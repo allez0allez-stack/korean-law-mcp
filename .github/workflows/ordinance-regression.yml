@@ -18,5 +18,5 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
-      - run: npx vitest run tests/ordinance-radar-exact-match.test.ts
+      - run: npx vitest run --config vitest.config.ts src/ordinance-radar-exact-match.test.ts
       - run: npm run build
