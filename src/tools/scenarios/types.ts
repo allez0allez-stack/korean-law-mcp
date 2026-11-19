@@ -40,6 +40,8 @@ export interface ScenarioContext {
     lawType: string
   }
   apiKey?: string
+  /** 법체계 체인이 명시적으로 지정한 조문. 지정 없으면 undefined. */
+  articles?: string[]
   /** 시나리오별 추가 파라미터 (time_travel: fromDate/toDate, action_plan: situation 등) */
   extras?: Record<string, unknown>
 }
