@@ -492,7 +492,7 @@ export async function chainLawSystem(
 
     if (wantsArticles) {
       // 명시적 조문 지정 시 대량 3단 비교로 요청 조문이 밀려나지 않도록 한다.
-      pushLeg(parts, batch, "지정 조문 (우선)", "get_batch_articles", true)
+      pushLeg(parts, batch, "핵심 조문 (지정 조문 우선)", "get_batch_articles", true)
       parts.push("※ 조문 지정 모드: 전체 3단 비교는 생략했습니다. 전체 비교가 필요하면 articles 없이 호출하세요.")
     } else {
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
