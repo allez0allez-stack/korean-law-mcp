@@ -10,6 +10,7 @@ import { cleanHtml } from "../lib/article-parser.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { formatToolError } from "../lib/errors.js"
 import { lawCache } from "../lib/cache.js"
+import { getAdminRule } from "./admin-rule.js"
 
 /** 단일 정확조회에는 위임조문 전문, 광역조회에는 미리보기를 제공한다. */
 export function formatDelegationBody(cleanContent: string, targeted: boolean): string {
@@ -67,11 +68,36 @@ export function findSubdelegationToGazette(content: string): string[] {
   return findings
 }
 
+/**
+ * 읽은 고시의 본문에서 정확한 시행령 조문(영 제○조의○)을 인용한 위치만 증거로 반환한다.
+ * 규정의 검색 헤더에 있는 대상 조문번호만으로는 절대 일치 판정하지 않는다.
+ * 반환되는 것은 문면의 교차인용 후보이며 법적 위임범위 적합성의 판정이 아니다.
+ */
+export function findExplicitDecreeCitations(decreeJo: string, noticeText: string): string[] {
+  const source = decreeJo.replace(/\s+/g, "").match(/^제(\d+)조(?:의(\d+))?$/)
+  if (!source) return []
+  const article = Number(source[1])
+  const branch = source[2] === undefined ? undefined : Number(source[2])
+  const pattern = /(?:^|[^가-힣A-Za-z0-9])영\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?(?!\s*(?:의\s*\d|\d))/g
+  const findings: string[] = []
+  for (const match of noticeText.matchAll(pattern)) {
+    const num = Number(match[1])
+    const sub = match[2] === undefined ? undefined : Number(match[2])
+    if (num !== article || sub !== branch) continue
+    const excerpt = noticeText.slice(Math.max(0, match.index - 60), Math.min(noticeText.length, match.index + match[0].length + 95))
+      .replace(/\s+/g, " ").trim()
+    findings.push(excerpt)
+    if (findings.length === 4) break
+  }
+  return findings
+}
+
 export const GetThreeTierSchema = z.object({
   mst: z.string().optional().describe("법령일련번호"),
   lawId: z.string().optional().describe("법령ID"),
   jo: z.string().regex(/^제\s*\d+\s*조(?:의\s*\d+)?$/).optional().describe("특정 법률 조문으로 위임관계 한정 (예: 제249조의7)"),
   knd: z.enum(["1", "2"]).optional().default("2").describe("1=인용조문, 2=위임조문 (기본값)"),
+  adminRuleId: z.string().regex(/^\d{13}$/).optional().describe("특정 조문 jo와 함께 고시 원문의 시행령 직접 인용 여부를 교차검증할 13자리 행정규칙일련번호 (search_admin_rule에서 확보)"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 }).refine(data => data.mst || data.lawId, {
   message: "mst 또는 lawId 중 하나는 필수입니다"
@@ -88,9 +114,12 @@ export async function getThreeTier(
     // (law_system·action_basis·ordinance_compare·procedure_detail)이 부르므로 렌더 결과를 캐시한다(2026-09-28 성능 감사).
     // 옛 MST 를 줘도 늘 현행 3단비교가 온다(MST 는 법령을 고를 뿐, 리뷰 실측) — 시행령·시행규칙 개정을 넘기지 않게 1시간만 둔다.
     // 체인은 스키마를 거치지 않아 knd 가 비어 온다 — 기본값 2로 맞춰 키를 하나로
+    if (input.adminRuleId && (!input.jo || input.knd === "1")) {
+      return { content: [{ type: "text", text: "[INVALID_ARGUMENT] adminRuleId 검증은 위임조문(knd=2)의 특정 jo와 함께 요청해야 합니다." }], isError: true }
+    }
     const cacheKey = `thdcmp:${input.mst ? `m${input.mst}` : `i${input.lawId}`}:${input.knd || "2"}:${input.jo?.replace(/\s+/g, "") || "all"}`
     const cached = lawCache.get<string>(cacheKey)
-    if (cached) return { content: [{ type: "text", text: cached }] }
+    if (cached && !input.adminRuleId) return { content: [{ type: "text", text: cached }] }
 
     const jsonText = await apiClient.getThreeTier({
       mst: input.mst,
@@ -204,8 +233,41 @@ export async function getThreeTier(
       resultText += `전체 ${articles.length}개 조문 중 처음 ${maxArticles}개만 표시합니다.\n`
     }
 
+    if (input.adminRuleId && normalizedJo && threeTierData.kndType === "위임조문") {
+      resultText += "\n▶ 지정 고시 원문 교차검증 (법적 적합성 판정 아님)\n"
+      const decree = selected[0]?.delegations.find(d => d.type === "시행령" && d.joNum)
+      if (!decree?.joNum) {
+        resultText += "[NOT_VERIFIED] 연결된 시행령의 정확한 조문번호를 확보하지 못했습니다.\n"
+      } else {
+        const rule = await getAdminRule(apiClient, {
+          id: input.adminRuleId,
+          keyword: decree.joNum,
+          max_results: 5,
+          apiKey: input.apiKey,
+        })
+        const body = rule.content[0]?.text || ""
+        const ruleName = body.match(/^행정규칙명:\s*(.+)$/m)?.[1] || "확인되지 않음"
+        resultText += `조회 고시: ${ruleName} (행정규칙일련번호: ${input.adminRuleId})\n`
+        resultText += `대조 시행령: ${decree.lawName} ${decree.joNum}\n`
+        if (rule.isError || body.includes("[NOT_FOUND]") || body.includes("⚠️ 연혁본")) {
+          resultText += "[NOT_VERIFIED] 고시 본문이 확인되지 않았거나 연혁본입니다. 현행 고시의 직접 인용은 검증하지 못했습니다.\n"
+        } else {
+          const matches = findExplicitDecreeCitations(decree.joNum, body)
+          if (matches.length) {
+            resultText += `[고시 본문 직접 인용 후보] 지정 고시에서 해당 시행령 조문을 문면 인용한 대목 ${matches.length}개를 확인했습니다.\n`
+            for (let i = 0; i < matches.length; i++) {
+              resultText += `근거 ${i + 1}: ${matches[i]}\n`
+            }
+            resultText += "※ 위임 대상·범위·시행시점의 부합 여부와 고시의 적법성은 확인하지 않았습니다.\n"
+          } else {
+            resultText += "[직접 인용 미확인] 조회한 고시의 최대 5개 검색 조문에서 해당 시행령 조문 직접 인용을 발견하지 못했습니다. 부존재 또는 미이행을 단정하지 마세요.\n"
+          }
+        }
+      }
+    }
+
     const text = truncateResponse(resultText)
-    lawCache.set(cacheKey, text, 60 * 60 * 1000)
+    if (!input.adminRuleId) lawCache.set(cacheKey, text, 60 * 60 * 1000)
     return { content: [{ type: "text", text }] }
   } catch (error) {
     return formatToolError(error, "get_three_tier")
