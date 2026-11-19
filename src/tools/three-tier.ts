@@ -113,8 +113,11 @@ export async function getThreeTier(
         if (delegation.content) {
           const cleanContent = cleanHtml(delegation.content)
 
-          // 너무 길면 줄 경계에서 자르기 (위임 내용은 법적으로 중요하므로 500자)
-          if (cleanContent.length > 500) {
+          // 단일 법률 조문을 정확히 지정한 경우에는 위임 조문 원문을
+          // 500자로 자르지 않는다. 포괄적인 3단 비교에서만 기존 제한을 유지한다.
+          if (normalizedJo && cleanContent) {
+            resultText += `${cleanContent}\n\n`
+          } else if (cleanContent.length > 500) {
             const lastNewline = cleanContent.lastIndexOf('\n', 500)
             const cutPos = lastNewline > 300 ? lastNewline : 500
             resultText += `${cleanContent.substring(0, cutPos)}\n   (위임 내용 ${cleanContent.length.toLocaleString()}자 중 일부만 표시)\n\n`
