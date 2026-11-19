@@ -138,22 +138,35 @@ export async function ordinanceRadar(
     let ordinSeq = input.ordinSeq || input.id
     const searchName = input.ordinanceName || input.query
     if (!ordinSeq && searchName) {
-      const sx = await apiClient.searchOrdinance({ query: searchName, display: 100, apiKey: input.apiKey })
-      const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
-        자치법규일련번호: extractTag(c, "자치법규일련번호"),
-        자치법규명: extractTag(c, "자치법규명"),
-      }))
-      // LIKE 검색 첫 결과는 다른 지자체의 조례일 수 있으므로 정확한 전체 명칭만 허용.
       const expected = normalizeAliasKey(searchName)
-      const exact = parsed.items.filter(item =>
-        normalizeAliasKey(item.자치법규명 || "") === expected
-      )
-      if (exact.length !== 1) {
-        return notFound(exact.length > 1
-          ? `[AMBIGUOUS] '${searchName}' 정확 일치 결과 ${exact.length}건. ordinSeq를 직접 지정하세요.`
-          : `[NOT_FOUND] '${searchName}' 정확 일치 결과를 확인하지 못했습니다. 다른 지자체의 조례를 자동 선택하지 않습니다. 검색 범위 밖의 결과가 있을 수 있으므로 ordinSeq를 직접 확인하세요.`)
+      const pageSize = 100
+      const maxPages = 10
+      const exact: Array<{ 자치법규일련번호: string; 자치법규명: string }> = []
+      let exhausted = false
+      for (let page = 1; page <= maxPages; page++) {
+        const sx = await apiClient.searchOrdinance({ query: searchName, display: pageSize, page, apiKey: input.apiKey })
+        const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
+          자치법규일련번호: extractTag(c, "자치법규일련번호"),
+          자치법규명: extractTag(c, "자치법규명"),
+        }))
+        exact.push(...parsed.items.filter(item =>
+          normalizeAliasKey(item.자치법규명 || "") === expected
+        ))
+        if (parsed.items.length === 0 || page * pageSize >= parsed.totalCnt) {
+          exhausted = true
+          break
+        }
       }
-      ordinSeq = exact[0].자치법규일련번호 || undefined
+      if (!exhausted) {
+        return notFound(`[SEARCH_INCOMPLETE] '${searchName}' 검색 결과가 ${maxPages * pageSize}건을 초과합니다. ordinSeq를 지정하세요.`)
+      }
+      const unique = [...new Map(exact.map(item => [item.자치법규일련번호, item])).values()]
+      if (unique.length !== 1) {
+        return notFound(unique.length > 1
+          ? `[AMBIGUOUS] '${searchName}' 정확 일치 결과 ${unique.length}건. ordinSeq를 직접 지정하세요.`
+          : `[NOT_FOUND] '${searchName}' 정확 일치 결과가 없습니다. 다른 지자체의 조례를 자동 선택하지 않습니다.`)
+      }
+      ordinSeq = unique[0].자치법규일련번호 || undefined
       if (!ordinSeq) {
         return notFound(`[NOT_FOUND] 자치법규 '${searchName}'을(를) 찾을 수 없습니다.\n⚠️ search_ordinance로 유효한 조례명·ordinSeq를 먼저 확인하세요.`)
       }
