@@ -19,6 +19,7 @@ import { formatToolError } from "../lib/errors.js"
 export const SearchOrdinanceSchema = z.object({
   query: z.string().describe("검색할 자치법규명 (예: '서울', '환경')"),
   display: z.number().min(1).max(100).default(20).describe("페이지당 결과 개수 (기본값: 20, 최대: 100)"),
+  page: z.number().int().min(1).max(10000).default(1).describe("조회 페이지 (기본값: 1). 업스트림 무시 시 결과를 반환하지 않음"),
   verifyArticleRelevance: z.boolean().optional()
     .describe("질의에 조문 번호가 있을 때 상위 후보의 본문을 열어 그 조문을 인용하는지 확인 (기본 false — 건당 업스트림 1회·약 1초가 추가된다)"),
   relevanceLimit: z.number().min(1).max(30).optional()
@@ -45,6 +46,7 @@ export async function searchOrdinance(
     let xmlText = await apiClient.searchOrdinance({
       query: normalizedQuery,
       display: input.display || 20,
+      page: input.page || 1,
       apiKey: input.apiKey
     })
 
@@ -71,6 +73,7 @@ export async function searchOrdinance(
         xmlText = await apiClient.searchOrdinance({
           query: expandedQuery,
           display: input.display || 20,
+          page: input.page || 1,
           apiKey: input.apiKey
         })
 
@@ -94,7 +97,15 @@ export async function searchOrdinance(
       }
     }
 
-    const currentPage = parsed.page
+    const requestedPage = input.page || 1
+    const currentPage = Number(parsed.page)
+    // Reject silent upstream page fallback instead of showing the wrong results.
+    if (!Number.isSafeInteger(currentPage) || currentPage !== requestedPage) {
+      return {
+        content: [{ type: "text", text: `[PAGE_MISMATCH] 자치법규 요청 페이지 ${requestedPage}, 실제 응답 페이지 ${parsed.page}. 해당 페이지 결과는 검증되지 않았으므로 반환하지 않습니다.` }],
+        isError: true,
+      }
+    }
     let ordinances = parsed.items
 
     if (totalCount === 0) {
