@@ -143,12 +143,19 @@ export async function ordinanceRadar(
       const maxPages = 10
       const exact: Array<{ 자치법규일련번호: string; 자치법규명: string }> = []
       let exhausted = false
+      const seenPages = new Set<string>()
       for (let page = 1; page <= maxPages; page++) {
         const sx = await apiClient.searchOrdinance({ query: searchName, display: pageSize, page, apiKey: input.apiKey })
         const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
           자치법규일련번호: extractTag(c, "자치법규일련번호"),
           자치법규명: extractTag(c, "자치법규명"),
         }))
+        // API가 page를 무시해 동일 페이지를 반복 반환하면 검색 완료로 오인하지 않는다.
+        const signature = JSON.stringify(parsed.items)
+        if (page > 1 && seenPages.has(signature) && parsed.totalCnt > pageSize) {
+          return notFound(`[PAGINATION_UNVERIFIED] '${searchName}' 검색 API가 이전 페이지를 반복 반환했습니다. ordinSeq를 직접 지정하세요.`)
+        }
+        seenPages.add(signature)
         exact.push(...parsed.items.filter(item =>
           normalizeAliasKey(item.자치법규명 || "") === expected
         ))
