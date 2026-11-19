@@ -44,6 +44,8 @@ export function classifyNoticeScope(
     const clause = m[3] === undefined ? null : Number(m[3])
     const ref = m[0].trim()
     const after = noticeText.slice(m.index + m[0].length, m.index + m[0].length + 105)
+    // 다음 고시 항의 문구를 끌어와 앞 항의 직접 위임으로 오인하지 않는다.
+    const sameNoticeParagraph = after.split(/[①-⑳]|<\d{1,2}>/)[0]
     const excerpt = noticeText.slice(Math.max(0,m.index-35), Math.min(noticeText.length,m.index+m[0].length+105)).replace(/\s+/g," ").trim()
     let status: NoticeScopeStatus = "not_verified"
     let rationale = "시행령의 항 번호가 특정되지 않아 동일 위임 문언의 대응 범위를 검증하지 못함"
@@ -51,7 +53,7 @@ export function classifyNoticeScope(
       const paragraph = paragraphBody(decreeText, clause)
       if (paragraph === null) {
         rationale = "참조된 시행령 항의 원문 경계를 확인할 수 없음"
-      } else if (GAZETTE.test(paragraph) && GAZETTE.test(after)) {
+      } else if (GAZETTE.test(paragraph) && GAZETTE.test(sameNoticeParagraph)) {
         status = "wording_candidate"
         rationale = "같은 시행령 항 인용과 양쪽의 금융위원회 고시 위임 표현이 문언상 대응"
       } else {
