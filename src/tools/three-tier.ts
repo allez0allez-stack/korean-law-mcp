@@ -15,6 +15,7 @@ import { classifyNoticeScope } from "../lib/delegation-scope.js"
 import { checkDelegationTemporalContext } from "../lib/delegation-temporal.js"
 import { todayKst } from "../lib/law-lineage.js"
 import { dateSchema } from "../lib/schemas.js"
+import { verifyHistoricalDelegation } from "./historical-delegation.js"
 
 /** 단일 정확조회에는 위임조문 전문, 광역조회에는 미리보기를 제공한다. */
 export function formatDelegationBody(cleanContent: string, targeted: boolean): string {
@@ -102,7 +103,10 @@ export const GetThreeTierSchema = z.object({
   jo: z.string().regex(/^제\s*\d+\s*조(?:의\s*\d+)?$/).optional().describe("특정 법률 조문으로 위임관계 한정 (예: 제249조의7)"),
   knd: z.enum(["1", "2"]).optional().default("2").describe("1=인용조문, 2=위임조문 (기본값)"),
   adminRuleId: z.string().regex(/^\d{13}$/).optional().describe("특정 조문 jo와 함께 고시 원문의 시행령 직접 인용 여부를 교차검증할 13자리 행정규칙일련번호 (search_admin_rule에서 확보)"),
-  asOf: dateSchema.optional().describe("현행 교차검증 기준일 YYYYMMDD. 과거·미래 기준일은 3단비교가 현행본만 반환하므로 NOT_VERIFIED로 차단합니다."),
+  asOf: dateSchema.optional().describe("기준일 YYYYMMDD. 과거일은 lawId·decreeLawId·decreeJo·adminRuleName·adminRuleId·jo로 3계층 연혁 원문 독립 대조, 미래일은 보류."),
+  decreeLawId: z.string().optional().describe("과거 기준일 교차검증용 시행령 법령ID(예: 010817). 현행 3단비교에서 과거의 조문 연결을 추정하지 않습니다."),
+  decreeJo: z.string().regex(/^제\s*\d+\s*조(?:의\s*\d+)?$/).optional().describe("과거 기준일 독립 대조 대상 시행령 정확 조문(예: 제271조의10)"),
+  adminRuleName: z.string().optional().describe("과거 기준일 고시 연혁을 조회할 정확한 행정규칙명(예: 금융투자업규정)"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 }).refine(data => data.mst || data.lawId, {
   message: "mst 또는 lawId 중 하나는 필수입니다"
@@ -123,7 +127,16 @@ export async function getThreeTier(
       return { content: [{ type: "text", text: "[INVALID_ARGUMENT] asOf는 adminRuleId가 있는 고시 교차검증에서만 지원합니다." }], isError: true }
     }
     if (input.asOf && input.asOf !== todayKst()) {
-      return { content: [{ type: "text", text: "[NOT_VERIFIED] 기준일 " + input.asOf + "은 현행 3단비교와 동일하지 않습니다. 해당 날짜의 법률·시행령·고시 원문 및 시행 슬라이스가 필요합니다. 현행본을 과거·미래 법령으로 대체하지 않습니다." }] }
+      if (input.asOf > todayKst()) {
+        return { content: [{ type: "text", text: "[NOT_VERIFIED] 미래 기준일에는 공포·시행예정 법령의 변동 가능성이 있어 확정 대조를 제공하지 않습니다." }] }
+      }
+      if (!input.lawId || !input.jo || !input.adminRuleId || !input.decreeLawId || !input.decreeJo || !input.adminRuleName || input.knd === "1") {
+        return { content: [{ type: "text", text: "[NOT_VERIFIED] 과거 기준일에는 lawId, jo, decreeLawId, decreeJo, adminRuleId, adminRuleName 및 knd=2가 필요합니다. 현행본을 과거·미래 법령으로 대체하지 않습니다. 현행 3단비교로 과거의 연결관계를 추정하지 않습니다." }] }
+      }
+      return verifyHistoricalDelegation(apiClient, {
+        lawId:input.lawId,jo:input.jo,decreeLawId:input.decreeLawId,decreeJo:input.decreeJo,
+        adminRuleId:input.adminRuleId,adminRuleName:input.adminRuleName,asOf:input.asOf,apiKey:input.apiKey,
+      })
     }
     if (input.adminRuleId && (!input.jo || input.knd === "1")) {
       return { content: [{ type: "text", text: "[INVALID_ARGUMENT] adminRuleId 검증은 위임조문(knd=2)의 특정 jo와 함께 요청해야 합니다." }], isError: true }
