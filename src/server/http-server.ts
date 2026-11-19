@@ -84,6 +84,30 @@ export async function startHTTPServer(
   // A reverse-proxy deployment opts in with a bounded numeric hop count.
   app.set("trust proxy", config.trustProxy)
 
+  // /mcp failures and aborted connections are logged without keys, paths with
+  // query strings, request bodies, IPs, or identifying request headers.
+  // MCP_DIAGNOSTICS=1 also samples successful requests to distinguish upstream
+  // latency from Render edge 502s (edge failures may never reach this app).
+  app.use((req, res, next) => {
+    if (req.path !== "/mcp") return next()
+    const start = process.hrtime.bigint()
+    const diagnostic = process.env.MCP_DIAGNOSTICS === "1"
+    let finished = false
+    const elapsedMs = () => Number((process.hrtime.bigint() - start) / 1_000_000n)
+    res.once("finish", () => {
+      finished = true
+      if (diagnostic || res.statusCode >= 500) {
+        console.error(`[http-mcp] event=finish status=${res.statusCode} duration_ms=${elapsedMs()}`)
+      }
+    })
+    res.once("close", () => {
+      if (!finished && !res.writableEnded) {
+        console.error(`[http-mcp] event=disconnect duration_ms=${elapsedMs()}`)
+      }
+    })
+    next()
+  })
+
   // ACCESS_LOG=1 일 때만 요청 로그 — req.path만 기록 (쿼리스트링의 oc= API 키 유출 방지)
   if (process.env.ACCESS_LOG === "1") {
     app.use((req, _res, next) => {
