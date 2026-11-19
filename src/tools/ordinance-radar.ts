@@ -23,7 +23,7 @@ import { rethrowIfFatal } from "../lib/fatal-errors.js"
 export const OrdinanceRadarSchema = z.object({
   ordinSeq: z.string().optional().describe("자치법규 일련번호 (ordinSeq)"),
   id: z.string().optional().describe("ordinSeq 별칭 — 힌트가 id=로 안내하는 경우 대응"),
-  ordinanceName: z.string().optional().describe("자치법규명 — 지정 시 검색 후 첫 결과 사용 (예: '서울특별시 광진구 주차장 설치 및 관리 조례')"),
+  ordinanceName: z.string().optional().describe("자치법규명 — 지정 시 전체 명칭 정확 일치 결과만 사용 (예: '서울특별시 광진구 주차장 설치 및 관리 조례')"),
   query: z.string().optional().describe("ordinanceName 별칭 — 자연어 조례명으로 검색"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달"),
 }).refine(d => d.ordinSeq || d.id || d.ordinanceName || d.query, {
@@ -134,15 +134,50 @@ export async function ordinanceRadar(
   input: OrdinanceRadarInput
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   try {
-    // 1. ordinSeq 확보 (직접 지정 우선, 없으면 조례명 검색 첫 결과)
+    // 1. ordinSeq 확보 (직접 지정 우선, 없으면 조례명 정확매칭 검색)
     let ordinSeq = input.ordinSeq || input.id
     const searchName = input.ordinanceName || input.query
     if (!ordinSeq && searchName) {
-      const sx = await apiClient.searchOrdinance({ query: searchName, display: 5, apiKey: input.apiKey })
-      const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
-        자치법규일련번호: extractTag(c, "자치법규일련번호"),
-      }))
-      ordinSeq = parsed.items[0]?.자치법규일련번호 || undefined
+      const expected = normalizeAliasKey(searchName)
+      const pageSize = 100
+      const maxPages = 10
+      const exact: Array<{ 자치법규일련번호: string; 자치법규명: string }> = []
+      let exhausted = false
+      const seenPages = new Set<string>()
+      for (let page = 1; page <= maxPages; page++) {
+        const sx = await apiClient.searchOrdinance({ query: searchName, display: pageSize, page, apiKey: input.apiKey })
+        const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
+          자치법규일련번호: extractTag(c, "자치법규일련번호"),
+          자치법규명: extractTag(c, "자치법규명"),
+        }))
+        // 전체 건수 메타데이터가 없으면 페이지 검색이 완결됐다고 증명할 수 없다.
+        if (!Number.isSafeInteger(parsed.totalCnt) || parsed.totalCnt < parsed.items.length || parsed.totalCnt < 0) {
+          return notFound(`[SEARCH_METADATA_INVALID] '${searchName}' 검색 결과의 totalCnt가 유효하지 않습니다. ordinSeq를 직접 지정하세요.`)
+        }
+        // API가 page를 무시해 동일 페이지를 반복 반환하면 검색 완료로 오인하지 않는다.
+        const signature = JSON.stringify(parsed.items)
+        if (page > 1 && seenPages.has(signature) && parsed.totalCnt > pageSize) {
+          return notFound(`[PAGINATION_UNVERIFIED] '${searchName}' 검색 API가 이전 페이지를 반복 반환했습니다. ordinSeq를 직접 지정하세요.`)
+        }
+        seenPages.add(signature)
+        exact.push(...parsed.items.filter(item =>
+          normalizeAliasKey(item.자치법규명 || "") === expected
+        ))
+        if (parsed.items.length === 0 || page * pageSize >= parsed.totalCnt) {
+          exhausted = true
+          break
+        }
+      }
+      if (!exhausted) {
+        return notFound(`[SEARCH_INCOMPLETE] '${searchName}' 검색 결과가 ${maxPages * pageSize}건을 초과합니다. ordinSeq를 지정하세요.`)
+      }
+      const unique = [...new Map(exact.map(item => [item.자치법규일련번호, item])).values()]
+      if (unique.length !== 1) {
+        return notFound(unique.length > 1
+          ? `[AMBIGUOUS] '${searchName}' 정확 일치 결과 ${unique.length}건. ordinSeq를 직접 지정하세요.`
+          : `[NOT_FOUND] '${searchName}' 정확 일치 결과가 없습니다. 다른 지자체의 조례를 자동 선택하지 않습니다.`)
+      }
+      ordinSeq = unique[0].자치법규일련번호 || undefined
       if (!ordinSeq) {
         return notFound(`[NOT_FOUND] 자치법규 '${searchName}'을(를) 찾을 수 없습니다.\n⚠️ search_ordinance로 유효한 조례명·ordinSeq를 먼저 확인하세요.`)
       }
@@ -157,6 +192,10 @@ export async function ordinanceRadar(
     }
     const base = svc.자치법규기본정보 || {}
     const ordName: string = base.자치법규명 || "알 수 없음"
+    // 검색 결과와 본문 API의 명칭이 다른 경우에도 잘못된 지자체 조례를 반환하지 않는다.
+    if (searchName && normalizeAliasKey(ordName) !== normalizeAliasKey(searchName)) {
+      return notFound(`[ORDINANCE_NAME_MISMATCH] 요청 '${searchName}', 실제 '${ordName}'. 다른 지자체의 조례를 반환하지 않습니다.`)
+    }
     const ordEff: string = base.시행일자 || ""
     const dept: string = base.담당부서명 || ""
     const govt: string = base.지자체기관명 || ""

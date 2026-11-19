@@ -1,0 +1,22 @@
+name: Korean LAW ordinance regression
+on:
+  push:
+    branches:
+      - fix/ordinance-radar-exact-match-20261119
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npx vitest run --config vitest.config.ts src/ordinance-radar-exact-match.test.ts
+      - run: npm run build
