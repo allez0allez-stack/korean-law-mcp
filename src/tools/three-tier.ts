@@ -11,6 +11,7 @@ import { truncateResponse } from "../lib/schemas.js"
 import { formatToolError } from "../lib/errors.js"
 import { lawCache } from "../lib/cache.js"
 import { getAdminRule } from "./admin-rule.js"
+import { classifyNoticeScope } from "../lib/delegation-scope.js"
 
 /** 단일 정확조회에는 위임조문 전문, 광역조회에는 미리보기를 제공한다. */
 export function formatDelegationBody(cleanContent: string, targeted: boolean): string {
@@ -258,6 +259,14 @@ export async function getThreeTier(
             for (let i = 0; i < matches.length; i++) {
               resultText += `근거 ${i + 1}: ${matches[i]}\n`
             }
+            const scope = classifyNoticeScope(decree.joNum, decree.content || "", body)
+            resultText += "\n▶ 조문별 위임 문언 대응 후보 (법적 적합성 확정 아님)\n"
+            for (const item of scope) {
+              const label = item.status === "wording_candidate" ? "문언상 대응 후보"
+                : item.status === "review_required" ? "추가 검토 필요" : "근거 미확인"
+              resultText += "[" + label + "] " + item.cite + ": " + item.rationale + "\n"
+            }
+            resultText += "※ 같은 시행령 항과 고시의 정하여 고시 문언이 대응하더라도 위임의 실질적 범위·적법성·기준일 적용 여부는 법률 검토가 필요합니다.\n"
             resultText += "※ 위임 대상·범위·시행시점의 부합 여부와 고시의 적법성은 확인하지 않았습니다.\n"
           } else {
             resultText += "[직접 인용 미확인] 조회한 고시의 최대 5개 검색 조문에서 해당 시행령 조문 직접 인용을 발견하지 못했습니다. 부존재 또는 미이행을 단정하지 마세요.\n"
