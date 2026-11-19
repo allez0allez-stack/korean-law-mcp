@@ -59,7 +59,9 @@ export function findSubdelegationToGazette(content: string): string[] {
     const start = Math.max(0, m.index - 100)
     const end = Math.min(plain.length, m.index + m[0].length + 95)
     const excerpt = plain.slice(start, end)
-    // 서로 다른 재위임 문구가 근접하면 발췌 구간이 같아질 수 있으므로\n    // excerpt 문자열이 아니라 정규식의 개별 매치마다 증거를 보존한다.\n    findings.push(excerpt)
+    // 서로 다른 재위임 문구가 근접하면 발췌 구간이 같아질 수 있으므로
+    // 발췌 문자열이 아닌 정규식의 개별 매치마다 증거를 보존한다.
+    findings.push(excerpt)
     if (findings.length === 8) break
   }
   return findings
