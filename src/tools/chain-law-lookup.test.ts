@@ -67,6 +67,25 @@ describe("#105 체인 기반 법령 탐색", () => {
     expect(c.aiQueries).toHaveLength(0)
   })
 
+  it("복합 위임질의에서 명시된 자본시장법을 정확히 고정한다", async () => {
+    lawCache.clear()
+    const name = "자본시장과 금융투자업에 관한 법률"
+    const c = fakeClient({ known: ["10ㆍ27법난 피해자의 명예회복 등에 관한 법률 시행령", name] })
+    const r = await resolveChainBaseLaw(c, name + " 제249조의7과 시행령 제271조의10 위임관계")
+    expect(r.laws[0]?.lawName).toBe(name)
+    expect(r.searchedWith).toBe(name)
+    expect(c.searched).toEqual([name])
+  })
+
+  it("명시 법령이 검색되지 않으면 무관한 부분검색 결과를 거부한다", async () => {
+    lawCache.clear()
+    const name = "자본시장과 금융투자업에 관한 법률"
+    const c = fakeClient({ known: ["10ㆍ27법난 피해자의 명예회복 등에 관한 법률 시행령"] })
+    const r = await resolveChainBaseLaw(c, name + " 제249조의7과 시행령 제271조의10 위임관계")
+    expect(r.laws).toHaveLength(0)
+    expect(c.aiQueries).toHaveLength(0)
+  })
+
   it("전부 실패하면 시도한 검색어를 모아 돌려준다", async () => {
     lawCache.clear()
     const c = fakeClient({ known: [] })

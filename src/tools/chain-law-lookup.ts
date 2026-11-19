@@ -8,7 +8,7 @@
  * 3단 시도: 추출한 법령명 → 원문(findLaws 자체 폴백 포함) → 의미검색이 지목한 법령명.
  * 의미검색(aiSearch)은 주제어를 조문으로 매핑하므로 "음주운전"에서 도로교통법을 얻는다.
  */
-import { findLaws, type LawInfo } from "../lib/law-search.js"
+import { findLaws, resolvedLawMatches, type LawInfo } from "../lib/law-search.js"
 import { lawNameFromQuery } from "../lib/query-extract.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { searchAiLawStructured, type AiLawArticleSignal } from "./life-law.js"
@@ -75,6 +75,21 @@ export async function resolveChainBaseLaw(
     tried.add(key)
     attempts.push(key)
     return findLaws(apiClient, key, apiKey, max)
+  }
+
+  // 명시된 법령명 뒤에 다른 조문·시행령이 이어지는 복합 질의에서는
+  // 법령명 전체를 먼저 고정한다. 나머지 검색어가 10ㆍ27법난 시행령처럼
+  // 부분 일치만 하는 타 법령을 반환해도 기반 법령으로 채택하지 않는다.
+  const explicit = query.trim().replace(/\\s+/g, " ").match(/^(.+?(?:법률|법|조례|규정|시행령|시행규칙))(?=\\s|제\\s*\\d|$)/)?.[1]
+  if (explicit) {
+    const byExplicit = await attempt(explicit)
+    const verified = byExplicit.filter(law => resolvedLawMatches(explicit, law.lawName))
+    if (verified.length) {
+      verified.sort((a, b) => Number(b.lawName === explicit) - Number(a.lawName === explicit))
+      return { laws: verified, searchedWith: explicit, attempts }
+    }
+    // 명시적 법령명을 확인할 수 없으면 추측 폴백으로 다른 법령을 반환하지 않는다.
+    return { laws: [], attempts }
   }
 
   // 1) 질의에 법령명이 들어 있으면 그것으로. 의문·구어 수식을 걷어낸 형태다
