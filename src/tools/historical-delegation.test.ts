@@ -35,7 +35,17 @@ vi.mock("./admin-rule.js",()=>({getAdminRule:vi.fn(async (_:unknown,p:{jo?:strin
  }]
 }))}))
 const input={lawId:"010513",jo:"제249조의7",decreeLawId:"010817",decreeJo:"제271조의10",adminRuleName:"금융투자업규정",adminRuleId:"2100000285020",asOf:"20251021"}
-const client={} as LawApiClient
+const client={
+ getLawText:vi.fn(async (p:{mst:string})=>JSON.stringify({법령:{
+   기본정보:{시행일자:"20251001"},
+   부칙:{부칙단위:[{
+    부칙공포번호:"1",부칙공포일자:"20251001",
+    부칙내용:[p.mst==="277365"
+      ?"제2조(경과조치) 제249조의7의 종전 규정에 따른다."
+      :"제3조(적용례) 제271조의10에 따라 고시하는 사항은 시행 이후 적용한다."]
+   }]}
+ }}))
+} as unknown as LawApiClient
 
 describe("historical delegation: three independent exact versions",()=>{
  beforeEach(()=>vi.clearAllMocks())
@@ -46,6 +56,9 @@ describe("historical delegation: three independent exact versions",()=>{
   expect(t).toContain("MST 278155")
   expect(t).toContain("일련번호 2100000266378")
   expect(t).toContain("[문언상 대응 후보]")
+  expect(t).toContain("▶ 부칙·분리시행 검토 게이트")
+  expect(t).toContain("[REVIEW_REQUIRED — 원자료 확보")
+  expect(t).toContain("[적용 여부 미확정:조문 직접 언급]")
   expect(getLawText).toHaveBeenCalledTimes(2)
   expect(getAdminRule).toHaveBeenCalledTimes(2)
   expect(vi.mocked(getAdminRule).mock.calls[1][1]).toMatchObject({id:"2100000266378",jo:"제7-41조의7"})
@@ -66,6 +79,13 @@ describe("historical delegation: three independent exact versions",()=>{
   const r=await verifyHistoricalDelegation(client,input)
   expect(r.content[0].text).toContain("[NOT_VERIFIED]")
   expect(r.content[0].text).toContain("시행일")
+ })
+ it("keeps citation result but labels addenda partial when the original version JSON fails",async()=>{
+  vi.mocked(client.getLawText).mockRejectedValueOnce(new Error("temporary upstream error"))
+  const r=await verifyHistoricalDelegation(client,input)
+  expect(r.content[0].text).toContain("[PARTIAL — 부칙 원자료 미확인]")
+  expect(r.content[0].text).toContain("[법률][NOT_VERIFIED]")
+  expect(r.content[0].text).toContain("MST 277365")
  })
  it("rejects future date without contacting source APIs",async()=>{
   const r=await verifyHistoricalDelegation(client,{...input,asOf:"20300101"})

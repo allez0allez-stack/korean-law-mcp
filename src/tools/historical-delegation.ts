@@ -10,6 +10,8 @@ import { getLawText } from "./law-text.js"
 import { getAdminRule } from "./admin-rule.js"
 import { classifyNoticeScope } from "../lib/delegation-scope.js"
 import { truncateResponse } from "../lib/schemas.js"
+import { reviewHistoricalAddenda, findHistoricalStagingRisks } from "../lib/delegation-addenda.js"
+import { rethrowIfFatal } from "../lib/fatal-errors.js"
 
 export interface HistoricalDelegationInput {
   lawId: string
@@ -100,6 +102,53 @@ export async function verifyHistoricalDelegation(
     return report("선택된 버전에서 요구한 법률 또는 시행령 조문을 확인하지 못했습니다.")
   }
 
+  // Full JSON is required: get_law_text(jo="부칙") textual output truncates
+  // after 50k chars for large financial statutes and can hide relevant clauses.
+  const stages=[
+    ...findHistoricalStagingRisks(lawHistory.versions,law.version,asOf).map(x=>"[법률] "+x.detail),
+    ...findHistoricalStagingRisks(decreeHistory.versions,decree.version,asOf).map(x=>"[시행령] "+x.detail),
+  ]
+  const addendaRequests=[
+    {label:"법률",version:law.version,article:jo},
+    {label:"시행령",version:decree.version,article:decreeJo},
+  ]
+  const rawResults=await Promise.allSettled(addendaRequests.map(x=>
+    apiClient.getLawText({mst:x.version.mst,efYd:x.version.efYd,apiKey})
+  ))
+  const addendaLines:string[]=[]
+  for(let i=0;i<rawResults.length;i++) {
+    const req=addendaRequests[i]
+    const raw=rawResults[i]
+    if(raw.status==="rejected") {
+      rethrowIfFatal(raw.reason)
+      addendaLines.push("["+req.label+"][NOT_VERIFIED] 기준시점 원본 부칙 JSON 조회 실패")
+      continue
+    }
+    try {
+      const obj=JSON.parse(raw.value)
+      const sourceDate=String(obj?.법령?.기본정보?.시행일자||"")
+      if(sourceDate!==req.version.efYd) {
+        addendaLines.push("["+req.label+"][NOT_VERIFIED] 선택한 시행일과 원본 부칙의 시행일 불일치")
+        continue
+      }
+      const info=reviewHistoricalAddenda(obj,req.article,req.version.ancNo)
+      if(info.status==="not_verified") {
+        addendaLines.push("["+req.label+"][NOT_VERIFIED] 부칙 원자료 구조 누락")
+        continue
+      }
+      addendaLines.push("["+req.label+"] 부칙 "+info.totalUnits+"건 중 "+req.article+" 직접 언급 "+info.articleMentions+"개 라인; 검토 근거 "+info.excerpts.length+"건"+(info.omitted?" (추가 "+info.omitted+"건 미표시)":""))
+      for(const ex of info.excerpts) {
+        const tag=ex.signal==="article_reference"?"조문 직접 언급":ex.signal==="selected_promulgation"?"선택 공포본 부칙":"기타"
+        addendaLines.push("  [적용 여부 미확정:"+tag+"] "+ex.heading+": "+ex.excerpt)
+      }
+      if(info.articleMentions===0) addendaLines.push("  ※ 직접 조문번호 미발견은 관련 부칙 없음 또는 적용되지 않음이라는 뜻이 아닙니다.")
+    } catch(error) {
+      rethrowIfFatal(error)
+      addendaLines.push("["+req.label+"][NOT_VERIFIED] 원본 부칙 파싱 또는 확인 실패")
+    }
+  }
+  const addendaUnverified=addendaLines.some(line=>line.includes("[NOT_VERIFIED]"))
+
   const matches=classifyNoticeScope(decreeJo,decreeText,noticeText)
   const base=jo.replace(/\s+/g,"").match(/^제(\d+)조(?:의(\d+))?$/)
   if (!base) return report("법률 조문번호 형식이 잘못됐습니다.")
@@ -120,6 +169,16 @@ export async function verifyHistoricalDelegation(
     const label=item.status==="wording_candidate"?"문언상 대응 후보":item.status==="review_required"?"추가 검토 필요":"근거 미확인"
     out+="["+label+"] "+item.cite+" — "+item.rationale+"\n"
   }
+  out+="\n▶ 부칙·분리시행 검토 게이트\n"
+  out+="시점적용 판단: "+(addendaUnverified?"[PARTIAL — 부칙 원자료 미확인]":"[REVIEW_REQUIRED — 원자료 확보, 적용 법리 판단 필요]")+"\n"
+  if(stages.length) {
+    out+="분리시행·공포 후 시행예정 위험 "+stages.length+"건 (조항별 실제 시행시점 확인 필요)\n"
+    for(const item of stages.slice(0,5)) out+="[분리시행 검토] "+item+"\n"
+  } else {
+    out+="연혁 계보상 동일 MST 다중 시행슬라이스·기준일 이전 공포 후 미시행 신호: 발견되지 않음 (부칙상 분리시행 부존재는 미확정)\n"
+  }
+  for(const line of addendaLines) out+=line+"\n"
+  out+="※ 고시 부칙의 적용례·경과조치는 위 법률·시행령 부칙 검토에 포함되지 않으므로 별도 확인 필요.\n"
   out+="\n※ 현행 3단비교를 재사용하지 않고 기준일에 따라 세 버전을 별도 선택했습니다.\n"
   out+="※ 본문 직접 인용과 문언 대응 후보는 위임 적법성·내용의 범위 일치·부칙 경과규정의 적용을 증명하지 않습니다.\n"
   out+="※ 해당 기준일 이전에 공포되어 나중에 시행되는 개정의 영향과 분리시행 여부는 추가 검토가 필요합니다.\n"
