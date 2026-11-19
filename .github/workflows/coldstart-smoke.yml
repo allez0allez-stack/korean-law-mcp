@@ -1,0 +1,53 @@
+name: Korean LAW on-demand cold-start smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/coldstart-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cold-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Probe public health endpoint (no credentials, bounded retries)
+        env:
+          HEALTH_URL: https://korean-law-mcp-ym.onrender.com/health
+        run: |
+          node --input-type=module <<'JS'
+          const url = process.env.HEALTH_URL;
+          const probe = async (label) => {
+            const start = performance.now();
+            try {
+              const response = await fetch(url, {
+                headers: { "Accept": "application/json", "Cache-Control": "no-cache" },
+                signal: AbortSignal.timeout(65_000),
+              });
+              const body = await response.text();
+              const elapsed = Math.round(performance.now() - start);
+              let healthy = false;
+              try { healthy = response.status === 200 && JSON.parse(body).status === "ok"; } catch {}
+              console.log(JSON.stringify({ label, httpStatus: response.status, durationMs: elapsed, healthy }));
+              return healthy;
+            } catch (err) {
+              console.log(JSON.stringify({ label, durationMs: Math.round(performance.now() - start), failure: err?.name || "error" }));
+              return false;
+            }
+          };
+          let recovered = false;
+          for (let i = 1; i <= 3; i++) {
+            if (await probe("cold-start-attempt-" + i)) { recovered = true; break; }
+            if (i < 3) await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          if (!recovered) {
+            console.error("Cold-start health probe failed after three bounded attempts");
+            process.exitCode = 1;
+          } else if (!(await probe("warm-follow-up"))) {
+            console.error("Warm follow-up failed after recovered health");
+            process.exitCode = 1;
+          }
+          JS
