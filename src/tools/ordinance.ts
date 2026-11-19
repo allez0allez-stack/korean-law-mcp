@@ -83,13 +83,14 @@ export async function getOrdinance(
         })
 
         if (matched.length === 0) {
-          resultText += `'${input.jo}' 조문을 찾을 수 없습니다.\n\n`
+          resultText += `[NOT_FOUND] '${input.jo}' 조문을 찾을 수 없습니다.\n\n`
           resultText += `목차 (총 ${articles.length}개 조문)\n\n`
           const tocItems: string[] = []
           for (const article of articles) {
             if (article.조제목) tocItems.push(article.조제목)
           }
           resultText += tocItems.join("\n")
+          return { content: [{ type: "text", text: truncateResponse(resultText) }], isError: true }
         } else {
           for (const article of matched) {
             if (article.조제목) resultText += `${article.조제목}\n`
@@ -115,6 +116,13 @@ export async function getOrdinance(
           }
         }
       }
+    }
+
+    // Requested an exact article, but upstream supplied no articles at all.
+    // Never report a metadata-only success as verified legal text.
+    if (input.jo && articles.length === 0) {
+      resultText += `[NOT_FOUND] '${input.jo}' 조문을 확인할 수 없습니다. 법령 원문을 검증하세요.\n`
+      return { content: [{ type: "text", text: truncateResponse(resultText) }], isError: true }
     }
 
     return {
