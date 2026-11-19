@@ -247,16 +247,16 @@ export async function getThreeTier(
         })
         const body = rule.content[0]?.text || ""
         const ruleName = body.match(/^행정규칙명:\s*(.+)$/m)?.[1] || "확인되지 않음"
-        resultText += \`조회 고시: \${ruleName} (행정규칙일련번호: \${input.adminRuleId})\n\`
-        resultText += \`대조 시행령: \${decree.lawName} \${decree.joNum}\n\`
+        resultText += `조회 고시: ${ruleName} (행정규칙일련번호: ${input.adminRuleId})\n`
+        resultText += `대조 시행령: ${decree.lawName} ${decree.joNum}\n`
         if (rule.isError || body.includes("[NOT_FOUND]") || body.includes("⚠️ 연혁본")) {
           resultText += "[NOT_VERIFIED] 고시 본문이 확인되지 않았거나 연혁본입니다. 현행 고시의 직접 인용은 검증하지 못했습니다.\n"
         } else {
           const matches = findExplicitDecreeCitations(decree.joNum, body)
           if (matches.length) {
-            resultText += \`[고시 본문 직접 인용 후보] 지정 고시에서 해당 시행령 조문을 문면 인용한 대목 \${matches.length}개를 확인했습니다.\n\`
+            resultText += `[고시 본문 직접 인용 후보] 지정 고시에서 해당 시행령 조문을 문면 인용한 대목 ${matches.length}개를 확인했습니다.\n`
             for (let i = 0; i < matches.length; i++) {
-              resultText += \`근거 \${i + 1}: \${matches[i]}\n\`
+              resultText += `근거 ${i + 1}: ${matches[i]}\n`
             }
             resultText += "※ 위임 대상·범위·시행시점의 부합 여부와 고시의 적법성은 확인하지 않았습니다.\n"
           } else {
