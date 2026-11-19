@@ -9,7 +9,6 @@ import { fetchAdminRuleHistory, pickAdminRuleGroup, adminVersionAt } from "../li
 import { getLawText } from "./law-text.js"
 import { getAdminRule } from "./admin-rule.js"
 import { classifyNoticeScope } from "../lib/delegation-scope.js"
-import { lawJoCode } from "../lib/law-jo.js"
 import { truncateResponse } from "../lib/schemas.js"
 
 export interface HistoricalDelegationInput {
@@ -79,7 +78,18 @@ export async function verifyHistoricalDelegation(
   if (failed.length) return report("선택된 연혁 원문 조회 실패: " + failed.map(x=>x.join(" ")).join("; "))
   const lawText=lawTextR.content[0].text
   const decreeText=decreeTextR.content[0].text
-  const noticeText=noticeTextR.content[0].text
+  const noticeSearchText=noticeTextR.content[0].text
+  // A keyword response may truncate long notice articles, silently omitting later
+  // clauses. Only one exact article is safe to resolve automatically.
+  const hit=noticeSearchText.match(/'[^']+' 포함 조문 (\\d+)개: ([^\\n]+)/)
+  if (!hit || Number(hit[1]) !== 1) {
+    return report("고시 검색 결과가 단일 조문으로 특정되지 않습니다. 해당 고시의 정확한 조문을 별도 조회해야 합니다.")
+  }
+  const selectedNoticeJo=hit[2].trim()
+  const noticeFullR=await getAdminRule(apiClient,{id:notice.version.serial,jo:selectedNoticeJo,apiKey})
+  const noticeFailure=errorText(noticeFullR)
+  if (noticeFailure) return report("고시의 선택 조문 원문을 온전히 확보하지 못했습니다: "+noticeFailure)
+  const noticeText=noticeFullR.content[0].text
   const requiredLawDate = "시행일: " + law.version.efYd
   const requiredDecreeDate = "시행일: " + decree.version.efYd
   const requiredNoticeDate = "시행일: " + notice.version.efYd.slice(0,4)+"."+notice.version.efYd.slice(4,6)+"."+notice.version.efYd.slice(6)
@@ -113,6 +123,6 @@ export async function verifyHistoricalDelegation(
   out+="\n※ 현행 3단비교를 재사용하지 않고 기준일에 따라 세 버전을 별도 선택했습니다.\n"
   out+="※ 본문 직접 인용과 문언 대응 후보는 위임 적법성·내용의 범위 일치·부칙 경과규정의 적용을 증명하지 않습니다.\n"
   out+="※ 해당 기준일 이전에 공포되어 나중에 시행되는 개정의 영향과 분리시행 여부는 추가 검토가 필요합니다.\n"
-  out+="※ 원문: get_law_text(mst="+law.version.mst+", efYd="+law.version.efYd+", jo="+jo+"); get_law_text(mst="+decree.version.mst+", efYd="+decree.version.efYd+", jo="+decreeJo+"); get_admin_rule(id="+notice.version.serial+", keyword="+decreeJo+")\n"
+  out+="※ 원문: get_law_text(mst="+law.version.mst+", efYd="+law.version.efYd+", jo="+jo+"); get_law_text(mst="+decree.version.mst+", efYd="+decree.version.efYd+", jo="+decreeJo+"); get_admin_rule(id="+notice.version.serial+", jo="+selectedNoticeJo+")\n"
   return {content:[{type:"text",text:truncateResponse(out)}]}
 }
