@@ -74,6 +74,9 @@ export async function getThreeTier(
     if (normalizedJo && selected.length === 0) {
       return { content: [{ type: "text", text: `${resultText}[NOT_FOUND] ${input.jo}의 3단 위임 연결이 확인되지 않았습니다. 다른 조문을 대신 반환하지 않습니다.` }] }
     }
+    if (normalizedJo && selected.length > 1) {
+      return { content: [{ type: "text", text: `${resultText}[AMBIGUOUS] ${input.jo}에 해당하는 조문이 ${selected.length}건입니다. 임의 선택하지 않습니다.` }] }
+    }
     const maxArticles = selected.length
 
     for (let i = 0; i < maxArticles; i++) {
