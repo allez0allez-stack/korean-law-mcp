@@ -34,7 +34,7 @@ export function classifyDelegationEvidence(
   const article = Number(parsed[1])
   const branch = parsed[2] === undefined ? undefined : Number(parsed[2])
   // 공백이 들쭉날쭉한 법령 원문에 대응하되, 가지번호 후속 숫자의 오탐을 막는다.
-  const re = /(?:^|[^가-힣A-Za-z0-9])법\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?(?!\s*\d)/g
+  const re = /(?:^|[^가-힣A-Za-z0-9])법\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?(?!\s*(?:의\s*\d|\d))/g
   for (const match of targetContent.matchAll(re)) {
     const citedArticle = Number(match[1])
     const citedBranch = match[2] === undefined ? undefined : Number(match[2])
