@@ -475,7 +475,9 @@ export async function chainLawSystem(
 
     const [threeTier, batch, annexes, sr] = await Promise.all([
       // 3단 비교
-      raceDeadline(dl, callTool(getThreeTier, apiClient, { mst: p.mst, apiKey: input.apiKey })),
+      raceDeadline(dl, wantsArticles
+        ? Promise.resolve(null)
+        : callTool(getThreeTier, apiClient, { mst: p.mst, apiKey: input.apiKey })),
       // 조문 조회
       raceDeadline(dl, wantsArticles
         ? callTool(getBatchArticles, apiClient, { mst: p.mst, articles: input.articles, apiKey: input.apiKey })
@@ -488,8 +490,13 @@ export async function chainLawSystem(
         : Promise.resolve(null)),
     ])
 
-    pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
-    pushLeg(parts, batch, "핵심 조문", "get_batch_articles", wantsArticles)
+    if (wantsArticles) {
+      // 명시적 조문 지정 시 대량 3단 비교로 요청 조문이 밀려나지 않도록 한다.
+      pushLeg(parts, batch, "핵심 조문 (지정 조문 우선)", "get_batch_articles", true)
+      parts.push("※ 조문 지정 모드: 전체 3단 비교는 생략했습니다. 전체 비교가 필요하면 articles 없이 호출하세요.")
+    } else {
+      pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
+    }
     pushLeg(parts, annexes, "별표/서식", "get_annexes", wantsAnnex)
     pushScenarioLeg(parts, sr, scenario)
 
