@@ -82,6 +82,7 @@ export async function searchLawFallbacks(
     const ordinFallback = await searchOrdinance(apiClient, {
       query: input.query,
       display: Math.min(input.display, 100),
+      page: 1,
       apiKey: input.apiKey,
     }).catch(() => null)
 
