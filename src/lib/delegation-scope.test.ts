@@ -23,6 +23,12 @@ describe("decree-notice paragraph-level scope evidence", () => {
     const result = classifyNoticeScope("제271조의10", decree, text)
     expect(result.map(x => x.status)).toEqual(["review_required","review_required"])
   })
+  it("does not borrow succeeding notice paragraph's gazette language", () => {
+    const text = "⑨ 영 제271조의10제13항 및 제14항에 따른 보고 서식은 금융감독원장이 정한다. ⑩ 영 제271조의10제15항제6호에서 금융위원회가 정하여 고시하는 회사란 A를 말한다."
+    const r = classifyNoticeScope("제271조의10", decree, text)
+    expect(r[0].status).toBe("review_required")
+    expect(r[1].status).toBe("wording_candidate")
+  })
   it("fail-closes when the decree paragraph cannot be located", () => {
     const r = classifyNoticeScope("제271조의10","① 첫째 항","영 제271조의10제19항에서 금융위원회가 정하여 고시한다.")
     expect(r).toHaveLength(1)
