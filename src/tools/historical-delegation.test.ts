@@ -13,10 +13,6 @@ vi.mock("../lib/law-lineage.js",async(importOriginal)=>{
     totalCount:1,fetchedPages:1,
   })),todayKst:()=> "20261119"}
 })
-const noticeRows=[
- {serial:"2100000285020",ruleId:"36022",name:"금융투자업규정",kind:"고시",issuedYd:"20260909",issuedNo:"2026-38",efYd:"20260909",rrCls:"일부개정",org:"금융위원회",isCurrent:true},
- {serial:"2100000266378",ruleId:"36022",name:"금융투자업규정",kind:"고시",issuedYd:"20251001",issuedNo:"2025-26",efYd:"20251001",rrCls:"일부개정",org:"금융위원회",isCurrent:false},
-]
 vi.mock("../lib/admin-rule-history.js",async(importOriginal)=>{
  const original=await importOriginal<typeof import("../lib/admin-rule-history.js")>()
  return {...original,fetchAdminRuleHistory:vi.fn(async()=>({
