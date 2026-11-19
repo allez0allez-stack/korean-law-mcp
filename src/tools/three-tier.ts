@@ -14,6 +14,7 @@ import { lawCache } from "../lib/cache.js"
 export const GetThreeTierSchema = z.object({
   mst: z.string().optional().describe("법령일련번호"),
   lawId: z.string().optional().describe("법령ID"),
+  jo: z.string().regex(/^제\s*\d+\s*조(?:의\s*\d+)?$/).optional().describe("특정 법률 조문으로 위임관계 한정 (예: 제249조의7)"),
   knd: z.enum(["1", "2"]).optional().default("2").describe("1=인용조문, 2=위임조문 (기본값)"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 }).refine(data => data.mst || data.lawId, {
@@ -31,7 +32,7 @@ export async function getThreeTier(
     // (law_system·action_basis·ordinance_compare·procedure_detail)이 부르므로 렌더 결과를 캐시한다(2026-09-28 성능 감사).
     // 옛 MST 를 줘도 늘 현행 3단비교가 온다(MST 는 법령을 고를 뿐, 리뷰 실측) — 시행령·시행규칙 개정을 넘기지 않게 1시간만 둔다.
     // 체인은 스키마를 거치지 않아 knd 가 비어 온다 — 기본값 2로 맞춰 키를 하나로
-    const cacheKey = `thdcmp:${input.mst ? `m${input.mst}` : `i${input.lawId}`}:${input.knd || "2"}`
+    const cacheKey = `thdcmp:${input.mst ? `m${input.mst}` : `i${input.lawId}`}:${input.knd || "2"}:${input.jo?.replace(/\s+/g, "") || "all"}`
     const cached = lawCache.get<string>(cacheKey)
     if (cached) return { content: [{ type: "text", text: cached }] }
 
@@ -65,11 +66,21 @@ export async function getThreeTier(
       }
     }
 
-    // 최대 5개 조문만 표시 (너무 길어질 수 있음)
-    const maxArticles = Math.min(articles.length, 5)
+    // 특정 조문 요청은 원본 전체에서 정확한 조문 번호를 찾아야 한다.
+    const normalizedJo = input.jo?.replace(/\s+/g, "")
+    const selected = normalizedJo
+      ? articles.filter(article => article.joNum.replace(/\s+/g, "") === normalizedJo)
+      : articles.slice(0, 5)
+    if (normalizedJo && selected.length === 0) {
+      return { content: [{ type: "text", text: `${resultText}[NOT_FOUND] ${input.jo}의 3단 위임 연결이 확인되지 않았습니다. 다른 조문을 대신 반환하지 않습니다.` }] }
+    }
+    if (normalizedJo && selected.length > 1) {
+      return { content: [{ type: "text", text: `${resultText}[AMBIGUOUS] ${input.jo}에 해당하는 조문이 ${selected.length}건입니다. 임의 선택하지 않습니다.` }] }
+    }
+    const maxArticles = selected.length
 
     for (let i = 0; i < maxArticles; i++) {
-      const article = articles[i]
+      const article = selected[i]
 
       resultText += `---\n`
       resultText += `${article.joNum}`
@@ -116,7 +127,7 @@ export async function getThreeTier(
       }
     }
 
-    if (articles.length > maxArticles) {
+    if (!normalizedJo && articles.length > maxArticles) {
       resultText += `\n... 외 ${articles.length - maxArticles}개 조문 (생략)\n`
       resultText += `전체 ${articles.length}개 조문 중 처음 ${maxArticles}개만 표시합니다.\n`
     }
