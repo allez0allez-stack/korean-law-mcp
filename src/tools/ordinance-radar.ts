@@ -138,11 +138,22 @@ export async function ordinanceRadar(
     let ordinSeq = input.ordinSeq || input.id
     const searchName = input.ordinanceName || input.query
     if (!ordinSeq && searchName) {
-      const sx = await apiClient.searchOrdinance({ query: searchName, display: 5, apiKey: input.apiKey })
+      const sx = await apiClient.searchOrdinance({ query: searchName, display: 100, apiKey: input.apiKey })
       const parsed = parseSearchXML(sx, "OrdinSearch", "law", (c) => ({
         자치법규일련번호: extractTag(c, "자치법규일련번호"),
+        자치법규명: extractTag(c, "자치법규명"),
       }))
-      ordinSeq = parsed.items[0]?.자치법규일련번호 || undefined
+      // LIKE 검색 첫 결과는 다른 지자체의 조례일 수 있으므로 정확한 전체 명칭만 허용.
+      const expected = normalizeAliasKey(searchName)
+      const exact = parsed.items.filter(item =>
+        normalizeAliasKey(item.자치법규명 || "") === expected
+      )
+      if (exact.length !== 1) {
+        return notFound(exact.length > 1
+          ? `[AMBIGUOUS] '${searchName}' 정확 일치 결과 ${exact.length}건. ordinSeq를 직접 지정하세요.`
+          : `[NOT_FOUND] '${searchName}' 정확 일치 결과를 확인하지 못했습니다. 다른 지자체의 조례를 자동 선택하지 않습니다. 검색 범위 밖의 결과가 있을 수 있으므로 ordinSeq를 직접 확인하세요.`)
+      }
+      ordinSeq = exact[0].자치법규일련번호 || undefined
       if (!ordinSeq) {
         return notFound(`[NOT_FOUND] 자치법규 '${searchName}'을(를) 찾을 수 없습니다.\n⚠️ search_ordinance로 유효한 조례명·ordinSeq를 먼저 확인하세요.`)
       }
