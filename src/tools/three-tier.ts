@@ -131,7 +131,7 @@ export async function getThreeTier(
         return { content: [{ type: "text", text: "[NOT_VERIFIED] 미래 기준일에는 공포·시행예정 법령의 변동 가능성이 있어 확정 대조를 제공하지 않습니다." }] }
       }
       if (!input.lawId || !input.jo || !input.adminRuleId || !input.decreeLawId || !input.decreeJo || !input.adminRuleName || input.knd === "1") {
-        return { content: [{ type: "text", text: "[NOT_VERIFIED] 과거 기준일에는 lawId, jo, decreeLawId, decreeJo, adminRuleId, adminRuleName 및 knd=2가 필요합니다. 현행 3단비교로 과거의 연결관계를 추정하지 않습니다." }] }
+        return { content: [{ type: "text", text: "[NOT_VERIFIED] 과거 기준일에는 lawId, jo, decreeLawId, decreeJo, adminRuleId, adminRuleName 및 knd=2가 필요합니다. 현행본을 과거·미래 법령으로 대체하지 않습니다. 현행 3단비교로 과거의 연결관계를 추정하지 않습니다." }] }
       }
       return verifyHistoricalDelegation(apiClient, {
         lawId:input.lawId,jo:input.jo,decreeLawId:input.decreeLawId,decreeJo:input.decreeJo,
