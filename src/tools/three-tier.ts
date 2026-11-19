@@ -11,6 +11,15 @@ import { truncateResponse } from "../lib/schemas.js"
 import { formatToolError } from "../lib/errors.js"
 import { lawCache } from "../lib/cache.js"
 
+/** 단일 정확조회에는 위임조문 전문, 광역조회에는 미리보기를 제공한다. */
+export function formatDelegationBody(cleanContent: string, targeted: boolean): string {
+  if (!cleanContent) return ""
+  if (targeted || cleanContent.length <= 500) return `${cleanContent}\n\n`
+  const lastNewline = cleanContent.lastIndexOf("\n", 500)
+  const cutPos = lastNewline > 300 ? lastNewline : 500
+  return `${cleanContent.substring(0, cutPos)}\n   (위임 내용 ${cleanContent.length.toLocaleString()}자 중 일부만 표시)\n\n`
+}
+
 export const GetThreeTierSchema = z.object({
   mst: z.string().optional().describe("법령일련번호"),
   lawId: z.string().optional().describe("법령ID"),
@@ -113,17 +122,7 @@ export async function getThreeTier(
         if (delegation.content) {
           const cleanContent = cleanHtml(delegation.content)
 
-          // 단일 법률 조문을 정확히 지정한 경우에는 위임 조문 원문을
-          // 500자로 자르지 않는다. 포괄적인 3단 비교에서만 기존 제한을 유지한다.
-          if (normalizedJo && cleanContent) {
-            resultText += `${cleanContent}\n\n`
-          } else if (cleanContent.length > 500) {
-            const lastNewline = cleanContent.lastIndexOf('\n', 500)
-            const cutPos = lastNewline > 300 ? lastNewline : 500
-            resultText += `${cleanContent.substring(0, cutPos)}\n   (위임 내용 ${cleanContent.length.toLocaleString()}자 중 일부만 표시)\n\n`
-          } else if (cleanContent) {
-            resultText += `${cleanContent}\n\n`
-          }
+          resultText += formatDelegationBody(cleanContent, Boolean(normalizedJo))
         } else {
           resultText += `\n`
         }
