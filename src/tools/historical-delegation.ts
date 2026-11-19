@@ -169,16 +169,16 @@ export async function verifyHistoricalDelegation(
     const label=item.status==="wording_candidate"?"문언상 대응 후보":item.status==="review_required"?"추가 검토 필요":"근거 미확인"
     out+="["+label+"] "+item.cite+" — "+item.rationale+"\n"
   }
-  out+="\\n▶ 부칙·분리시행 검토 게이트\\n"
-  out+="시점적용 판단: "+(addendaUnverified?"[PARTIAL — 부칙 원자료 미확인]":"[REVIEW_REQUIRED — 원자료 확보, 적용 법리 판단 필요]")+"\\n"
+  out+="\n▶ 부칙·분리시행 검토 게이트\n"
+  out+="시점적용 판단: "+(addendaUnverified?"[PARTIAL — 부칙 원자료 미확인]":"[REVIEW_REQUIRED — 원자료 확보, 적용 법리 판단 필요]")+"\n"
   if(stages.length) {
-    out+="분리시행·공포 후 시행예정 위험 "+stages.length+"건 (조항별 실제 시행시점 확인 필요)\\n"
-    for(const item of stages.slice(0,5)) out+="[분리시행 검토] "+item+"\\n"
+    out+="분리시행·공포 후 시행예정 위험 "+stages.length+"건 (조항별 실제 시행시점 확인 필요)\n"
+    for(const item of stages.slice(0,5)) out+="[분리시행 검토] "+item+"\n"
   } else {
-    out+="연혁 계보상 동일 MST 다중 시행슬라이스·기준일 이전 공포 후 미시행 신호: 발견되지 않음 (부칙상 분리시행 부존재는 미확정)\\n"
+    out+="연혁 계보상 동일 MST 다중 시행슬라이스·기준일 이전 공포 후 미시행 신호: 발견되지 않음 (부칙상 분리시행 부존재는 미확정)\n"
   }
-  for(const line of addendaLines) out+=line+"\\n"
-  out+="※ 고시 부칙의 적용례·경과조치는 위 법률·시행령 부칙 검토에 포함되지 않으므로 별도 확인 필요.\\n"
+  for(const line of addendaLines) out+=line+"\n"
+  out+="※ 고시 부칙의 적용례·경과조치는 위 법률·시행령 부칙 검토에 포함되지 않으므로 별도 확인 필요.\n"
   out+="\n※ 현행 3단비교를 재사용하지 않고 기준일에 따라 세 버전을 별도 선택했습니다.\n"
   out+="※ 본문 직접 인용과 문언 대응 후보는 위임 적법성·내용의 범위 일치·부칙 경과규정의 적용을 증명하지 않습니다.\n"
   out+="※ 해당 기준일 이전에 공포되어 나중에 시행되는 개정의 영향과 분리시행 여부는 추가 검토가 필요합니다.\n"
