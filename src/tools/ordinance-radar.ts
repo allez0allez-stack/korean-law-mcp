@@ -23,7 +23,7 @@ import { rethrowIfFatal } from "../lib/fatal-errors.js"
 export const OrdinanceRadarSchema = z.object({
   ordinSeq: z.string().optional().describe("자치법규 일련번호 (ordinSeq)"),
   id: z.string().optional().describe("ordinSeq 별칭 — 힌트가 id=로 안내하는 경우 대응"),
-  ordinanceName: z.string().optional().describe("자치법규명 — 지정 시 검색 후 첫 결과 사용 (예: '서울특별시 광진구 주차장 설치 및 관리 조례')"),
+  ordinanceName: z.string().optional().describe("자치법규명 — 지정 시 전체 명칭 정확 일치 결과만 사용 (예: '서울특별시 광진구 주차장 설치 및 관리 조례')"),
   query: z.string().optional().describe("ordinanceName 별칭 — 자연어 조례명으로 검색"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달"),
 }).refine(d => d.ordinSeq || d.id || d.ordinanceName || d.query, {
