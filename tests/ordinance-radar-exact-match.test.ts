@@ -62,4 +62,11 @@ describe("ordinance_radar exact municipality guard", () => {
     expect(result.content[0].text).toContain("[PAGINATION_UNVERIFIED]")
   })
 
+  it("rejects missing or invalid totalCnt metadata", async () => {
+    const api = mockClient([xml([["22", requested]], 0)])
+    const result = await ordinanceRadar(api, { ordinanceName: requested })
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("[SEARCH_METADATA_INVALID]")
+  })
+
 })
