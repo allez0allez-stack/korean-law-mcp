@@ -60,7 +60,7 @@ export function findSubdelegationToGazette(content: string): string[] {
     const end = Math.min(plain.length, m.index + m[0].length + 95)
     const excerpt = plain.slice(start, end)
     if (!findings.includes(excerpt)) findings.push(excerpt)
-    if (findings.length === 3) break
+    if (findings.length === 8) break
   }
   return findings
 }
