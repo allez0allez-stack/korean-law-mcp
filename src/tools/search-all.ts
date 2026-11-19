@@ -76,7 +76,7 @@ export async function searchAll(
         content: [{ type: "text", text: `행정규칙 검색 실패: ${e.message}` }],
         isError: true
       })),
-      searchOrdinance(apiClient, { query: input.query, display, apiKey: input.apiKey }).catch(e => ({
+      searchOrdinance(apiClient, { query: input.query, display, page: 1, apiKey: input.apiKey }).catch(e => ({
         content: [{ type: "text", text: `자치법규 검색 실패: ${e.message}` }],
         isError: true
       }))
