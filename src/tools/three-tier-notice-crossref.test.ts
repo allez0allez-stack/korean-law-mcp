@@ -70,7 +70,7 @@ describe("specific decree→notice cross-reference", () => {
   })
 
   it("does not present a searched notice as a verified match when it lacks the decree citation", async () => {
-    vi.mocked(getAdminRule).mockResolvedValueOnce({content:[{type:"text",text:"행정규칙명: 다른 규정\n본문 검색: 제271조의10\n제1조(목적) 법 제249조의7을 규정한다."}]})
+    vi.mocked(getAdminRule).mockResolvedValueOnce({content:[{type:"text",text:"행정규칙명: 다른 규정\n시행일: 2026.09.09\n본문 검색: 제271조의10\n제1조(목적) 법 제249조의7을 규정한다."}]})
     const out=await getThreeTier(client,{mst:"notice-fixture",jo:"제249조의7",knd:"2",adminRuleId:"2100000285020"})
     expect(out.content[0].text).toContain("[직접 인용 미확인]")
     expect(out.content[0].text).not.toContain("[고시 본문 직접 인용 후보]")
