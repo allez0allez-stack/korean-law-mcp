@@ -50,9 +50,16 @@ describe("ordinance_radar exact municipality guard", () => {
     expect((api.searchOrdinance as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
   })
   it("fails closed when the result set exceeds the bounded page budget", async () => {
-    const api = mockClient(Array.from({length: 10}, (_, i) => xml([["11", wrong]], 1001, i + 1)))
+    const api = mockClient(Array.from({length: 10}, (_, i) => xml([[String(i + 11), wrong]], 1001, i + 1)))
     const result = await ordinanceRadar(api, { ordinanceName: requested })
     expect(result.isError).toBe(true)
     expect(result.content[0].text).toContain("[SEARCH_INCOMPLETE]")
   })
+  it("rejects ignored page parameters that repeat the same result page", async () => {
+    const api = mockClient([xml([["11", wrong]], 201, 1), xml([["11", wrong]], 201, 1)])
+    const result = await ordinanceRadar(api, { ordinanceName: requested })
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("[PAGINATION_UNVERIFIED]")
+  })
+
 })
