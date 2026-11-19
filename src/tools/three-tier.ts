@@ -43,6 +43,28 @@ export function classifyDelegationEvidence(
   return "listed_only"
 }
 
+/**
+ * 시행령 조문에서 고시 재위임의 명시적 문언만 탐지한다.
+ * 이는 고시 제정/적법성/특정 고시와의 일치를 검증하지 않는다.
+ * 하위 조문 중 해당 시행령 조문에 포함된 문언만 검사하며 모법의 위임을 추정하지 않는다.
+ */
+export function findSubdelegationToGazette(content: string): string[] {
+  const plain = cleanHtml(content || "").replace(/\s+/g, " ")
+  if (!plain) return []
+  // '정하여 고시하는 서식', '정하여 고시한다' 등 명시적 문구만 허용.
+  // 단순 '금융위원회가 정한다' 또는 '고시를 참조'는 재위임으로 확정하지 않는다.
+  const re = /(?:금융위원회|금융위원장|금융감독원장|장관|대통령령으로 정하는 기관의 장)(?:가|이)?\s*정하여\s*고시(?:하는|한다|하도록|할)/g
+  const findings: string[] = []
+  for (const m of plain.matchAll(re)) {
+    const start = Math.max(0, m.index - 100)
+    const end = Math.min(plain.length, m.index + m[0].length + 95)
+    const excerpt = plain.slice(start, end)
+    if (!findings.includes(excerpt)) findings.push(excerpt)
+    if (findings.length === 3) break
+  }
+  return findings
+}
+
 export const GetThreeTierSchema = z.object({
   mst: z.string().optional().describe("법령일련번호"),
   lawId: z.string().optional().describe("법령ID"),
@@ -151,6 +173,18 @@ export async function getThreeTier(
 
         if (delegation.content) {
           const cleanContent = cleanHtml(delegation.content)
+
+          // 고시의 실제 이름·존재·적법성은 이 조문만으로 판정할 수 없다.
+          // 정확조회에서만 근거 조각을 제한적으로 표시한다.
+          if (normalizedJo && threeTierData.kndType === "위임조문" && delegation.type === "시행령") {
+            const gazetteTexts = findSubdelegationToGazette(cleanContent)
+            if (gazetteTexts.length) {
+              resultText += "  재위임 문언: [고시 위임 문구 확인] 시행령 본문에서 고시 위임 표현을 확인했습니다. 특정 고시의 제정·연결·적법성은 미검증입니다.\n"
+              gazetteTexts.forEach((excerpt, idx) => { resultText += `  근거 발췌 ${idx + 1}: ${excerpt}\n` })
+            } else {
+              resultText += "  재위임 문언: [고시 위임 문구 미확인] 이 시행령 조문의 검색 범위에서 명시적 문구를 발견하지 못했습니다. 다른 조문·간접 위임 여부는 미검증입니다.\n"
+            }
+          }
 
           resultText += formatDelegationBody(cleanContent, Boolean(normalizedJo))
         } else {
