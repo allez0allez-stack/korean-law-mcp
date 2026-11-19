@@ -20,6 +20,29 @@ export function formatDelegationBody(cleanContent: string, targeted: boolean): s
   return `${cleanContent.substring(0, cutPos)}\n   (위임 내용 ${cleanContent.length.toLocaleString()}자 중 일부만 표시)\n\n`
 }
 
+/**
+ * 3단비교 목록 등재와 하위조문 본문의 명시적 모법 인용을 구분한다.
+ * 모법 직접 인용은 확인할 수 있지만 위임의 적법성·위임 범위까지 보증하지 않는다.
+ * 조번호의 가지번호까지 정밀 매칭한다 (제249조의7 != 제249조의70).
+ */
+export function classifyDelegationEvidence(
+  sourceJo: string,
+  targetContent: string,
+): "explicit_citation" | "listed_only" {
+  const parsed = sourceJo.replace(/\\s+/g, "").match(/^제(\\d+)조(?:의(\\d+))?$/)
+  if (!parsed || !targetContent.trim()) return "listed_only"
+  const article = Number(parsed[1])
+  const branch = parsed[2] === undefined ? undefined : Number(parsed[2])
+  // 공백이 들쭉날쭉한 법령 원문에 대응하되, 가지번호 후속 숫자의 오탐을 막는다.
+  const re = /(?:^|[^가-힣A-Za-z0-9])법\\s*제\\s*(\\d+)\\s*조(?:\\s*의\\s*(\\d+))?(?!\\s*\\d)/g
+  for (const match of targetContent.matchAll(re)) {
+    const citedArticle = Number(match[1])
+    const citedBranch = match[2] === undefined ? undefined : Number(match[2])
+    if (citedArticle === article && citedBranch === branch) return "explicit_citation"
+  }
+  return "listed_only"
+}
+
 export const GetThreeTierSchema = z.object({
   mst: z.string().optional().describe("법령일련번호"),
   lawId: z.string().optional().describe("법령ID"),
@@ -119,6 +142,13 @@ export async function getThreeTier(
         if (delegation.title) resultText += ` (${delegation.title})`
         resultText += `\n`
 
+        const evidence = classifyDelegationEvidence(article.joNum, delegation.content || "")
+        if (evidence === "explicit_citation") {
+          resultText += "  근거상태: [본문 인용 확인] 하위 조문에 해당 법률 조문(법 제○조)이 명시됩니다. 위임의 적법성·범위는 별도 검토가 필요합니다.\\n"
+        } else {
+          resultText += "  근거상태: [연계 목록 확인] 법제처 3단비교에 등재되었으나 하위 조문에서 해당 법률 조문의 직접 인용은 확인하지 못했습니다.\\n"
+        }
+
         if (delegation.content) {
           const cleanContent = cleanHtml(delegation.content)
 
@@ -127,6 +157,10 @@ export async function getThreeTier(
           resultText += `\n`
         }
       }
+    }
+
+    if (normalizedJo) {
+      resultText += "※ 근거상태는 법제처 3단비교 등재 여부와 하위 조문 본문의 명시적 '법 제○조' 인용 여부만 구분합니다. 행정규칙의 위임 사슬·법률유보·위임범위의 충족 또는 미이행 여부를 자동 확정하지 않습니다.\\n"
     }
 
     if (!normalizedJo && articles.length > maxArticles) {
