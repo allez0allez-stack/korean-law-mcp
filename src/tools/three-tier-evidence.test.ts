@@ -53,6 +53,11 @@ describe("gazette subdelegation evidence — bounded and unverified", () => {
     expect(findSubdelegationToGazette("금융위원회가 정한다.")).toHaveLength(0)
     expect(findSubdelegationToGazette("금융위원회의 고시를 참조한다.")).toHaveLength(0)
     expect(findSubdelegationToGazette("")).toHaveLength(0)
+    const multi = ["⑫ 금융위원회가 정하여 고시하는 서식", "⑬ 금융위원회가 정하여 고시하는 사항", "⑮ 금융위원회가 정하여 고시하는 회사", "<18> 금융위원회가 정하여 고시한다."].join(" ")
+    const hits = findSubdelegationToGazette(multi)
+    expect(hits).toHaveLength(4)
+    expect(hits.some(h => h.includes("<18>"))).toBe(true)
+
   })
 
   it("keeps source excerpts bounded and never asserts which particular notice implements the clause", () => {
