@@ -150,6 +150,10 @@ export async function ordinanceRadar(
           자치법규일련번호: extractTag(c, "자치법규일련번호"),
           자치법규명: extractTag(c, "자치법규명"),
         }))
+        // 전체 건수 메타데이터가 없으면 페이지 검색이 완결됐다고 증명할 수 없다.
+        if (!Number.isSafeInteger(parsed.totalCnt) || parsed.totalCnt < parsed.items.length || parsed.totalCnt < 0) {
+          return notFound(`[SEARCH_METADATA_INVALID] '${searchName}' 검색 결과의 totalCnt가 유효하지 않습니다. ordinSeq를 직접 지정하세요.`)
+        }
         // API가 page를 무시해 동일 페이지를 반복 반환하면 검색 완료로 오인하지 않는다.
         const signature = JSON.stringify(parsed.items)
         if (page > 1 && seenPages.has(signature) && parsed.totalCnt > pageSize) {
