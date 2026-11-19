@@ -488,7 +488,7 @@ export async function chainLawSystem(
         ? callTool(getAnnexes, apiClient, { lawName: p.lawName, apiKey: input.apiKey })
         : Promise.resolve(null)),
       raceDeadline(dl, scenario
-        ? runScenario(scenario, { apiClient, query: input.query, law: p, apiKey: input.apiKey } as ScenarioContext)
+        ? runScenario(scenario, { apiClient, query: input.query, law: p, articles: input.articles, apiKey: input.apiKey } as ScenarioContext)
         : Promise.resolve(null)),
     ])
 
