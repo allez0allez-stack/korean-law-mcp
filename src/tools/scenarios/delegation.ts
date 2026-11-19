@@ -17,8 +17,9 @@ import { getArticleHistory } from "../article-history.js"
  */
 const DELEGATION_STATUS_NOTE =
   "자동 대조 미제공: 법제처 위임 연계 목록이 법령명 검색 필터를 지원하지 않아 미제정 하위법령을 자동으로 집계하지 못합니다. " +
-  "위 '3단 비교' 섹션의 위임 조문(대통령령·부령으로 정한다)과 아래 법체계의 하위법령을 대조하세요. " +
-  "LLM은 이 섹션을 근거로 '미이행 위임 없음'이라고 단정하지 마세요."
+  "법제처 3단비교에서 [본문 인용 확인]은 하위 조문에 모법 조문이 명시됐다는 뜻이고, [연계 목록 확인]은 목록 등재만 확인됐다는 뜻입니다. " +
+  "법체계도에 표시되는 시행령·시행규칙·고시는 법령 단위 관련 목록이므로 각 조문에 직접 위임됐다고 단정할 수 없습니다. " +
+  "위임의 적법성·범위 또는 미제정 하위규정의 부재는 자동 검증하지 않습니다."
 
 export async function runDelegationScenario(ctx: ScenarioContext): Promise<ScenarioResult> {
   const sections: ScenarioSection[] = []
