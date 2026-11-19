@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest"
-import { searchOrdinance } from "./ordinance-search.js"
+import { searchOrdinance, SearchOrdinanceSchema } from "./ordinance-search.js"
 import { lawCache } from "../lib/cache.js"
 import { normalizeLawSearchText } from "../lib/search-normalizer.js"
 import type { LawApiClient } from "../lib/api-client.js"
@@ -166,5 +166,37 @@ describe("searchOrdinance: 공백 덩어리 질의 (리뷰 C3)", () => {
     const r = await searchOrdinance(client, { query: "서울" + " ".repeat(100_000) + "주차 제12조", display: 20 })
     expect(performance.now() - t0).toBeLessThan(500)
     expect(r.isError).toBe(true)
+  })
+})
+
+describe("searchOrdinance page integrity", () => {
+  const response = (page: number) => `<?xml version="1.0" encoding="UTF-8"?><OrdinSearch><totalCnt>223</totalCnt><page>${page}</page><law><자치법규일련번호>${page}</자치법규일련번호><자치법규명>주차장 조례</자치법규명><지자체기관명>테스트시</지자체기관명></law></OrdinSearch>`
+
+  it("forwards page 2 upstream and preserves verified page identity", async () => {
+    const seen: number[] = []
+    const client = { searchOrdinance: async (p: {page?: number}) => {
+      seen.push(p.page ?? -1)
+      return response(p.page ?? 1)
+    }} as unknown as LawApiClient
+    const r = await searchOrdinance(client, {query:"주차장 설치 및 관리 조례", display:5, page:2})
+    expect(seen).toEqual([2])
+    expect(r.isError).not.toBe(true)
+    expect(r.content[0].text).toContain("2페이지")
+    expect(r.content[0].text).toContain("[2]")
+  })
+
+  it("fails closed when upstream ignores page instead of relabeling page 1", async () => {
+    const client = { searchOrdinance: async () => response(1) } as unknown as LawApiClient
+    const r = await searchOrdinance(client, {query:"주차장 설치 및 관리 조례",display:5,page:2})
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).toContain("[PAGE_MISMATCH]")
+    expect(r.content[0].text).not.toContain("테스트시")
+  })
+
+  it("rejects invalid page values before calling upstream", () => {
+    const { page: _page, ...base } = {query:"주차장 설치 및 관리 조례", display:5, page:1}
+    expect(SearchOrdinanceSchema.safeParse({...base,page:0}).success).toBe(false)
+    expect(SearchOrdinanceSchema.safeParse({...base,page:1.5}).success).toBe(false)
+    expect(SearchOrdinanceSchema.safeParse({...base,page:10001}).success).toBe(false)
   })
 })
