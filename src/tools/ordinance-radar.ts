@@ -134,7 +134,7 @@ export async function ordinanceRadar(
   input: OrdinanceRadarInput
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   try {
-    // 1. ordinSeq 확보 (직접 지정 우선, 없으면 조례명 검색 첫 결과)
+    // 1. ordinSeq 확보 (직접 지정 우선, 없으면 조례명 정확매칭 검색)
     let ordinSeq = input.ordinSeq || input.id
     const searchName = input.ordinanceName || input.query
     if (!ordinSeq && searchName) {
@@ -168,6 +168,10 @@ export async function ordinanceRadar(
     }
     const base = svc.자치법규기본정보 || {}
     const ordName: string = base.자치법규명 || "알 수 없음"
+    // 검색 결과와 본문 API의 명칭이 다른 경우에도 잘못된 지자체 조례를 반환하지 않는다.
+    if (searchName && normalizeAliasKey(ordName) !== normalizeAliasKey(searchName)) {
+      return notFound(`[ORDINANCE_NAME_MISMATCH] 요청 '${searchName}', 실제 '${ordName}'. 다른 지자체의 조례를 반환하지 않습니다.`)
+    }
     const ordEff: string = base.시행일자 || ""
     const dept: string = base.담당부서명 || ""
     const govt: string = base.지자체기관명 || ""
