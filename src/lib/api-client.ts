@@ -395,6 +395,7 @@ export class LawApiClient {
   async searchOrdinance(params: {
     query: string
     display?: number
+    page?: number
     apiKey?: string
   }): Promise<string> {
     const apiParams = new URLSearchParams({
@@ -403,6 +404,7 @@ export class LawApiClient {
       type: this.getResponseType(),
       query: params.query,
       display: (params.display || 20).toString(),
+      page: (params.page || 1).toString(),
     })
 
     const url = `${LAW_API_BASE}/lawSearch.do?${apiParams.toString()}`
