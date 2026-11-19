@@ -33,3 +33,29 @@ describe("getOrdinance: 공포일자를 제정일로 표기하지 않는다 (D11
     expect(t).not.toContain("제정일:")
   })
 })
+
+
+describe("getOrdinance exact-article fail-closed semantics", () => {
+  it("returns a structured tool error for a missing article", async () => {
+    const client = { getOrdinance: async () => ORDIN_JSON } as unknown as LawApiClient
+    const result = await getOrdinance(client, GetOrdinanceSchema.parse({ ordinSeq: "1589887", jo: "제999조" }))
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("[NOT_FOUND]")
+    expect(result.content[0].text).toContain("제999조")
+    expect(result.content[0].text).not.toContain("이 규칙은")
+  })
+
+  it("returns the exact article as success when it exists", async () => {
+    const client = { getOrdinance: async () => ORDIN_JSON } as unknown as LawApiClient
+    const result = await getOrdinance(client, GetOrdinanceSchema.parse({ ordinSeq: "1589887", jo: "제1조" }))
+    expect(result.isError).not.toBe(true)
+    expect(result.content[0].text).toContain("이 규칙은")
+  })
+
+  it("rejects a metadata-only response on exact-article lookup", async () => {
+    const client = { getOrdinance: async () => JSON.stringify({LawService: { 자치법규기본정보: { 자치법규명: "테스트 조례" } }}) } as unknown as LawApiClient
+    const result = await getOrdinance(client, GetOrdinanceSchema.parse({ordinSeq:"123",jo:"제5조"}))
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("[NOT_FOUND]")
+  })
+})
