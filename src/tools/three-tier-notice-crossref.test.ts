@@ -48,6 +48,21 @@ describe("specific decree→notice cross-reference", () => {
     expect(vi.mocked(getAdminRule).mock.calls[0][1]).toMatchObject({id:"2100000285020",keyword:"제271조의10",max_results:5})
   })
 
+  it("refuses a historical asOf before requesting current three-tier or notice data", async () => {
+    const result = await getThreeTier(client,{mst:"notice-fixture",jo:"제249조의7",adminRuleId:"2100000285020",asOf:"20250101",knd:"2"})
+    expect(result.content[0].text).toContain("[NOT_VERIFIED]")
+    expect(result.content[0].text).toContain("현행본을 과거·미래 법령으로 대체하지 않습니다")
+    expect(client.getThreeTier).not.toHaveBeenCalled()
+    expect(getAdminRule).not.toHaveBeenCalled()
+  })
+
+  it("refuses a future-effective notice instead of reporting matching historical scope", async () => {
+    vi.mocked(getAdminRule).mockResolvedValueOnce({content:[{type:"text",text:"행정규칙명: 미래 고시\\n시행일: 2099.01.01\\n영 제271조의10제13항"}]})
+    const result=await getThreeTier(client,{mst:"notice-fixture",jo:"제249조의7",adminRuleId:"2100000285020",knd:"2"})
+    expect(result.content[0].text).toContain("[NOT_VERIFIED]")
+    expect(result.content[0].text).not.toContain("[고시 본문 직접 인용 후보]")
+  })
+
   it("rejects unscoped lookup without consuming a notice call", async () => {
     const out=await getThreeTier(client,{mst:"notice-fixture",adminRuleId:"2100000285020",knd:"2"})
     expect(out.isError).toBe(true)
@@ -55,7 +70,7 @@ describe("specific decree→notice cross-reference", () => {
   })
 
   it("does not present a searched notice as a verified match when it lacks the decree citation", async () => {
-    vi.mocked(getAdminRule).mockResolvedValueOnce({content:[{type:"text",text:"행정규칙명: 다른 규정\n본문 검색: 제271조의10\n제1조(목적) 법 제249조의7을 규정한다."}]})
+    vi.mocked(getAdminRule).mockResolvedValueOnce({content:[{type:"text",text:"행정규칙명: 다른 규정\n시행일: 2026.09.09\n본문 검색: 제271조의10\n제1조(목적) 법 제249조의7을 규정한다."}]})
     const out=await getThreeTier(client,{mst:"notice-fixture",jo:"제249조의7",knd:"2",adminRuleId:"2100000285020"})
     expect(out.content[0].text).toContain("[직접 인용 미확인]")
     expect(out.content[0].text).not.toContain("[고시 본문 직접 인용 후보]")

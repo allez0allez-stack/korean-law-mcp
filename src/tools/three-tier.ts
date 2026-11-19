@@ -12,6 +12,9 @@ import { formatToolError } from "../lib/errors.js"
 import { lawCache } from "../lib/cache.js"
 import { getAdminRule } from "./admin-rule.js"
 import { classifyNoticeScope } from "../lib/delegation-scope.js"
+import { checkDelegationTemporalContext } from "../lib/delegation-temporal.js"
+import { todayKst } from "../lib/law-lineage.js"
+import { dateSchema } from "../lib/schemas.js"
 
 /** 단일 정확조회에는 위임조문 전문, 광역조회에는 미리보기를 제공한다. */
 export function formatDelegationBody(cleanContent: string, targeted: boolean): string {
@@ -99,6 +102,7 @@ export const GetThreeTierSchema = z.object({
   jo: z.string().regex(/^제\s*\d+\s*조(?:의\s*\d+)?$/).optional().describe("특정 법률 조문으로 위임관계 한정 (예: 제249조의7)"),
   knd: z.enum(["1", "2"]).optional().default("2").describe("1=인용조문, 2=위임조문 (기본값)"),
   adminRuleId: z.string().regex(/^\d{13}$/).optional().describe("특정 조문 jo와 함께 고시 원문의 시행령 직접 인용 여부를 교차검증할 13자리 행정규칙일련번호 (search_admin_rule에서 확보)"),
+  asOf: dateSchema.optional().describe("현행 교차검증 기준일 YYYYMMDD. 과거·미래 기준일은 3단비교가 현행본만 반환하므로 NOT_VERIFIED로 차단합니다."),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 }).refine(data => data.mst || data.lawId, {
   message: "mst 또는 lawId 중 하나는 필수입니다"
@@ -115,6 +119,12 @@ export async function getThreeTier(
     // (law_system·action_basis·ordinance_compare·procedure_detail)이 부르므로 렌더 결과를 캐시한다(2026-09-28 성능 감사).
     // 옛 MST 를 줘도 늘 현행 3단비교가 온다(MST 는 법령을 고를 뿐, 리뷰 실측) — 시행령·시행규칙 개정을 넘기지 않게 1시간만 둔다.
     // 체인은 스키마를 거치지 않아 knd 가 비어 온다 — 기본값 2로 맞춰 키를 하나로
+    if (input.asOf && !input.adminRuleId) {
+      return { content: [{ type: "text", text: "[INVALID_ARGUMENT] asOf는 adminRuleId가 있는 고시 교차검증에서만 지원합니다." }], isError: true }
+    }
+    if (input.asOf && input.asOf !== todayKst()) {
+      return { content: [{ type: "text", text: "[NOT_VERIFIED] 기준일 " + input.asOf + "은 현행 3단비교와 동일하지 않습니다. 해당 날짜의 법률·시행령·고시 원문 및 시행 슬라이스가 필요합니다. 현행본을 과거·미래 법령으로 대체하지 않습니다." }] }
+    }
     if (input.adminRuleId && (!input.jo || input.knd === "1")) {
       return { content: [{ type: "text", text: "[INVALID_ARGUMENT] adminRuleId 검증은 위임조문(knd=2)의 특정 jo와 함께 요청해야 합니다." }], isError: true }
     }
@@ -250,9 +260,12 @@ export async function getThreeTier(
         const ruleName = body.match(/^행정규칙명:\s*(.+)$/m)?.[1] || "확인되지 않음"
         resultText += `조회 고시: ${ruleName} (행정규칙일련번호: ${input.adminRuleId})\n`
         resultText += `대조 시행령: ${decree.lawName} ${decree.joNum}\n`
-        if (rule.isError || body.includes("[NOT_FOUND]") || body.includes("⚠️ 연혁본")) {
-          resultText += "[NOT_VERIFIED] 고시 본문이 확인되지 않았거나 연혁본입니다. 현행 고시의 직접 인용은 검증하지 못했습니다.\n"
+        const temporal = checkDelegationTemporalContext(body, todayKst(), input.asOf)
+        resultText += "기준일: " + (input.asOf || todayKst()) + " (KST) / 고시 시행일: " + (temporal.effectiveDate || "확인 불가") + "\n"
+        if (rule.isError || temporal.status === "not_verified") {
+          resultText += "[NOT_VERIFIED] " + temporal.reason + " 근거의 시점 일치는 검증하지 못했습니다.\n"
         } else {
+          resultText += "시점 판정: [고시 시행일 확인] " + temporal.reason + "\n"
           const matches = findExplicitDecreeCitations(decree.joNum, body)
           if (matches.length) {
             resultText += `[고시 본문 직접 인용 후보] 지정 고시에서 해당 시행령 조문을 문면 인용한 대목 ${matches.length}개를 확인했습니다.\n`
