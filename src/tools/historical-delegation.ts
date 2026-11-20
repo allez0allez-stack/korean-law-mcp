@@ -130,7 +130,7 @@ export async function verifyHistoricalDelegation(
       continue
     }
     try {
-      const obj=JSON.parse(raw.value)
+      const obj=JSON.parse(raw.value as string)
       const sourceDate=String(obj?.법령?.기본정보?.시행일자||"")
       if(sourceDate!==req.version.efYd) {
         addendaLines.push("["+req.label+"][NOT_VERIFIED] 선택한 시행일과 원본 부칙의 시행일 불일치")
