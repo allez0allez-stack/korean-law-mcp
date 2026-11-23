@@ -14,7 +14,7 @@ import type { ToolResponse } from "../lib/types.js"
 
 export const KOFIA_IPO_RULE_URL = "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140"
 const MAX_HTML_BYTES = 1_000_000
-const RULE_ARTICLES = ["제5조의4", "제5조의5", "제5조의6", "제5조의7", "제9조의3"] as const
+const RULE_ARTICLES = ["제5조의2", "제5조의4", "제5조의5", "제5조의6", "제5조의7", "제9조의3"] as const
 
 export function shouldReadKofiaIpoRule(query: string, resolvedLawName: string): boolean {
   return resolvedLawName === "자본시장과 금융투자업에 관한 법률"
@@ -93,7 +93,9 @@ export async function fetchKofiaOfficialHtml(): Promise<string> {
   const bytes = new Uint8Array(received)
   let offset = 0
   for (const chunk of fragments) { bytes.set(chunk, offset); offset += chunk.byteLength }
-  return new TextDecoder("utf-8").decode(bytes)
+  const declaredCharset = /charset\s*=\s*["']?([a-zA-Z0-9_-]+)/i.exec(contentType)?.[1]
+  const charset = declaredCharset && /^(utf-8|euc-kr|ks_c_5601-1987)$/i.test(declaredCharset) ? declaredCharset : "utf-8"
+  return new TextDecoder(charset).decode(bytes)
 }
 
 export async function getKofiaIpoRuleEvidence(
