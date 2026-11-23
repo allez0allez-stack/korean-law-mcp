@@ -35,6 +35,25 @@ describe("historical notice original addenda audit",()=>{
     expect(r.noticeMentions).toBe(14)
     expect(r.omitted).toBe(11)
   })
+  it("flags a plain effective-day clause without 시행일 or 경과조치 words",()=>{
+    const result=reviewNoticeAddenda([
+      "부칙 제2025-40호\\n이 고시는 공포한 날부터 시행한다.",
+      "부칙 제2025-39호\\n이 고시는 2025년 10월 1일부터 시행한다.",
+    ],"제7-41조의7","제271조의10")
+    expect(result.transitionLines).toBe(2)
+    expect(result.excerpts).toHaveLength(2)
+    expect(result.excerpts.every(v=>v.signal==="transition_phrase")).toBe(true)
+  })
+  it("shows the earliest future effective change first instead of history search order",()=>{
+    const versions=[
+      {serial:"selected",issuedYd:"20251001",efYd:"20251001",issuedNo:"2025-26"},
+      {serial:"late",issuedYd:"20251015",efYd:"20270101",issuedNo:"2025-30"},
+      {serial:"early",issuedYd:"20251010",efYd:"20251101",issuedNo:"2025-29"},
+    ]
+    const result=findNoticeFutureIssueRisks(versions,versions[0],"20251021",1)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toContain("20251101")
+  })
   it("flags only already-issued but future-effective changes in same genealogy",()=>{
     const v=[
       {serial:"a",issuedYd:"20251001",efYd:"20251001",issuedNo:"2025-26"},
