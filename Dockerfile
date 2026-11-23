@@ -19,6 +19,7 @@ COPY tsconfig.json ./
 RUN npm run build
 # One-process Auth0 RS256 security gate, no optional native deps or external traffic.
 RUN node scripts/verify-direct-oauth-runtime.mjs
+RUN node scripts/verify-direct-oauth-http.mjs
 RUN npm prune --omit=dev --omit=optional --ignore-scripts
 RUN npm run verify:annex-runtime
 
