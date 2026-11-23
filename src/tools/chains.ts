@@ -14,6 +14,7 @@ import {
   type LawInfo,
 } from "../lib/law-search.js"
 import { routeQuery } from "../lib/query-router.js"
+import { extractArticleNumbers } from "../lib/query-extract.js"
 import { resolveChainBaseLaw } from "./chain-law-lookup.js"
 import {
   startChainDeadline,
@@ -469,33 +470,37 @@ export async function chainLawSystem(
     // 키워드 확장: 별표
     const exp = detectExpansions(input.query)
     const wantsAnnex = exp.includes("annex_fee") || exp.includes("annex_table") || exp.includes("annex_form")
-    const wantsArticles = Boolean(input.articles?.length)
+    // Explicit articles parameter takes priority. If omitted, honor article numbers
+    // already present in the natural-language question instead of silently
+    // returning the first pages of an unfiltered three-tier comparison.
+    const articles = input.articles?.length ? input.articles : extractArticleNumbers(input.query).slice(0, 50)
+    const wantsArticles = articles.length > 0
     // Scenario 확장
     const scenario = (input.scenario || detectScenario(input.query, "chain_law_system")) as ScenarioType | null
 
     const [threeTier, batch, annexes, sr] = await Promise.all([
       // 3단 비교
-      raceDeadline(dl, wantsArticles && input.articles?.length === 1
-        ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: input.articles[0], apiKey: input.apiKey })
+      raceDeadline(dl, wantsArticles && articles.length === 1
+        ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
         : wantsArticles
           ? Promise.resolve(null)
           : callTool(getThreeTier, apiClient, { mst: p.mst, apiKey: input.apiKey })),
       // 조문 조회
       raceDeadline(dl, wantsArticles
-        ? callTool(getBatchArticles, apiClient, { mst: p.mst, articles: input.articles, apiKey: input.apiKey })
+        ? callTool(getBatchArticles, apiClient, { mst: p.mst, articles, apiKey: input.apiKey })
         : Promise.resolve(null)),
       raceDeadline(dl, wantsAnnex
         ? callTool(getAnnexes, apiClient, { lawName: p.lawName, apiKey: input.apiKey })
         : Promise.resolve(null)),
       raceDeadline(dl, scenario
-        ? runScenario(scenario, { apiClient, query: input.query, law: p, articles: input.articles, apiKey: input.apiKey } as ScenarioContext)
+        ? runScenario(scenario, { apiClient, query: input.query, law: p, articles, apiKey: input.apiKey } as ScenarioContext)
         : Promise.resolve(null)),
     ])
 
     if (wantsArticles) {
       // 명시적 조문 지정 시 대량 3단 비교로 요청 조문이 밀려나지 않도록 한다.
       pushLeg(parts, batch, "핵심 조문 (지정 조문 우선)", "get_batch_articles", true)
-      pushLeg(parts, threeTier, "지정 조문 위임관계", "get_three_tier", input.articles?.length === 1)
+      pushLeg(parts, threeTier, "지정 조문 위임관계", "get_three_tier", articles.length === 1)
       parts.push("※ 조문 지정 모드: 전체 3단 비교는 생략했습니다. 전체 비교가 필요하면 articles 없이 호출하세요.")
     } else {
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
