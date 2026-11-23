@@ -67,6 +67,27 @@ describe("#105 체인 기반 법령 탐색", () => {
     expect(c.aiQueries).toHaveLength(0)
   })
 
+
+  it("복합 질의에서 명시 법령을 고정하고 무관한 후보를 거부한다", async () => {
+    lawCache.clear()
+    const c = fakeClient({
+      known: ["자본시장과 금융투자업에 관한 법률", "112신고의 운영 및 처리에 관한 법률 시행령"],
+      aiLawName: "112신고의 운영 및 처리에 관한 법률 시행령",
+    })
+    const r = await resolveChainBaseLaw(c, "자본시장과 금융투자업에 관한 법률 제249조의7 및 관련 시행령 위임 규정")
+    expect(r.laws.map(l => l.lawName)).toEqual(["자본시장과 금융투자업에 관한 법률"])
+    expect(r.searchedWith).toBe("자본시장과 금융투자업에 관한 법률")
+    expect(c.aiQueries).toHaveLength(0)
+  })
+
+  it("명시된 법령이 없으면 의미검색으로 다른 법령을 대체하지 않는다", async () => {
+    lawCache.clear()
+    const c = fakeClient({ known: ["112신고의 운영 및 처리에 관한 법률 시행령"], aiLawName: "112신고의 운영 및 처리에 관한 법률 시행령" })
+    const r = await resolveChainBaseLaw(c, "자본시장과 금융투자업에 관한 법률 제249조의7 및 관련 시행령 위임 규정")
+    expect(r.laws).toHaveLength(0)
+    expect(c.aiQueries).toHaveLength(0)
+  })
+
   it("전부 실패하면 시도한 검색어를 모아 돌려준다", async () => {
     lawCache.clear()
     const c = fakeClient({ known: [] })
