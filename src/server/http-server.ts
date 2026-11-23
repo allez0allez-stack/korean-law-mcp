@@ -180,7 +180,7 @@ export async function startHTTPServer(
   // 폐쇄망·사내망 배포처럼 서버 자체에 접근 통제가 필요한 환경에서 설정한다.
   // 미설정이면 기존처럼 공개 동작 (법제처 API 키는 인가 수단이 아니다).
   const authToken = config.authToken
-  if (!authToken) {
+  if (!authToken && !directOAuth) {
     if (config.allowUnauthenticatedRemote) {
       console.error("⚠️  MCP_ALLOW_UNAUTHENTICATED_REMOTE=1 — non-loopback /mcp is intentionally unauthenticated.")
     } else {
