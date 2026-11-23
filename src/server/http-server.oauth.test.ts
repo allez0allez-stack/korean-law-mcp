@@ -52,7 +52,7 @@ beforeAll(async () => {
   vi.stubEnv("CORS_ORIGIN", "")
   vi.stubEnv("ALLOWED_ORIGINS", "")
   vi.stubEnv("RATE_LIMIT_RPM", "0")
-  vi.stubEnv("FALLBACK_RATE_LIMIT_RPM", "0")
+  vi.stubEnv("FALLBACK_RATE_LIMIT_RPM", "120")
   vi.spyOn(console, "error").mockImplementation(() => {})
   vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
     if (typeof input === "string" && input === issuer + ".well-known/jwks.json") {
