@@ -4,7 +4,7 @@
  * forwarded. Opt-in only; old MCP_AUTH_TOKEN clients remain supported during
  * migration. JWKS source and resource origin are pinned, never user-supplied.
  */
-import { createPublicKey, verify as verifySignature } from "node:crypto"
+import { createPublicKey, verify as verifySignature, type JsonWebKey } from "node:crypto"
 
 export const DIRECT_OAUTH_RESOURCE = "https://korean-law-mcp-ym.onrender.com"
 export const DIRECT_OAUTH_ISSUER = "https://krx-dart-research.us.auth0.com/"
@@ -166,7 +166,9 @@ function createPinnedJwksResolver(config: DirectOAuthConfig): JwksResolver {
       const parsed: unknown = JSON.parse(raw)
       if (!isObject(parsed) || !Array.isArray(parsed.keys) ||
           parsed.keys.length > 25) throw new Error("OAuth JWKS malformed")
-      const keys = parsed.keys.filter(isObject) as PublicJwk[]
+      const keys = (parsed.keys as unknown[]).filter(
+        (x): x is PublicJwk => isObject(x) && typeof x.kty === "string",
+      )
       if (!keys.length) throw new Error("OAuth JWKS empty")
       cached = keys
       expiresAt = Date.now() + JWKS_TTL_MS
