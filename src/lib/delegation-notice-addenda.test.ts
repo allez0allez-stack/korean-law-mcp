@@ -37,8 +37,8 @@ describe("historical notice original addenda audit",()=>{
   })
   it("flags a plain effective-day clause without 시행일 or 경과조치 words",()=>{
     const result=reviewNoticeAddenda([
-      "부칙 제2025-40호\\n이 고시는 공포한 날부터 시행한다.",
-      "부칙 제2025-39호\\n이 고시는 2025년 10월 1일부터 시행한다.",
+      "부칙 제2025-40호\n이 고시는 공포한 날부터 시행한다.",
+      "부칙 제2025-39호\n이 고시는 2025년 10월 1일부터 시행한다.",
     ],"제7-41조의7","제271조의10")
     expect(result.transitionLines).toBe(2)
     expect(result.excerpts).toHaveLength(2)
