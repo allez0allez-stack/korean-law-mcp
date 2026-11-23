@@ -8,7 +8,7 @@
  * 3단 시도: 추출한 법령명 → 원문(findLaws 자체 폴백 포함) → 의미검색이 지목한 법령명.
  * 의미검색(aiSearch)은 주제어를 조문으로 매핑하므로 "음주운전"에서 도로교통법을 얻는다.
  */
-import { findLaws, type LawInfo } from "../lib/law-search.js"
+import { findLaws, resolvedLawMatches, type LawInfo } from "../lib/law-search.js"
 import { lawNameFromQuery } from "../lib/query-extract.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { searchAiLawStructured, type AiLawArticleSignal } from "./life-law.js"
@@ -75,6 +75,15 @@ export async function resolveChainBaseLaw(
     tried.add(key)
     attempts.push(key)
     return findLaws(apiClient, key, apiKey, max)
+  }
+
+  // An explicitly named statute followed by an article is authoritative.
+  // Trailing prose must not route to unrelated laws via LIKE or semantic search.
+  const explicit = query.trim().match(/^(.+?(?:법률|법|시행령|시행규칙|조례|규정))\s+제?\s*\d+\s*조(?:\s*의\s*\d+)?(?=\s|$)/)
+  if (explicit) {
+    const name = explicit[1].trim()
+    const exact = (await attempt(name)).filter(law => resolvedLawMatches(name, law.lawName))
+    return { laws: exact, searchedWith: exact.length ? name : undefined, attempts }
   }
 
   // 1) 질의에 법령명이 들어 있으면 그것으로. 의문·구어 수식을 걷어낸 형태다
