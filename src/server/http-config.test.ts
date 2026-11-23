@@ -18,6 +18,20 @@ describe("HTTP security configuration", () => {
     expect(readHttpServerConfig({ MCP_HTTP_HOST: "0.0.0.0", MCP_ALLOW_UNAUTHENTICATED_REMOTE: "1" }).allowUnauthenticatedRemote).toBe(true)
   })
 
+  it("allows remote single-process direct OAuth without a legacy shared token", () => {
+    const env = {
+      MCP_HTTP_HOST: "0.0.0.0",
+      MCP_AUTH_TOKEN: "",
+      KOREAN_LAW_DIRECT_OAUTH: "1",
+      OAUTH_ISSUER: "https://krx-dart-research.us.auth0.com/",
+      OAUTH_AUDIENCE: "https://korean-law-mcp-ym.onrender.com",
+      MCP_RESOURCE_ID: "https://korean-law-mcp-ym.onrender.com",
+      OAUTH_ALLOWED_SUBS: "auth0|authorized-person",
+    }
+    expect(readHttpServerConfig(env).host).toBe("0.0.0.0")
+    expect(() => readHttpServerConfig({ ...env, OAUTH_ALLOWED_SUBS: "*" })).toThrow()
+  })
+
   it("accepts only explicit numeric proxy hops", () => {
     expect(readHttpServerConfig({ TRUST_PROXY: "1" }).trustProxy).toBe(1)
     expect(() => readHttpServerConfig({ TRUST_PROXY: "true" })).toThrow("TRUST_PROXY must be an integer")

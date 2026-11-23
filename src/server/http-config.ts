@@ -2,6 +2,7 @@
 
 import { parseIntegerLimit, readExecutionLimits, type ExecutionLimits } from "../lib/execution-limits.js"
 import { resolveChainDeadlineMs } from "../tools/chain-deadline.js"
+import { readDirectOAuthConfig } from "./direct-oauth.js"
 
 const DEFAULT_BODY_LIMIT_BYTES = 100 * 1024
 const MAX_BODY_LIMIT_BYTES = 10 * 1024 * 1024
@@ -78,9 +79,10 @@ export function readHttpServerConfig(env: NodeJS.ProcessEnv = process.env): Http
   const authToken = env.MCP_AUTH_TOKEN ?? ""
   const hasAuthToken = authToken.trim().length > 0
   const allowUnauthenticatedRemote = parseRemoteUnauthenticatedOverride(env.MCP_ALLOW_UNAUTHENTICATED_REMOTE)
-  if (!isLoopbackHost(host) && !hasAuthToken && !allowUnauthenticatedRemote) {
+  const directOAuth = readDirectOAuthConfig(env)
+  if (!isLoopbackHost(host) && !hasAuthToken && !directOAuth && !allowUnauthenticatedRemote) {
     throw new Error(
-      "MCP_HTTP_HOST is non-loopback. Set MCP_AUTH_TOKEN or explicitly set MCP_ALLOW_UNAUTHENTICATED_REMOTE=1.",
+      "MCP_HTTP_HOST is non-loopback. Set MCP_AUTH_TOKEN or enable validated direct OAuth or explicitly set MCP_ALLOW_UNAUTHENTICATED_REMOTE=1.",
     )
   }
 

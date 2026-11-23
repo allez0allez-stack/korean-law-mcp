@@ -17,6 +17,7 @@ import { maskSensitiveUrl } from "../lib/fetch-with-retry.js"
 import { TOOL_COUNTS } from "../tool-registry.js"
 import { VERSION } from "../version.js"
 import { readHttpServerConfig } from "./http-config.js"
+import { createDirectOAuthVerifier, oauthChallenge, protectedResourceMetadata, readDirectOAuthConfig } from "./direct-oauth.js"
 
 /** 타이밍 공격 내성 문자열 비교 (길이가 달라도 throw하지 않음) */
 function safeEqual(a: string, b: string): boolean {
@@ -79,6 +80,8 @@ export async function startHTTPServer(
   // Parse every security boundary before the listener is opened.  A bad value
   // must fail startup, not degrade into NaN and disable a comparison later.
   const config = readHttpServerConfig()
+  const directOAuth = readDirectOAuthConfig()
+  const verifyDirectOAuth = directOAuth ? createDirectOAuthVerifier(directOAuth) : null
   const app = express()
   // Direct deployments must not trust a spoofable X-Forwarded-For header.
   // A reverse-proxy deployment opts in with a bounded numeric hop count.
@@ -136,6 +139,10 @@ export async function startHTTPServer(
   /** 이 Origin을 허용할지 판정. 반환값은 응답에 실을 ACAO 값(null이면 거부) */
   function resolveOrigin(origin: string | undefined): string | null {
     if (!origin) return corsOrigin // 브라우저가 아닌 클라이언트
+    if (directOAuth) {
+      // OAuth mode is ChatGPT-only; a legacy wildcard CORS setting must not reopen it.
+      return origin === "https://chatgpt.com" || origin === "https://www.chatgpt.com" ? origin : null
+    }
     if (allowedOrigins.includes(origin)) return origin
     if (allowedOrigins.length === 0 && corsOriginConfigured) {
       if (corsOrigin === "*") return "*"
@@ -161,35 +168,49 @@ export async function startHTTPServer(
     next()
   })
 
-  // ── 접근 인증 (MCP_AUTH_TOKEN 설정 시에만 활성) ────────────────────────────
+  // The discovery document remains public; all actual MCP operations are authenticated.
+  const oauthMetadata = (_req: express.Request, res: express.Response) => {
+    if (!directOAuth) { res.status(503).json({ error: "oauth_not_configured" }); return }
+    res.json(protectedResourceMetadata(directOAuth))
+  }
+  app.get("/.well-known/oauth-protected-resource", oauthMetadata)
+  app.get("/.well-known/oauth-protected-resource/mcp", oauthMetadata)
+
+  // ── 접근 인증 (legacy MCP_AUTH_TOKEN or direct Auth0 OAuth) ──────────────────
   // 폐쇄망·사내망 배포처럼 서버 자체에 접근 통제가 필요한 환경에서 설정한다.
   // 미설정이면 기존처럼 공개 동작 (법제처 API 키는 인가 수단이 아니다).
   const authToken = config.authToken
-  if (!authToken) {
+  if (!authToken && !directOAuth) {
     if (config.allowUnauthenticatedRemote) {
       console.error("⚠️  MCP_ALLOW_UNAUTHENTICATED_REMOTE=1 — non-loopback /mcp is intentionally unauthenticated.")
     } else {
       console.error("ℹ️  MCP_AUTH_TOKEN 미설정 — loopback HTTP only. Remote exposure requires MCP_AUTH_TOKEN or an explicit override.")
     }
   }
-  app.use((req, res, next) => {
-    if (!authToken) return next()
-    if (req.method === "OPTIONS") return next() // 프리플라이트는 인증 헤더를 못 싣는다
-    if (req.path === "/health" || req.path === "/") return next()
+  app.use(async (req, res, next) => {
+    if (!authToken && !directOAuth) return next()
+    if (req.method === "OPTIONS") return next() // browser preflight
+    if (req.path === "/health" || req.path === "/" ||
+        req.path.startsWith("/.well-known/oauth-protected-resource")) return next()
 
-    const presented =
-      (req.headers["x-mcp-token"] as string | undefined) ||
-      bearerValue(req.headers["authorization"] as string | undefined)
-
-    if (!presented || !safeEqual(presented, authToken)) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: { code: -32001, message: "Unauthorized." },
-        id: null,
-      })
-      return
+    const authorization = req.headers["authorization"] as string | undefined
+    const presented = (req.headers["x-mcp-token"] as string | undefined) ||
+      bearerValue(authorization)
+    if (authToken && presented && safeEqual(presented, authToken)) {
+      return next() // old clients during migration only
     }
-    next()
+    if (directOAuth && verifyDirectOAuth && authorization?.startsWith("Bearer ")) {
+      if (await verifyDirectOAuth(authorization.slice(7).trim())) {
+        res.locals.directOAuthAuthenticated = true
+        return next()
+      }
+    }
+    if (directOAuth) res.setHeader("WWW-Authenticate", oauthChallenge(directOAuth))
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized." },
+      id: null,
+    })
   })
 
   app.use(express.json({ limit: config.bodyLimitBytes }))
@@ -317,7 +338,8 @@ export async function startHTTPServer(
     // ALLOW_QUERY_API_KEY=0 으로 쿼리 경로를 차단할 수 있다 (폐쇄망 권장).
     // 인증이 켜진 경우 Authorization 헤더는 접근 토큰이므로 법제처 키로 오인하면 안 된다.
     const authHeader = bearerValue(req.headers["authorization"] as string | undefined)
-    const authHeaderIsAccessToken = Boolean(authToken) && authHeader && safeEqual(authHeader, authToken)
+    const authHeaderIsAccessToken = Boolean(res.locals.directOAuthAuthenticated) ||
+      (Boolean(authToken) && authHeader && safeEqual(authHeader, authToken))
     const queryKey = process.env.ALLOW_QUERY_API_KEY === "0" ? undefined : req.query.oc
     const candidateApiKey =
       (req.headers["apikey"] as string | undefined) ||
