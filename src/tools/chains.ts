@@ -18,6 +18,7 @@ import { extractArticleNumbers } from "../lib/query-extract.js"
 import { resolveChainBaseLaw } from "./chain-law-lookup.js"
 import { discoverTopicArticles } from "./law-topic-articles.js"
 import { getKofiaIpoRuleEvidence, shouldReadKofiaIpoRule } from "./official-industry-rule.js"
+import { getFscIpoRuleEvidence } from "./financial-regulatory-basis.js"
 import {
   startChainDeadline,
   raceDeadline,
@@ -497,7 +498,7 @@ export async function chainLawSystem(
     const scenario = (input.scenario || detectScenario(input.query, "chain_law_system")) as ScenarioType | null
 
     const wantsKofia = shouldReadKofiaIpoRule(input.query, p.lawName)
-    const [threeTier, batch, annexes, sr, kofia] = await Promise.all([
+    const [threeTier, batch, annexes, sr, kofia, fscRule] = await Promise.all([
       // 3단 비교
       raceDeadline(dl, wantsArticles && articles.length === 1
         ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
@@ -517,6 +518,9 @@ export async function chainLawSystem(
       raceDeadline(dl, wantsKofia
         ? callTool(getKofiaIpoRuleEvidence, apiClient, { query: input.query, lawName: p.lawName })
         : Promise.resolve(null)),
+      raceDeadline(dl, wantsKofia
+        ? callTool(getFscIpoRuleEvidence, apiClient, { apiKey: input.apiKey })
+        : Promise.resolve(null)),
     ])
 
     if (wantsArticles) {
@@ -528,6 +532,7 @@ export async function chainLawSystem(
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
     }
     pushLeg(parts, annexes, "별표/서식", "get_annexes", wantsAnnex)
+    pushLeg(parts, fscRule, "금융위원회 고시 (행정규칙)", "search_admin_rule/get_admin_rule", wantsKofia)
     pushLeg(parts, kofia, "협회 자율규정 공식 원문 (법령과 구분)", "금투협 원문 링크", wantsKofia)
     pushScenarioLeg(parts, sr, scenario)
 
