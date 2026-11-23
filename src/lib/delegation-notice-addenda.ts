@@ -20,7 +20,7 @@ export interface NoticeAddendumReview {
   omitted: number
 }
 
-const TRANSITION = /경과조치|적용례|특례|시행\s*당시|시행\s*전에?|시행\s*이후|종전의\s*규정|유예|시행일/
+const TRANSITION = /경과조치|적용례|특례|시행\s*당시|시행\s*전에?|시행\s*이후|종전의\s*규정|유예|시행일|시행\s*한다|시행\s*함|부터\s*시행|공포\s*후\s*\d+\s*(?:개월|년|일)/
 function noticeArticlePattern(article: string): RegExp | null {
   // Administrative provisions include a dash branch: 제7-41조의7.
   const m = article.replace(/\s+/g, "").match(/^제(\d+)(?:-(\d+))?조(?:의(\d+))?$/)
@@ -102,6 +102,7 @@ export function findNoticeFutureIssueRisks(
 ):string[] {
   const candidates=group.filter(v=>v.serial!==selected.serial && v.issuedYd &&
     v.issuedYd<=asOf && v.efYd && v.efYd>asOf)
+  candidates.sort((a,b)=>a.efYd.localeCompare(b.efYd) || a.issuedYd.localeCompare(b.issuedYd))
   return candidates.slice(0,Math.max(0,limit)).map(v=>
     "발령 제"+v.issuedNo+"호("+v.issuedYd+")의 시행일 "+v.efYd+
     "이 기준일 "+asOf+"보다 늦습니다. 해당 규정 조문에 영향 여부 확인 필요"
