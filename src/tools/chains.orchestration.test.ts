@@ -5,7 +5,7 @@
  * B#11 보조 갈래의 장애가 "결과 없음"으로 읽히거나 체인 전체를 죽이던 것
  */
 import { describe, it, expect, beforeEach } from "vitest"
-import { chainFullResearch, chainProcedureDetail, chainOrdinanceCompare, chainDocumentReview } from "./chains.js"
+import { chainFullResearch, chainLawSystem, chainProcedureDetail, chainOrdinanceCompare, chainDocumentReview } from "./chains.js"
 import { lawCache } from "../lib/cache.js"
 import type { LawApiClient } from "../lib/api-client.js"
 
@@ -113,5 +113,41 @@ describe("B#11 보조 갈래의 장애는 '없음'이 아니라 '실패'로 밝�
     const out = res.content[0].text
     expect(out).toContain("▶ 근거 법령 검색 실패 [NOT_FOUND / FAILED]")
     expect(out).not.toContain("▶ 근거 법령\n")
+  })
+})
+
+
+describe("law_system: 자연어 조문번호 자동 라우팅 (#26)", () => {
+  beforeEach(() => lawCache.clear())
+
+  it("법령명 + 제249조의7 복합 질의는 전체 3단 미리보기 대신 지정 조문 조회로 간다", async () => {
+    const c = colloquialClient(["자본시장과 금융투자업에 관한 법률"])
+    const res = await chainLawSystem(c, {
+      query: "자본시장과 금융투자업에 관한 법률 제249조의7 및 관련 시행령 위임 규정",
+    })
+    const out = res.content[0].text
+    expect(out).toContain("법체계 확인: 자본시장과 금융투자업에 관한 법률")
+    expect(out).toContain("핵심 조문 (지정 조문 우선)")
+    expect(out).toContain("지정 조문 위임관계")
+    expect(out).toContain("조문 지정 모드")
+    expect(out).not.toContain("▶ 3단 비교 (법률·시행령·시행규칙)")
+  })
+
+  it("법령명만 들어간 질의는 기존 전체 3단 비교를 유지한다", async () => {
+    const c = colloquialClient(["관세법"])
+    const res = await chainLawSystem(c, { query: "관세법 체계" })
+    const out = res.content[0].text
+    expect(out).toContain("3단 비교 (법률·시행령·시행규칙)")
+    expect(out).not.toContain("조문 지정 모드")
+  })
+
+  it("articles를 명시한 경우에는 query 조문 대신 명시 파라미터를 우선한다", async () => {
+    const c = colloquialClient(["자본시장과 금융투자업에 관한 법률"])
+    const res = await chainLawSystem(c, {
+      query: "자본시장과 금융투자업에 관한 법률 제249조의7",
+      articles: ["제249조의8"],
+    })
+    expect(res.content[0].text).toContain("핵심 조문 (지정 조문 우선)")
+    expect(res.content[0].text).toContain("조문 지정 모드")
   })
 })
