@@ -16,6 +16,9 @@ import {
 import { routeQuery } from "../lib/query-router.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
 import { resolveChainBaseLaw } from "./chain-law-lookup.js"
+import { discoverTopicArticles } from "./law-topic-articles.js"
+import { getKofiaIpoRuleEvidence, shouldReadKofiaIpoRule } from "./official-industry-rule.js"
+import { getFscIpoRuleEvidence } from "./financial-regulatory-basis.js"
 import {
   startChainDeadline,
   raceDeadline,
@@ -473,12 +476,29 @@ export async function chainLawSystem(
     // Explicit articles parameter takes priority. If omitted, honor article numbers
     // already present in the natural-language question instead of silently
     // returning the first pages of an unfiltered three-tier comparison.
-    const articles = input.articles?.length ? input.articles : extractArticleNumbers(input.query).slice(0, 50)
+    const inlineArticles = extractArticleNumbers(input.query).slice(0, 50)
+    const topicDiscovery = !input.articles?.length && !inlineArticles.length
+      ? await raceDeadline(dl, discoverTopicArticles(apiClient, { query: input.query, lawName: p.lawName, mst: p.mst, apiKey: input.apiKey }))
+      : null
+    const topicMatches = topicDiscovery?.ok && topicDiscovery.value.status === "MATCH"
+      ? topicDiscovery.value.matches : []
+    const articles = input.articles?.length ? input.articles : inlineArticles.length
+      ? inlineArticles : topicMatches.map(m => m.article)
     const wantsArticles = articles.length > 0
+    if (topicMatches.length) {
+      parts.push(`▶ 질의 주제 → 공식 법령 조문제목 기반 후보 (실제 본문은 아래 조회)\n${topicMatches.map(m => `${m.article} ${m.heading} (일치 구절: ${m.matchedTerm})`).join("\n")}\n※ 제목의 어휘 일치에 따른 후보이며, 법률상 적용 여부의 확정 판단이 아닙니다.`)
+    } else if (topicDiscovery && !topicDiscovery.ok) {
+      parts.push("▶ 주제별 조문 후보 조회 [TIMEOUT] — 기존 법령 체계 조회로 전환합니다.")
+    } else if (topicDiscovery?.ok && topicDiscovery.value.status === "NO_MATCH") {
+      parts.push("▶ 주제별 조문 후보 [NOT_FOUND] — 공식 법령 조문 제목에서 충분한 어휘 일치를 찾지 못했습니다. 전체 체계를 조회하며 관련 조문을 추측하지 않습니다.")
+    } else if (topicDiscovery?.ok && topicDiscovery.value.status === "UNAVAILABLE") {
+      parts.push("▶ 주제별 조문 후보 [NOT_VERIFIED] — 공식 조문 목차 조회에 실패해 전체 법령 체계로 전환합니다.")
+    }
     // Scenario 확장
     const scenario = (input.scenario || detectScenario(input.query, "chain_law_system")) as ScenarioType | null
 
-    const [threeTier, batch, annexes, sr] = await Promise.all([
+    const wantsKofia = shouldReadKofiaIpoRule(input.query, p.lawName)
+    const [threeTier, batch, annexes, sr, kofia, fscRule] = await Promise.all([
       // 3단 비교
       raceDeadline(dl, wantsArticles && articles.length === 1
         ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
@@ -495,6 +515,12 @@ export async function chainLawSystem(
       raceDeadline(dl, scenario
         ? runScenario(scenario, { apiClient, query: input.query, law: p, articles, apiKey: input.apiKey } as ScenarioContext)
         : Promise.resolve(null)),
+      raceDeadline(dl, wantsKofia
+        ? callTool(getKofiaIpoRuleEvidence, apiClient, { query: input.query, lawName: p.lawName })
+        : Promise.resolve(null)),
+      raceDeadline(dl, wantsKofia
+        ? callTool(getFscIpoRuleEvidence, apiClient, { apiKey: input.apiKey })
+        : Promise.resolve(null)),
     ])
 
     if (wantsArticles) {
@@ -506,6 +532,8 @@ export async function chainLawSystem(
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
     }
     pushLeg(parts, annexes, "별표/서식", "get_annexes", wantsAnnex)
+    pushLeg(parts, fscRule, "금융위원회 고시 (행정규칙)", "search_admin_rule/get_admin_rule", wantsKofia)
+    pushLeg(parts, kofia, "협회 자율규정 공식 원문 (법령과 구분)", "금투협 원문 링크", wantsKofia)
     pushScenarioLeg(parts, sr, scenario)
 
     return wrapResult(parts.join("\n"))

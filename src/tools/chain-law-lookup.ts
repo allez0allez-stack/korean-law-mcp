@@ -12,6 +12,7 @@ import { findLaws, resolvedLawMatches, type LawInfo } from "../lib/law-search.js
 import { lawNameFromQuery } from "../lib/query-extract.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { searchAiLawStructured, type AiLawArticleSignal } from "./life-law.js"
+import { namedStatuteForTopic } from "./law-topic-articles.js"
 import type { LawApiClient } from "../lib/api-client.js"
 
 export interface ChainBaseLawResult {
@@ -84,6 +85,15 @@ export async function resolveChainBaseLaw(
     const name = explicit[1].trim()
     const exact = (await attempt(name)).filter(law => resolvedLawMatches(name, law.lawName))
     return { laws: exact, searchedWith: exact.length ? name : undefined, attempts }
+  }
+
+  // Only documented colloquial legal concepts may pin a statute.
+  // An official exact-name match is required. Fail closed instead of trusting
+  // noisy aiSearch hits (cornerstone -> REIT regression).
+  const topicStatute = namedStatuteForTopic(query)
+  if (topicStatute) {
+    const pinned = (await attempt(topicStatute)).filter(law => resolvedLawMatches(topicStatute, law.lawName))
+    return { laws: pinned, searchedWith: pinned.length ? topicStatute : undefined, attempts }
   }
 
   // 1) 질의에 법령명이 들어 있으면 그것으로. 의문·구어 수식을 걷어낸 형태다
