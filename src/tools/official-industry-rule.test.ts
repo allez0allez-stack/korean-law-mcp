@@ -12,6 +12,7 @@ const SAMPLE = `<html><head><script>alert('x')</script></head><body>
 <tr><td>제9조의3(사전청약투자자 주식의 배정)</td><td>① 주식 배정</td></tr></table>
 </body></html>`
 
+const INDEX = '<table><tr><td><a href="revisionView.do?historySeq=1820">증권 인수업무 등에 관한 규정</a></td><td>2026-11-12</td></tr></table>'
 const client = {} as LawApiClient
 
 describe("KOFIA evidence is a distinct official association rule, not a statute", () => {
@@ -25,16 +26,16 @@ describe("KOFIA evidence is a distinct official association rule, not a statute"
     expect(extractKofiaArticleEvidence(SAMPLE).map(x => x.article)).toEqual(["제5조의4", "제5조의5", "제5조의7", "제9조의3"])
   })
   it("renders section evidence with provenance and snapshot caveat", async () => {
-    const res = await getKofiaIpoRuleEvidence(client, { query:"코너스톤투자자 참여조건", lawName: ACT, loadHtml: async () => SAMPLE })
+    const res = await getKofiaIpoRuleEvidence(client, { query:"코너스톤투자자 참여조건", lawName: ACT, loadHtml: async () => SAMPLE, loadIndexHtml: async () => INDEX })
     const out = res.content[0].text
-    expect(out).toContain("OFFICIAL_SELF_REGULATION / SNAPSHOT")
-    expect(out).toContain("2026-11-12 개정 표기 확인")
+    expect(out).toContain("OFFICIAL_SELF_REGULATION / LATEST_INDEX_VERIFIED")
+    expect(out).toContain("2026-11-12 개정 목록·본문 연혁 대조 PASS")
     expect(out).toContain("제5조의4")
     expect(out).toContain("law.kofia.or.kr")
     expect(out).toContain("협회 자율규정")
   })
   it("does not fabricate rule text on fetch failures", async () => {
-    const res = await getKofiaIpoRuleEvidence(client, { query:"코너스톤투자자", lawName: ACT, loadHtml: async () => {throw Error("Network unavailable")} })
+    const res = await getKofiaIpoRuleEvidence(client, { query:"코너스톤투자자", lawName: ACT, loadHtml: async () => {throw Error("Network unavailable")}, loadIndexHtml: async () => INDEX })
     expect(res.isError).toBeTruthy()
     expect(res.content[0].text).toContain("원문 조회 미완료")
     expect(res.content[0].text).toContain("law.kofia.or.kr")
