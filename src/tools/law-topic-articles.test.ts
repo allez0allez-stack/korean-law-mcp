@@ -51,7 +51,7 @@ describe("topic articles: only verified official headings may nominate an articl
   })
   it("auto-discovers official Article 119-4 without AI search", async () => {
     const c = client()
-    vi.stubGlobal("fetch", vi.fn(async () => new Response('<html><body>증권 인수업무 등에 관한 규정 제5조의4(사전수요조사 참여자격) 제5조의5(사전청약투자자 참여자격) 개정 2026. 11. 12</body></html>', {status: 200, headers: {'content-type':'text/html'}})))
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(url.includes("revisionlist.do") ? '<table><tr><td><a href="revisionView.do?historySeq=1820">증권 인수업무 등에 관한 규정</a></td><td>2026-11-12</td></tr></table>' : '<html><body>증권 인수업무 등에 관한 규정 개정 2026. 11. 12 제5조의4(사전수요조사 참여자격) 제5조의5(사전청약투자자 참여자격)</body></html>', {status:200,headers:{'content-type':'text/html'}})))
     const res = await chainLawSystem(c.api, { query: "코너스톤투자자 사전청약투자자 금융투자협회 규정 참여 요건" })
     vi.unstubAllGlobals()
     const out = res.content[0].text
@@ -68,6 +68,7 @@ describe("topic articles: only verified official headings may nominate an articl
     expect(c.stats.getText).toBe(0)
   })
   it("preserves explicit article priority over inferred topic", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(url.includes("revisionlist.do") ? '<table><tr><td><a href="revisionView.do?historySeq=1820">증권 인수업무 등에 관한 규정</a></td><td>2026-11-12</td></tr></table>' : '<html><body>증권 인수업무 등에 관한 규정 개정 2026. 11. 12 제5조의4(사전수요조사 참여자격) 제5조의5(사전청약투자자 참여자격)</body></html>', {status:200,headers:{'content-type':'text/html'}})))
     const c = client()
     const out = (await chainLawSystem(c.api, { query: "코너스톤투자자", articles: ["제119조의3"] })).content[0].text
     expect(out).not.toContain("조문제목 기반 후보")
