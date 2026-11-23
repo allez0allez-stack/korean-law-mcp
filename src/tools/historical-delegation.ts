@@ -12,6 +12,8 @@ import { classifyNoticeScope } from "../lib/delegation-scope.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { reviewHistoricalAddenda, findHistoricalStagingRisks } from "../lib/delegation-addenda.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
+import { loadAdminRuleDoc, type AdminRuleDoc } from "../lib/admin-rule-doc.js"
+import { reviewNoticeAddenda, findNoticeFutureIssueRisks } from "../lib/delegation-notice-addenda.js"
 
 export interface HistoricalDelegationInput {
   lawId: string
@@ -112,9 +114,12 @@ export async function verifyHistoricalDelegation(
     {label:"법률",version:law.version,article:jo},
     {label:"시행령",version:decree.version,article:decreeJo},
   ]
-  const rawResults=await Promise.allSettled(addendaRequests.map(x=>
-    apiClient.getLawText({mst:x.version.mst,efYd:x.version.efYd,apiKey})
-  ))
+  // Request all three *original* documents. Reuse the parsed notice XML cache:
+  // getAdminRule above already loaded this serial, no second upstream download.
+  const rawResults=await Promise.allSettled([
+    ...addendaRequests.map(x=>apiClient.getLawText({mst:x.version.mst,efYd:x.version.efYd,apiKey})),
+    loadAdminRuleDoc(apiClient,notice.version.serial,apiKey),
+  ])
   const addendaLines:string[]=[]
   for(let i=0;i<rawResults.length;i++) {
     const req=addendaRequests[i]
@@ -125,7 +130,7 @@ export async function verifyHistoricalDelegation(
       continue
     }
     try {
-      const obj=JSON.parse(raw.value)
+      const obj=JSON.parse(raw.value as string)
       const sourceDate=String(obj?.법령?.기본정보?.시행일자||"")
       if(sourceDate!==req.version.efYd) {
         addendaLines.push("["+req.label+"][NOT_VERIFIED] 선택한 시행일과 원본 부칙의 시행일 불일치")
@@ -147,6 +152,44 @@ export async function verifyHistoricalDelegation(
       addendaLines.push("["+req.label+"][NOT_VERIFIED] 원본 부칙 파싱 또는 확인 실패")
     }
   }
+  const noticeFutureRisk=findNoticeFutureIssueRisks(noticeGroup,notice.version,asOf)
+  const noticeRaw=rawResults[addendaRequests.length]
+  if(noticeRaw.status==="rejected") {
+    rethrowIfFatal(noticeRaw.reason)
+    addendaLines.push("[고시][NOT_VERIFIED] 선택 연혁본의 부칙 원본 XML 조회 실패")
+  } else {
+    try {
+      const doc=noticeRaw.value as AdminRuleDoc
+      const effective=(doc.efDate||"").replace(/[^0-9]/g,"")
+      const issued=(doc.issuedDate||"").replace(/[^0-9]/g,"")
+      if(doc.ruleName.replace(/\s+/g,"")!==notice.version.name.replace(/\s+/g,"") ||
+          effective!==notice.version.efYd || issued!==notice.version.issuedYd) {
+        addendaLines.push("[고시][NOT_VERIFIED] 선택한 고시의 이름·시행일·발령일과 원본 XML이 불일치하거나 메타데이터가 없습니다.")
+      } else {
+        const review=reviewNoticeAddenda(doc.addenda,selectedNoticeJo,decreeJo)
+        if(review.status==="not_verified") {
+          addendaLines.push("[고시][NOT_VERIFIED] 선택 연혁본의 부칙 원문이 없거나 형식이 확인되지 않았습니다. 부칙 부존재로 판정하지 않습니다.")
+        } else {
+          addendaLines.push("[고시] 부칙 원본 "+review.blocks+"블록, 검토 라인 "+review.scannedLines+
+            "개; 고시 "+selectedNoticeJo+" 직접 언급 "+review.noticeMentions+"개, 시행령 "+decreeJo+
+            " 직접 언급 "+review.decreeMentions+"개, 경과·시행일 문언 "+review.transitionLines+
+            "개; 검토 근거 "+review.excerpts.length+"건"+(review.omitted?" (추가 "+review.omitted+"건 미표시)":""))
+          for(const evidence of review.excerpts) {
+            const label=evidence.signal==="notice_article"?"고시 조문 직접 언급":
+              evidence.signal==="decree_article"?"시행령 조문 직접 언급":"경과·시행일 문언"
+            addendaLines.push("  [적용 여부 미확정:"+label+"] 부칙 블록 "+evidence.block+": "+evidence.excerpt)
+          }
+          if(review.noticeMentions===0 && review.decreeMentions===0)
+            addendaLines.push("  ※ 직접 조문번호 미발견은 관련 부칙 없음 또는 적용되지 않음이라는 뜻이 아닙니다.")
+        }
+      }
+    } catch(error) {
+      rethrowIfFatal(error)
+      addendaLines.push("[고시][NOT_VERIFIED] 부칙 원본 파싱 또는 증거 추출에 실패했습니다.")
+    }
+  }
+  for(const risk of noticeFutureRisk) addendaLines.push("[고시 분리시행 검토] "+risk)
+
   const addendaUnverified=addendaLines.some(line=>line.includes("[NOT_VERIFIED]"))
 
   const matches=classifyNoticeScope(decreeJo,decreeText,noticeText)
@@ -178,7 +221,7 @@ export async function verifyHistoricalDelegation(
     out+="연혁 계보상 동일 MST 다중 시행슬라이스·기준일 이전 공포 후 미시행 신호: 발견되지 않음 (부칙상 분리시행 부존재는 미확정)\n"
   }
   for(const line of addendaLines) out+=line+"\n"
-  out+="※ 고시 부칙의 적용례·경과조치는 위 법률·시행령 부칙 검토에 포함되지 않으므로 별도 확인 필요.\n"
+  out+="※ 법률·시행령·고시 부칙의 발췌는 적용가능성의 증거 후보일 뿐, 실제 적용례·경과조치 및 조항별 시행일의 법적 판단이 아닙니다.\n"
   out+="\n※ 현행 3단비교를 재사용하지 않고 기준일에 따라 세 버전을 별도 선택했습니다.\n"
   out+="※ 본문 직접 인용과 문언 대응 후보는 위임 적법성·내용의 범위 일치·부칙 경과규정의 적용을 증명하지 않습니다.\n"
   out+="※ 해당 기준일 이전에 공포되어 나중에 시행되는 개정의 영향과 분리시행 여부는 추가 검토가 필요합니다.\n"
