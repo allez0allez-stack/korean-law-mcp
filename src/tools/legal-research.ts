@@ -24,6 +24,8 @@ import {
 } from "./chains.js"
 import { throwIfRequestCancelled } from "../lib/session-state.js"
 import { truncateResponse } from "../lib/schemas.js"
+import { shouldReadKofiaIpoRule } from "./official-industry-rule.js"
+import { namedStatuteForTopic } from "./law-topic-articles.js"
 
 const TASK_VALUES = new Set([
   "full_research", "law_system", "action_basis", "dispute_prep",
@@ -90,6 +92,25 @@ export const LegalResearchSchema = z.preprocess((raw) => {
     .describe("[document_review] 최대 분석 조항 수 (기본 15)"),
   apiKey: z.string().optional(),
 }))
+
+/**
+ * The ordinary legal_research entry point defaults to full_research. For a
+ * narrowly identified cornerstone/IPO-rule compliance question, that generic
+ * aiSearch path buries the dispositive provisions. Prefer the existing
+ * statute → decree → FSC administrative rule → KOFIA self-regulation chain.
+ * Disputes, precedent analysis, and explicit scenario requests retain their
+ * original task semantics. No opaque new semantic inference is introduced.
+ */
+export function shouldPreferIpoStatutoryGrounding(query: string): boolean {
+  if (!/(코너스톤\s*투자자|cornerstone\s*investor|사전\s*청약\s*투자자|사전\s*수요\s*(?:조사|예측))/i.test(query)) return false
+  if (/(판례|소송|분쟁|불복|대법원|행정심판|재판|판결|손해배상|위헌)/.test(query)) return false
+  if (!/(법령|법률|시행령|규정|고시|요건|자격|적격|배정|의무보유|보호예수|주금|납입|한도|참여|금투협|금융투자협회|사전\s*청약)/i.test(query)) return false
+  const lawName = namedStatuteForTopic(query)
+  if (!lawName || !shouldReadKofiaIpoRule(query, lawName)) return false
+  // A specifically cited other statute/article must not be silently rerouted.
+  const cited = query.match(/(민법|상법|부동산투자회사법|관세법|형법|조세특례제한법)\s+제\s*\d+\s*조/)
+  return !cited
+}
 
 export type LegalResearchInput = z.infer<typeof LegalResearchSchema>
 
@@ -190,6 +211,10 @@ export async function legalResearch(
     }
     case "full_research":
     default: {
+      if (!input.scenario && shouldPreferIpoStatutoryGrounding(query)) {
+        const focused = await chainLawSystem(apiClient, { query, apiKey })
+        return withNote("ℹ️ 공식 규정·참여요건 질의로 판정되어 법률→시행령→금융위원회 고시→금투협 자율규정의 근거 확인을 우선했습니다. 판례·분쟁 리서치는 task=dispute_prep으로 별도 조회하세요.", focused)
+      }
       const { value: scenario, note } = pickScenario(chainFullResearchSchema.shape.scenario, input.scenario, task)
       return withNote(note, await chainFullResearch(apiClient, { query, scenario, apiKey }))
     }
