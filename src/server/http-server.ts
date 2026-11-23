@@ -139,7 +139,10 @@ export async function startHTTPServer(
   /** 이 Origin을 허용할지 판정. 반환값은 응답에 실을 ACAO 값(null이면 거부) */
   function resolveOrigin(origin: string | undefined): string | null {
     if (!origin) return corsOrigin // 브라우저가 아닌 클라이언트
-    if (directOAuth && (origin === "https://chatgpt.com" || origin === "https://www.chatgpt.com")) return origin
+    if (directOAuth) {
+      // OAuth mode is ChatGPT-only; a legacy wildcard CORS setting must not reopen it.
+      return origin === "https://chatgpt.com" || origin === "https://www.chatgpt.com" ? origin : null
+    }
     if (allowedOrigins.includes(origin)) return origin
     if (allowedOrigins.length === 0 && corsOriginConfigured) {
       if (corsOrigin === "*") return "*"
