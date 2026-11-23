@@ -21,7 +21,7 @@ Object.assign(process.env, {
   MCP_RESOURCE_ID: resource,
   OAUTH_ALLOWED_SUBS: "auth0|QA-user",
   RATE_LIMIT_RPM: "0",
-  FALLBACK_RATE_LIMIT_RPM: "0",
+  FALLBACK_RATE_LIMIT_RPM: "120",
   CORS_ORIGIN: "",
   ALLOWED_ORIGINS: "",
 })
