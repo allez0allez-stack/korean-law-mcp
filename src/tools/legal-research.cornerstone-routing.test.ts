@@ -37,7 +37,7 @@ describe("LegalResearch default routing to official IPO legal authorities", () =
   })
 
   it("default full_research returns official article and self-regulatory tier", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(mockHtml, {status:200, headers:{"content-type":"text/html"}})))
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(url.includes("revisionlist.do") ? `<table><tr><td><a href="revisionView.do?historySeq=1820">증권 인수업무 등에 관한 규정</a></td><td>2026-11-12</td></tr></table>` : mockHtml, {status:200, headers:{"content-type":"text/html"}})))
     const input = LegalResearchSchema.parse({query:"코너스톤투자자 사전청약 참여자격 및 금융투자협회 규정"})
     expect(input.task).toBe("full_research")
     const result = await legalResearch(client(), input)
