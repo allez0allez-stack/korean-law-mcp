@@ -17,5 +17,8 @@ describe("official lsDelegated documented-field fixtures (not live envelopes)",(
   it("rejects conflicting names for the same serial",()=>expect(parse(root([article("제11조",[link,{...link,위임행정규칙제목:"다른기준"}])]),source,"제11조").status).toBe("NOT_VERIFIED"))
   it("reports no link only for an identified article in the response",()=>expect(parse(root([article("제11조",[])]),source,"제11조").status).toBe("NO_LINK_IN_RESPONSE"))
   it("does not claim absence when the source article is missing",()=>expect(parse(root([article("제12조",[link])]),source,"제11조").status).toBe("NOT_VERIFIED"))
+  it("rejects metadata in an unrelated sibling envelope",()=>expect(parse({identity:{basic:meta},unrelated:{rows:[article("제11조",[link])]}},source,"제11조").status).toBe("NOT_VERIFIED"))
+  it("rejects multiple independently identified envelopes",()=>expect(parse({first:{basic:meta,rows:[article("제11조",[link])]},second:{basic:meta,rows:[article("제11조",[link])]}},source,"제11조").status).toBe("NOT_VERIFIED"))
+  it("keeps a valid source envelope isolated from an unrelated sibling",()=>{const r=parse({service:{basic:meta,rows:[article("제11조",[link])]},unrelated:{rows:[article("제11조",[{...link,위임행정규칙제목:"다른규칙"}])]}},source,"제11조");expect(r.links.map(l=>l.name)).toEqual(["시험기준"])})
   it("deduplicates repeated rule links",()=>expect(parse(root([article("제11조",[link,link])]),source,"제11조").links).toHaveLength(1))
 })
