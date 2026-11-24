@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { extractNamedStatuteReferences as extract, traceStatuteReferences as trace, wantsStatuteReferenceTrace as wants } from "./statute-reference-trace.js"
+import { extractNamedStatuteReferences as extract, traceStatuteReferences as trace, wantsStatuteReferenceTrace as wants, matchesExplicitTraceRoot as matchesRoot } from "./statute-reference-trace.js"
 import type { LawApiClient } from "../lib/api-client.js"
 import { lawCache } from "../lib/cache.js"
 
@@ -27,6 +27,7 @@ describe("explicit statutory reference evidence", () => {
   it("preserves branch and paragraph wording without claiming paragraph-level verification",()=>expect(extract("「민법」 제123조의2 제3항 제4호")[0]).toMatchObject({article:"제123조의2",wording:"「민법」 제123조의2 제3항 제4호"}))
   it("does not assign bare, unquoted, invalid or incomplete references",()=>expect(extract("제1조와 민법 제750조, 「규정이 아님」 제1조, 「민법」 제0조, 「민법」 제2조의123, 「민법」 제3조례")).toEqual([]))
   it("does not infer 준용 from a distant word",()=>expect(extract("「민법」 제1조에 따른 신청 후 다른 규정을 준용한다")[0].relation).toBe("CITATION"))
+  it("requires an exact root name or documented alias",()=>{expect(matchesRoot("건축법 제11조 인용 추적","건축법")).toBe(true);expect(matchesRoot("「건축법」 제11조 인용 추적","건축법")).toBe(true);expect(matchesRoot("국토계획법 제56조 인용 추적",A.lawName)).toBe(true);expect(matchesRoot("기준법 제23조 인용 추적","근로기준법")).toBe(false);expect(matchesRoot("해고 제한 인용 추적","근로기준법")).toBe(false)})
   it("activates only explicit current trace intent",()=>{expect(wants("건축법 제11조 인용관계 추적")).toBe(true);expect(wants("건축법 제11조")).toBe(false);expect(wants("2024년 건축법 제11조 인용 추적")).toBe(false)})
   it("reads exact official bodies recursively to depth 2, prevents circular reread",async()=>{
     const c=mock([{law:ROOT,articles:{"001100":"「국토의 계획 및 이용에 관한 법률」 제56조에 따른다. 「건축법」 제11조에 따른다."}},{law:A,articles:{"005600":"「민법」 제750조를 준용한다."}},{law:B,articles:{"075000":"「건축법」 제11조에 따른다."}}]);const s=(await trace(c.api,{law:ROOT,articles:["제11조"]})).content[0].text
