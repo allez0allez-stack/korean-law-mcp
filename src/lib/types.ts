@@ -51,6 +51,8 @@ export interface ThreeTierMeta {
 export interface DelegationItem {
   type: "시행령" | "시행규칙" | "행정규칙"
   lawName: string
+  /** Official listed rule serial, not an attestation of the currently effective version. */
+  adminRuleSerial?: string
   jo?: string
   joNum?: string
   title: string
