@@ -26,6 +26,7 @@ import { throwIfRequestCancelled } from "../lib/session-state.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { shouldRouteScopedResearch } from "./scoped-law-query.js"
 import { wantsStatuteReferenceTrace } from "./statute-reference-trace.js"
+import { wantsAdminDelegationTrace } from "./admin-delegation-trace.js"
 import { shouldReadKofiaIpoRule } from "./official-industry-rule.js"
 import { namedStatuteForTopic } from "./law-topic-articles.js"
 
@@ -213,6 +214,10 @@ export async function legalResearch(
     }
     case "full_research":
     default: {
+      if (!input.scenario && wantsAdminDelegationTrace(query) && !/판례|판결|소송|분쟁|심판/.test(query)) {
+        return withNote("공식 위임행정규칙 연결 목록과 현재 시행 원문을 우선 조회합니다. 적법성 및 실제 적용 여부의 판단은 별도 검토가 필요합니다.",
+          await chainLawSystem(apiClient, { query, articles: input.articles, apiKey }))
+      }
       if (!input.scenario && wantsStatuteReferenceTrace(query) && !/판례|판결|소송|분쟁|심판/.test(query)) {
         return withNote("공식 법령 원문의 명시적 인용 추적을 우선합니다. 인용의 실존과 법적 적용 판단은 구별됩니다.",
           await chainLawSystem(apiClient, { query, articles: input.articles, apiKey }))
