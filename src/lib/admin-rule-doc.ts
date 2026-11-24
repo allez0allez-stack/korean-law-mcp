@@ -15,6 +15,9 @@ import { adminRuleXmlCache, adminRuleCacheKey, ADMIN_RULE_CACHE_TTL_MS } from ".
 export interface AdminRuleDoc {
   /** 행정규칙명 원문 — 비면 식별자 오류(행정규칙ID 를 넘긴 경우 등) */
   ruleName: string
+  /** Official detail identifiers; absent when upstream omits them. */
+  ruleSerial?: string
+  ruleId?: string
   promDate: string
   /** 발령일자 (신구대조 폴백 머리말) */
   issuedDate: string
@@ -68,6 +71,8 @@ function parseAdminRuleXml(xmlText: string): AdminRuleDoc {
   // 실측: 큰 규칙 5건에서 XML 만 둘 때보다 6.7MB 더 붙잡았다. 복제해 원문과 끊는다.
   return structuredClone({
     ruleName: first(doc, "행정규칙명").trim(),
+    ruleSerial: first(doc, "행정규칙일련번호").trim(),
+    ruleId: first(doc, "행정규칙ID").trim(),
     // 상세 응답의 실제 태그는 발령일자/발령번호 (공포일자는 없는 경우가 많다 — 실측)
     promDate: first(doc, "공포일자") || first(doc, "발령일자"),
     issuedDate: first(doc, "발령일자").trim(),
