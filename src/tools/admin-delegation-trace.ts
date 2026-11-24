@@ -83,8 +83,9 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
         continue
       }
       const doc = await loadAdminRuleDoc(api,current.serial,apiKey)
-      if (!sameLawName(doc.ruleName,current.name)||doc.efDate!==current.efYd||!doc.issuedDate||doc.issuedDate!==current.issuedYd||!doc.hasContent||doc.imgInfo.imageOnly) {
-        lines.push("[NOT_VERIFIED] "+linkLabel+" — 원문 명칭·시행일·발령일 또는 텍스트 검증 실패");continue
+      const identityMatches = doc.ruleSerial === current.serial && !!doc.ruleId && /^\d+$/.test(doc.ruleId) && /^\d+$/.test(current.ruleId) && doc.ruleId.replace(/^0+(?=\d)/, "") === current.ruleId.replace(/^0+(?=\d)/, "")
+      if (!identityMatches||!sameLawName(doc.ruleName,current.name)||doc.efDate!==current.efYd||!doc.issuedDate||doc.issuedDate!==current.issuedYd||!doc.hasContent||doc.imgInfo.imageOnly) {
+        lines.push("[NOT_VERIFIED] "+linkLabel+" — 원문 일련번호·행정규칙ID·명칭·시행일·발령일 또는 텍스트 검증 실패");continue
       }
       lines.push("[ADMIN_VERSION_VERIFIED] "+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
