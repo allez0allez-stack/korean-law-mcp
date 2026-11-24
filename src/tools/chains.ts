@@ -16,6 +16,7 @@ import {
 import { routeQuery } from "../lib/query-router.js"
 import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
 import { traceStatuteReferences, wantsStatuteReferenceTrace, matchesExplicitTraceRoot } from "./statute-reference-trace.js"
+import { traceAdminRuleDelegations, wantsAdminDelegationTrace, isHistoricalAdminTrace } from "./admin-delegation-trace.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
@@ -449,8 +450,14 @@ export async function chainLawSystem(
   apiClient: LawApiClient,
   input: z.infer<typeof chainLawSystemSchema>
 ): Promise<ToolResponse> {
+  if (wantsAdminDelegationTrace(input.query) && isHistoricalAdminTrace(input.query)) {
+    return {content:[{type:"text",text:"[NOT_VERIFIED] 공식 위임행정규칙 연결 추적은 현행 기준만 지원합니다. 과거 적용 관계를 현행 목록으로 대체하지 않습니다."}],isError:true}
+  }
   const plan = planScopedLawQuery(input.query)
   if (!plan) return chainLawSystemSingle(apiClient, input)
+  if (wantsAdminDelegationTrace(input.query)) {
+    return {content:[{type:"text",text:"[NOT_VERIFIED] 복수 시작 법령의 행정규칙 추적은 미지원입니다. 시작 법령별로 요청하십시오."}],isError:true}
+  }
   if (wantsStatuteReferenceTrace(input.query)) {
     return { content: [{ type: "text", text: "[NOT_VERIFIED] 복수 시작 법령의 연쇄 인용 추적은 아직 지원하지 않습니다. 시작 법령별로 인용 추적을 요청하십시오." }], isError: true }
   }
@@ -498,7 +505,7 @@ async function chainLawSystemSingle(
     }
 
     const p = laws[0]
-    if (wantsStatuteReferenceTrace(input.query) && !matchesExplicitTraceRoot(input.query, p.lawName)) {
+    if ((wantsStatuteReferenceTrace(input.query) || wantsAdminDelegationTrace(input.query)) && !matchesExplicitTraceRoot(input.query, p.lawName)) {
       return { content: [{ type: "text", text: "[NOT_VERIFIED] 인용 추적의 시작 법령을 정확한 공식 명칭과 대조하지 못했습니다. 법령명과 조문번호를 명시하십시오." }], isError: true }
     }
     const parts = [
@@ -535,10 +542,11 @@ async function chainLawSystemSingle(
 
     const wantsKofia = shouldReadKofiaIpoRule(input.query, p.lawName)
     const wantsReferenceTrace = wantsStatuteReferenceTrace(input.query)
+    const wantsAdminTrace = wantsAdminDelegationTrace(input.query)
     // Search rows identify the current effective slice within the MST.
     const effectiveDate = p.effectiveDate && /^\d{8}$/.test(p.effectiveDate) && p.effectiveDate <= todayKst() ? p.effectiveDate : undefined
     if (wantsArticles && effectiveDate) parts.push(`조문 조회 시행일: ${effectiveDate} (현행 검색 행 기준; 3단비교는 별도 연결 목록)`)
-    const [threeTier, batch, annexes, sr, kofia, fscRule, referenceTrace] = await Promise.all([
+    const [threeTier, batch, annexes, sr, kofia, fscRule, referenceTrace, adminTrace] = await Promise.all([
       // 3단 비교
       raceDeadline(dl, wantsArticles && articles.length === 1
         ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
@@ -564,6 +572,9 @@ async function chainLawSystemSingle(
       raceDeadline(dl, wantsReferenceTrace && wantsArticles
         ? callTool(traceStatuteReferences, apiClient, { law: p, articles, apiKey: input.apiKey })
         : Promise.resolve(null)),
+      raceDeadline(dl, wantsAdminTrace && wantsArticles
+        ? callTool(traceAdminRuleDelegations, apiClient, { law: p, articles, apiKey: input.apiKey })
+        : Promise.resolve(null)),
     ])
 
     if (wantsArticles) {
@@ -576,6 +587,8 @@ async function chainLawSystemSingle(
     }
     if (wantsReferenceTrace && !wantsArticles) parts.push("▶ 법령 간 명시 인용 추적 [NOT_VERIFIED] — 시작 조문을 특정하지 못했습니다. 법령명과 조문번호를 명시하십시오.")
     pushLeg(parts, referenceTrace, "법령 간 명시 인용 추적", "legal_research", wantsReferenceTrace && wantsArticles)
+    if (wantsAdminTrace && !wantsArticles) parts.push("▶ 위임행정규칙 추적 [NOT_VERIFIED] — 시작 조문을 특정하지 못했습니다.")
+    pushLeg(parts, adminTrace, "공식 위임행정규칙 연결 추적", "legal_research", wantsAdminTrace && wantsArticles)
     pushLeg(parts, annexes, "별표/서식", "get_annexes", wantsAnnex)
     pushLeg(parts, fscRule, "금융위원회 고시 (행정규칙)", "search_admin_rule/get_admin_rule", wantsKofia)
     pushLeg(parts, kofia, "협회 자율규정 공식 원문 (법령과 구분)", "금투협 원문 링크", wantsKofia)
