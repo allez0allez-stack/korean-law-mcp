@@ -72,7 +72,10 @@ function dedupeDelegations(items: DelegationItem[], meta: ThreeTierMeta): Delega
   const map = new Map<string, DelegationItem>()
 
   for (const item of items) {
-    const key = item.jo ? `${item.type}|${item.jo}` : `${item.type}|${normalizeWhitespace(item.lawName || "")}|${normalizeWhitespace(item.title || "")}`
+    // Administrative-rule article numbers are local to each rule/version.
+    const key = item.type === "행정규칙"
+      ? JSON.stringify([item.type, item.adminRuleSerial || "", normalizeWhitespace(item.lawName || ""), item.jo || "", normalizeWhitespace(item.title || "")])
+      : item.jo ? `${item.type}|${item.jo}` : `${item.type}|${normalizeWhitespace(item.lawName || "")}|${normalizeWhitespace(item.title || "")}`
     const prev = map.get(key)
     if (!prev) {
       map.set(key, item)
@@ -91,9 +94,9 @@ function dedupeDelegations(items: DelegationItem[], meta: ThreeTierMeta): Delega
   return Array.from(map.values())
 }
 
-function convertToJO(articleNum: string, branchNum: string = "00"): string {
-  const article = articleNum.padStart(4, "0")
-  const branch = branchNum.padStart(2, "0")
+function convertToJO(articleNum: string | number, branchNum: string | number = "00"): string {
+  const article = String(articleNum).padStart(4, "0")
+  const branch = String(branchNum).padStart(2, "0")
   return article + branch
 }
 
@@ -214,9 +217,12 @@ export function parseThreeTierDelegation(jsonData: any): ThreeTierData {
           : [rawArticle.위임행정규칙목록.위임행정규칙]
 
         for (const item of rules) {
+          const rawSerial = item.위임행정규칙일련번호
+          const serial = typeof rawSerial === "string" || (typeof rawSerial === "number" && Number.isSafeInteger(rawSerial)) ? String(rawSerial).trim() : ""
           article.delegations.push({
             type: "행정규칙",
             lawName: item.위임행정규칙명 || "",
+            ...(/^\d{13}$/.test(serial) ? { adminRuleSerial: serial } : {}),
             jo: item.위임행정규칙조번호
               ? convertToJO(item.위임행정규칙조번호, item.위임행정규칙조가지번호 || "00")
               : undefined,
