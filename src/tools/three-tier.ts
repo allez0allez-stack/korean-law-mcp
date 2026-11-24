@@ -257,6 +257,7 @@ export async function getThreeTier(
         resultText += `${typeLabel} ${delegation.lawName}`
         if (delegation.joNum) resultText += ` ${delegation.joNum}`
         if (delegation.title) resultText += ` (${delegation.title})`
+        if (delegation.type === "행정규칙" && delegation.adminRuleSerial) resultText += ` [연계 목록 일련번호: ${delegation.adminRuleSerial}; 현행 시행 버전 별도 확인]`
         resultText += `\n`
 
         const evidence = classifyDelegationEvidence(article.joNum, delegation.content || "")
