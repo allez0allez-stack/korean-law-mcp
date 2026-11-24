@@ -25,6 +25,7 @@ import {
 import { throwIfRequestCancelled } from "../lib/session-state.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { shouldRouteScopedResearch } from "./scoped-law-query.js"
+import { wantsStatuteReferenceTrace } from "./statute-reference-trace.js"
 import { shouldReadKofiaIpoRule } from "./official-industry-rule.js"
 import { namedStatuteForTopic } from "./law-topic-articles.js"
 
@@ -212,6 +213,10 @@ export async function legalResearch(
     }
     case "full_research":
     default: {
+      if (!input.scenario && wantsStatuteReferenceTrace(query) && !/판례|판결|소송|분쟁|심판/.test(query)) {
+        return withNote("공식 법령 원문의 명시적 인용 추적을 우선합니다. 인용의 실존과 법적 적용 판단은 구별됩니다.",
+          await chainLawSystem(apiClient, { query, articles: input.articles, apiKey }))
+      }
       if (!input.scenario && shouldRouteScopedResearch(query)) {
         return withNote("복수 법령의 명시적 인용을 발견해 법령별 현행 근거 조회를 우선합니다. 판례·분쟁·법적 적용관계 분석은 별도 검토가 필요합니다.",
           await chainLawSystem(apiClient, { query, articles: input.articles, apiKey }))

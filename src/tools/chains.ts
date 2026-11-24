@@ -15,6 +15,7 @@ import {
 } from "../lib/law-search.js"
 import { routeQuery } from "../lib/query-router.js"
 import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
+import { traceStatuteReferences, wantsStatuteReferenceTrace, matchesExplicitTraceRoot } from "./statute-reference-trace.js"
 import { sameLawName } from "../lib/law-lineage.js"
 import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
@@ -450,6 +451,9 @@ export async function chainLawSystem(
 ): Promise<ToolResponse> {
   const plan = planScopedLawQuery(input.query)
   if (!plan) return chainLawSystemSingle(apiClient, input)
+  if (wantsStatuteReferenceTrace(input.query)) {
+    return { content: [{ type: "text", text: "[NOT_VERIFIED] 복수 시작 법령의 연쇄 인용 추적은 아직 지원하지 않습니다. 시작 법령별로 인용 추적을 요청하십시오." }], isError: true }
+  }
   if (input.scenario || /\d{4}\s*년|\d{4}[-.]\d{1,2}[-.]\d{1,2}|경과조치|과거\s*법령|개정\s*이력/.test(input.query)) {
     return { content: [{ type: "text", text: "[NOT_VERIFIED] 복수 법령의 기준일·확장 시나리오는 이 조회 경로에서 지원하지 않습니다. 법령별로 분리해 조회하십시오." }], isError: true }
   }
@@ -494,6 +498,9 @@ async function chainLawSystemSingle(
     }
 
     const p = laws[0]
+    if (wantsStatuteReferenceTrace(input.query) && !matchesExplicitTraceRoot(input.query, p.lawName)) {
+      return { content: [{ type: "text", text: "[NOT_VERIFIED] 인용 추적의 시작 법령을 정확한 공식 명칭과 대조하지 못했습니다. 법령명과 조문번호를 명시하십시오." }], isError: true }
+    }
     const parts = [
       `═══ 법체계 확인: ${p.lawName} ═══`,
       `법령ID: ${p.lawId} | MST: ${p.mst} | 구분: ${p.lawType}`,
@@ -527,7 +534,8 @@ async function chainLawSystemSingle(
     const scenario = (input.scenario || detectScenario(input.query, "chain_law_system")) as ScenarioType | null
 
     const wantsKofia = shouldReadKofiaIpoRule(input.query, p.lawName)
-    const [threeTier, batch, annexes, sr, kofia, fscRule] = await Promise.all([
+    const wantsReferenceTrace = wantsStatuteReferenceTrace(input.query)
+    const [threeTier, batch, annexes, sr, kofia, fscRule, referenceTrace] = await Promise.all([
       // 3단 비교
       raceDeadline(dl, wantsArticles && articles.length === 1
         ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
@@ -550,6 +558,9 @@ async function chainLawSystemSingle(
       raceDeadline(dl, wantsKofia
         ? callTool(getFscIpoRuleEvidence, apiClient, { apiKey: input.apiKey })
         : Promise.resolve(null)),
+      raceDeadline(dl, wantsReferenceTrace && wantsArticles
+        ? callTool(traceStatuteReferences, apiClient, { law: p, articles, apiKey: input.apiKey })
+        : Promise.resolve(null)),
     ])
 
     if (wantsArticles) {
@@ -560,6 +571,8 @@ async function chainLawSystemSingle(
     } else {
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
     }
+    if (wantsReferenceTrace && !wantsArticles) parts.push("▶ 법령 간 명시 인용 추적 [NOT_VERIFIED] — 시작 조문을 특정하지 못했습니다. 법령명과 조문번호를 명시하십시오.")
+    pushLeg(parts, referenceTrace, "법령 간 명시 인용 추적", "legal_research", wantsReferenceTrace && wantsArticles)
     pushLeg(parts, annexes, "별표/서식", "get_annexes", wantsAnnex)
     pushLeg(parts, fscRule, "금융위원회 고시 (행정규칙)", "search_admin_rule/get_admin_rule", wantsKofia)
     pushLeg(parts, kofia, "협회 자율규정 공식 원문 (법령과 구분)", "금투협 원문 링크", wantsKofia)
