@@ -12,10 +12,11 @@ import { formatToolError } from "../lib/errors.js"
 import { truncateResponse } from "../lib/schemas.js"
 import type { ToolResponse } from "../lib/types.js"
 import { KOFIA_REVISION_INDEX_URL, parseKofiaLatestIpoVersion, latestRevisionDateInRule } from "./kofia-version-resolver.js"
+import { extractRuleSections, extractSupplementarySection, type KofiaSectionEvidence } from "./kofia-section-evidence.js"
 
 export const KOFIA_IPO_RULE_URL = "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140"
 const MAX_HTML_BYTES = 1_000_000
-const RULE_ARTICLES = ["제5조의2", "제5조의4", "제5조의5", "제5조의6", "제5조의7", "제9조의3"] as const
+const RULE_ARTICLES = ["제5조의2", "제5조의3", "제5조의4", "제5조의5", "제5조의6", "제5조의7", "제9조의3"] as const
 
 export function shouldReadKofiaIpoRule(query: string, resolvedLawName: string): boolean {
   return resolvedLawName === "자본시장과 금융투자업에 관한 법률"
@@ -47,17 +48,21 @@ export function htmlRuleText(html: string): string {
   ).replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").replace(/\n{3,}/g, "\n\n").trim()
 }
 
-export function extractKofiaArticleEvidence(html: string): Array<{ article: string; excerpt: string }> {
-  const plain = htmlRuleText(html)
-  const result: Array<{ article: string; excerpt: string }> = []
-  for (const article of RULE_ARTICLES) {
-    const nameRx = new RegExp(`${article.replace(/조/, "\\s*조\\s*").replace(/의/, "\\s*의\\s*")}\\s*\\(`)
-    const match = nameRx.exec(plain)
-    if (!match) continue
-    const text = plain.slice(match.index, match.index + 460).replace(/\s+/g, " ").trim()
-    result.push({ article, excerpt: text })
-  }
-  return result
+// Preserve HTML block and table-cell boundaries for article-heading candidates.
+// The same reader still produces the original normalized text for version checks.
+export function structuredKofiaRuleText(html: string): string {
+  return htmlRuleText(html.replace(/<\/(?:td|th|tr|p|div|h[1-6]|li)\s*>|<br\b[^>]*>/gi, "\n"))
+}
+
+export function extractKofiaArticleEvidence(html: string): KofiaSectionEvidence[] {
+  return extractRuleSections(structuredKofiaRuleText(html), RULE_ARTICLES)
+    .filter(x => x.excerpt.length > 0)
+}
+
+function renderSection(x: KofiaSectionEvidence): string {
+  if (!x.excerpt) return `${x.article} [${x.status}] 원문 위치·본문 미확인`
+  const label = x.status === "HEADING_BOUNDED" ? "제목 경계 기반" : "경계 미확정 발췌"
+  return `${x.article} 원문 위치 확인 [${label}${x.truncated ? '; 길이 제한으로 일부 발췌' : ''}]: ${x.excerpt}`
 }
 
 /** Fixed allowlisted KOFIA URL; HTTP redirects are never followed. */
@@ -130,8 +135,10 @@ export async function getKofiaIpoRuleEvidence(
         "과 규정 본문 연혁 " + (currentHeaderDate || "미확인") + "이 일치하지 않습니다")
     }
     if (!plain.includes("증권 인수업무 등에 관한 규정")) throw Error("금투협 공식 규정명 일치 검증 실패")
-    const clauses = extractKofiaArticleEvidence(html)
-    if (!clauses.length) throw Error("금투협 관련 조문 본문 추출 실패")
+    const structured = structuredKofiaRuleText(html)
+    const clauses = extractRuleSections(structured, RULE_ARTICLES)
+    if (!clauses.some(x => x.excerpt.length > 0)) throw Error("금투협 관련 조문 본문 추출 실패")
+    const supplement = extractSupplementarySection(structured, version.amendedOn)
     const status = `${version.amendedOn} 개정 목록·본문 연혁 대조 PASS`
     const output = [
       "[OFFICIAL_SELF_REGULATION / LATEST_INDEX_VERIFIED] 금융투자협회 증권 인수업무 등에 관한 규정",
@@ -139,7 +146,9 @@ export async function getKofiaIpoRuleEvidence(
       `개정 목록: ${version.indexUrl}`,
       `원문: ${version.url} | 버전 historySeq=${version.historySeq}`,
       `원문 확인: ${status} | HTML 원문 직접 열람`,
-      ...clauses.map(x => `${x.article} 원문 위치 확인: ${x.excerpt}`),
+      "※ 개별 조문은 제목 경계 기반 또는 일부 발췌이며 항·호·목 전체 및 적용 여부를 보증하지 않습니다.",
+      renderSection(supplement),
+      ...clauses.map(renderSection),
       "※ 인용된 조문이 실제 사안에 적용되는지, 부칙 시행일·경과조치는 별도 심사해야 합니다.",
     ].join("\n")
     return { content: [{ type: "text", text: truncateResponse(output) }] }
