@@ -16,7 +16,7 @@ import {
 import { routeQuery } from "../lib/query-router.js"
 import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
 import { traceStatuteReferences, wantsStatuteReferenceTrace, matchesExplicitTraceRoot } from "./statute-reference-trace.js"
-import { sameLawName } from "../lib/law-lineage.js"
+import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
 import { resolveChainBaseLaw } from "./chain-law-lookup.js"
@@ -535,6 +535,9 @@ async function chainLawSystemSingle(
 
     const wantsKofia = shouldReadKofiaIpoRule(input.query, p.lawName)
     const wantsReferenceTrace = wantsStatuteReferenceTrace(input.query)
+    // Search rows identify the current effective slice within the MST.
+    const effectiveDate = p.effectiveDate && /^\d{8}$/.test(p.effectiveDate) && p.effectiveDate <= todayKst() ? p.effectiveDate : undefined
+    if (wantsArticles && effectiveDate) parts.push(`조문 조회 시행일: ${effectiveDate} (현행 검색 행 기준; 3단비교는 별도 연결 목록)`)
     const [threeTier, batch, annexes, sr, kofia, fscRule, referenceTrace] = await Promise.all([
       // 3단 비교
       raceDeadline(dl, wantsArticles && articles.length === 1
@@ -544,7 +547,7 @@ async function chainLawSystemSingle(
           : callTool(getThreeTier, apiClient, { mst: p.mst, apiKey: input.apiKey })),
       // 조문 조회
       raceDeadline(dl, wantsArticles
-        ? callTool(getBatchArticles, apiClient, { mst: p.mst, articles, apiKey: input.apiKey })
+        ? callTool(getBatchArticles, apiClient, { mst: p.mst, articles, ...(effectiveDate ? { efYd: effectiveDate } : {}), apiKey: input.apiKey })
         : Promise.resolve(null)),
       raceDeadline(dl, wantsAnnex
         ? callTool(getAnnexes, apiClient, { lawName: p.lawName, apiKey: input.apiKey })
