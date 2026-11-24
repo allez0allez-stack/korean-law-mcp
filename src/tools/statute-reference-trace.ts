@@ -3,6 +3,7 @@ import type { LawApiClient } from "../lib/api-client.js"
 import { findLaws, type LawInfo } from "../lib/law-search.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { buildJO } from "../lib/law-parser.js"
+import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { formatArticleUnit } from "../lib/article-parser.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { throwIfRequestCancelled } from "../lib/session-state.js"
@@ -42,6 +43,17 @@ export function extractNamedStatuteReferences(body: string): NamedStatuteReferen
 export function wantsStatuteReferenceTrace(query: string): boolean {
   return /(?:인용|준용|참조|법령\s*간\s*연결)\s*(?:관계\s*)?(?:추적|확인|조회|분석)|(?:인용|준용|참조)\s*조문/.test(query)
     && !/\d{4}\s*년|\d{4}[-.]\d{1,2}[-.]\d{1,2}|경과조치|과거\s*법령|개정\s*이력/.test(query)
+}
+
+/** A trace may not promote a semantic or partial-name root match to verified evidence. */
+export function matchesExplicitTraceRoot(query: string, officialName: string): boolean {
+  const prefix = query.trim().match(/^(.+?)(?=\s*제?\s*\d{1,4}\s*조|\s+(?:인용|준용|참조|법령\s*간\s*연결)\s*(?:관계\s*)?(?:추적|확인|조회|분석|조문))/)?.[1]
+  const name = prefix?.trim().replace(/^「|」$/g, "").trim()
+  if (!name || !/(?:법률|법|시행령|시행규칙|규칙|규정|조례)$/.test(name)) return false
+  const suffix = name.match(/\s*(시행령|시행규칙)$/)?.[1]
+  const base = suffix ? name.replace(/\s*(시행령|시행규칙)$/, "") : name
+  const canonical = resolveLawAlias(base).canonical + (suffix ? " " + suffix : "")
+  return sameLawName(name, officialName) || sameLawName(canonical, officialName)
 }
 
 interface ArticleRecord { header: string; body: string }
