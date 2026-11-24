@@ -41,3 +41,16 @@ describe("law-linkage — 루트 태그 실형상 파싱 부활", () => {
     expect(r.content[0].text).toContain("경관법")
   })
 })
+
+
+describe("explicit official linkage schema probe",()=>{
+  it("calls only the fixed official endpoint and returns bounded allowlisted fields",async()=>{
+    let request:unknown
+    const api={fetchApi:async(p:unknown)=>{request=p;return JSON.stringify({service:{basic:{법령명:"시험법",법령일련번호:123456,시행일자:20200101,secret:"PRIVATE_VALUE"},rows:[{조문번호:"제1조",links:[{위임구분:"위임행정규칙",위임행정규칙일련번호:"2100000000001",위임행정규칙제목:"시험고시",라인텍스트:"RAW_BODY"}]}]}})}} as unknown as LawApiClient
+    const r=await getDelegatedLaws(api,{query:"시험법",display:20,page:1,officialLinkProbe:{mst:"123456"}})
+    expect(request).toMatchObject({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:"123456"}})
+    expect(r.content[0].text).toContain("[PROBE_RESPONSE]");expect(r.content[0].text).toContain("시험고시");expect(r.content[0].text).not.toContain("PRIVATE_VALUE");expect(r.content[0].text).not.toContain("RAW_BODY")
+  })
+  it("fails closed on error or unknown envelope",async()=>{for(const raw of ["not json",JSON.stringify({error:"bad"})]){const r=await getDelegatedLaws(stub(raw),{query:"시험법",display:20,page:1,officialLinkProbe:{lawId:"123456"}});expect(r.isError).toBe(true);expect(r.content[0].text).toContain("PROBE_NOT_VERIFIED")}})
+  it("rejects two identifiers without making an upstream call",async()=>{let calls=0;const api={fetchApi:async()=>{calls++;return "{}"}} as unknown as LawApiClient;const r=await getDelegatedLaws(api,{query:"시험법",display:20,page:1,officialLinkProbe:{mst:"123456",lawId:"000001"}});expect(r.isError).toBe(true);expect(calls).toBe(0)})
+})
