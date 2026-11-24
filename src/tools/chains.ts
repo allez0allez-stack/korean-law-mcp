@@ -32,7 +32,7 @@ import type { ScenarioType, ScenarioContext, ScenarioResult } from "./scenarios/
 
 // Tool handler imports
 import { analyzeDocument } from "./document-analysis.js"
-import { getThreeTier } from "./three-tier.js"
+import { getThreeTier, getThreeTierForArticles } from "./three-tier.js"
 import { getBatchArticles } from "./batch-articles.js"
 import { renderPrecedentSearchResult, searchPrecedents, type SearchPrecedentsInput } from "./precedents.js"
 import { searchInterpretations } from "./interpretations.js"
@@ -503,7 +503,7 @@ export async function chainLawSystem(
       raceDeadline(dl, wantsArticles && articles.length === 1
         ? callTool(getThreeTier, apiClient, { mst: p.mst, jo: articles[0], apiKey: input.apiKey })
         : wantsArticles
-          ? Promise.resolve(null)
+          ? callTool(getThreeTierForArticles, apiClient, { mst: p.mst, articles, apiKey: input.apiKey })
           : callTool(getThreeTier, apiClient, { mst: p.mst, apiKey: input.apiKey })),
       // 조문 조회
       raceDeadline(dl, wantsArticles
@@ -526,8 +526,8 @@ export async function chainLawSystem(
     if (wantsArticles) {
       // 명시적 조문 지정 시 대량 3단 비교로 요청 조문이 밀려나지 않도록 한다.
       pushLeg(parts, batch, "핵심 조문 (지정 조문 우선)", "get_batch_articles", true)
-      pushLeg(parts, threeTier, "지정 조문 위임관계", "get_three_tier", articles.length === 1)
-      parts.push("※ 조문 지정 모드: 전체 3단 비교는 생략했습니다. 전체 비교가 필요하면 articles 없이 호출하세요.")
+      pushLeg(parts, threeTier, "지정 조문 위임관계", "get_three_tier", true)
+      parts.push("※ 조문 지정 모드: 전체 3단 비교는 생략했습니다. 전체 비교가 필요하면 질문과 articles 모두에서 개별 조문번호를 제외하세요.")
     } else {
       pushLeg(parts, threeTier, "3단 비교 (법률·시행령·시행규칙)", "get_three_tier")
     }
