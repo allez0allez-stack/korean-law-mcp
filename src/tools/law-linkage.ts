@@ -11,6 +11,7 @@ import type { LawApiClient } from "../lib/api-client.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { extractTag } from "../lib/xml-parser.js"
 import { formatToolError } from "../lib/errors.js"
+import { rethrowIfFatal } from "../lib/fatal-errors.js"
 
 // === 스키마 ===
 
@@ -28,6 +29,7 @@ export const LinkedOrdinanceArticlesSchema = baseLinkageSchema.extend({
   query: z.string().describe("법령명 (예: '국민건강보험법')")
 })
 export const DelegatedLawsSchema = baseLinkageSchema.extend({
+  officialLinkProbe: z.object({ mst: z.string().regex(/^\d{1,12}$/).optional(), lawId: z.string().regex(/^\d{1,12}$/).optional() }).refine(p => Boolean(p.mst) !== Boolean(p.lawId), "mst 또는 lawId 중 하나만 필요합니다").optional().describe("공식 lsDelegated 응답 구조 진단. 법적 관계를 확정하지 않음"),
   // 실측: lnkDep은 서버측 검색 필터가 없다(query 무시, 전체 덤프+페이징만).
   // 조회 페이지 내 클라이언트 필터만 가능 — 법령 기준 연계는 get_linked_ordinance_articles 권장.
   query: z.string().describe("필터 키워드(법령명 등) — ⚠️ 법제처가 이 목록의 서버측 검색을 지원하지 않아 조회 페이지 내 부분 필터만 됩니다. 법령 기준 자치법규 연계는 get_linked_ordinance_articles 사용 권장")
@@ -166,8 +168,48 @@ export const getLinkedOrdinanceArticles = (apiClient: LawApiClient, input: Linka
     title: "법령-자치법규 조문 연계", emptyMsg: "조문 연계 결과가 없습니다."
   })
 
-export const getDelegatedLaws = (apiClient: LawApiClient, input: LinkageInput) =>
-  handleLinkage(apiClient, input, {
+/** Bounded, explicit, read-only upstream schema probe. No raw response or credentials. */
+async function probeOfficialLinks(api: LawApiClient, input: z.infer<typeof DelegatedLawsSchema>) {
+  const probe = input.officialLinkProbe!
+  const failure = (msg: string) => ({content:[{type:"text",text:"[PROBE_NOT_VERIFIED] "+msg}],isError:true})
+  if (Boolean(probe.mst) === Boolean(probe.lawId) || !/^\d{1,12}$/.test(probe.mst || probe.lawId || "")) return failure("정확한 MST 또는 법령ID 하나가 필요합니다.")
+  try {
+    const raw = await api.fetchApi({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:probe.mst?{MST:probe.mst}:{ID:probe.lawId!},apiKey:input.apiKey})
+    if (raw.length > 5_000_000) return failure("응답 크기 한도 초과")
+    const payload: unknown = JSON.parse(raw)
+    const allowed = new Set(["법령일련번호","법령명","법령ID","시행일자","조문번호","조문가지번호","조문제목","위임구분","위임법령일련번호","위임법령제목","위임법령조문번호","위임법령조문가지번호","위임행정규칙일련번호","위임행정규칙제목","조항호목"])
+    const stack: Array<{node:unknown,path:string,depth:number,article:string}> = [{node:payload,path:"$",depth:0,article:""}]
+    const shapes = new Set<string>(), identities: Array<Record<string,string>> = [], samples: Array<Record<string,string>> = []
+    let visited=0, links=0, metadata=0, clipped=false
+    while (stack.length) {
+      const {node,path,depth,article}=stack.pop()!
+      if (++visited>50000 || depth>24) {clipped=true;break}
+      if (!node || typeof node!=="object") continue
+      if (Array.isArray(node)) { for (const n of node) stack.push({node:n,path:path+"[]",depth:depth+1,article});continue }
+      const row=Object.fromEntries(Object.entries(node))
+      const scalar=(v:unknown)=>typeof v==="string"?v.slice(0,200):typeof v==="number"&&Number.isSafeInteger(v)?String(v):""
+      const current=scalar(row["조문번호"])||article
+      const keys=Object.keys(row).filter(k=>/^[가-힣A-Za-z0-9_]{1,80}$/.test(k)).sort()
+      if(shapes.size<40)shapes.add(path+": "+keys.slice(0,35).join(", "))
+      const identity=Boolean(row["법령명"]&&row["법령일련번호"]&&row["시행일자"])
+      const admin=Boolean(row["위임행정규칙일련번호"]||row["위임행정규칙제목"])
+      if(identity)metadata++
+      if(admin)links++
+      if((identity&&identities.length<3)||(admin&&samples.length<9)){
+        const sample:Record<string,string>={path,sourceArticle:current}
+        for(const k of keys)if(allowed.has(k)&&scalar(row[k]))sample[k]=scalar(row[k])
+        if(identity&&identities.length<3)identities.push(sample)
+        if(admin&&samples.length<9)samples.push(sample)
+      }
+      for(const k of keys)if(row[k]&&typeof row[k]==="object")stack.push({node:row[k],path:path+"."+k,depth:depth+1,article:current})
+    }
+    if(!metadata)return failure("JSON 응답에서 공식 법령 식별정보 미확인; 링크 부존재를 의미하지 않습니다. 구조: "+[...shapes].slice(0,10).join(" | ").slice(0,1500))
+    return {content:[{type:"text",text:truncateResponse("[PROBE_RESPONSE] 공식 API 구조 진단 — 법적 근거 검증 아님\n"+JSON.stringify({metadata,links,clipped,shapes:[...shapes],identities,samples},null,2),14000)}]}
+  }catch(e){rethrowIfFatal(e);return failure("공식 위임법령 API 요청 또는 JSON 해석 실패")}
+}
+
+export const getDelegatedLaws = (apiClient: LawApiClient, input: z.infer<typeof DelegatedLawsSchema>) =>
+  input.officialLinkProbe ? probeOfficialLinks(apiClient,input) : handleLinkage(apiClient, input, {
     // 실측 루트는 lnkDepSearch — 종전 대문자 가정(LnkDepSearch)으로 매 호출 0건이었다
     target: "lnkDep", primaryRoot: "lnkDepSearch", fallbackRoot: "LawSearch",
     title: "위임 연계 자치법규 목록", emptyMsg: "위임 연계 자치법규가 없습니다.",
