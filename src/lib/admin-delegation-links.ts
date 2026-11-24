@@ -39,8 +39,8 @@ export function parseDelegatedAdminLinks(payload: unknown, source: AdminLinkSour
       if (!delegation) {partial=true;continue}
       // Official child field identifies administrative-rule links; the parent's
       // numeric/text classification is not inferred as a legal conclusion.
-      if (!Object.hasOwn(delegation,"위임행정규칙조문정보")) continue
-      if (Object.hasOwn(delegation,"위임법령조문정보") || Object.hasOwn(delegation,"위임규정조문정보")) {partial=true;continue}
+      if (!Object.prototype.hasOwnProperty.call(delegation,"위임행정규칙조문정보")) continue
+      if (Object.prototype.hasOwnProperty.call(delegation,"위임법령조문정보") || Object.prototype.hasOwnProperty.call(delegation,"위임규정조문정보")) {partial=true;continue}
       const entries=rows(delegation.위임행정규칙조문정보)
       if (!entries.length) partial=true
       for (const item of entries) {
