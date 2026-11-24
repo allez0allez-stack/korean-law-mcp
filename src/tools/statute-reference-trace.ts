@@ -56,20 +56,24 @@ export function matchesExplicitTraceRoot(query: string, officialName: string): b
   return sameLawName(name, officialName) || sameLawName(canonical, officialName)
 }
 
-interface ArticleRecord { header: string; body: string }
+interface ArticleRecord { header: string; body: string; effectiveDate?: string }
 interface Node { law: LawInfo; article: string; depth: number }
 const keyFor = (law: LawInfo, article: string) => `${law.mst}:${buildJO(article)}`
 
 /** Read the exact article from structured official JSON; never scan a formatted tool summary. */
 async function readExactArticle(api: LawApiClient, law: LawInfo, article: string, apiKey?: string): Promise<ArticleRecord> {
   const jo = buildJO(article)
-  const raw = JSON.parse(await api.getLawText({ mst: law.mst, jo, apiKey }))?.법령
+  // A single proclamation MST can have several effective-date slices.
+  // The current search row, not an MST-only response, identifies the slice.
+  const efYd = law.effectiveDate
+  if (efYd && (!/^\d{8}$/.test(efYd) || efYd > todayKst())) throw Error("현행 검색 시행일 미확인 또는 시행 예정")
+  const raw = JSON.parse(await api.getLawText({ mst: law.mst, jo, ...(efYd ? { efYd } : {}), apiKey }))?.법령
   const info = raw?.기본정보
   const name = info?.법령명_한글 || info?.법령명한글 || info?.법령명
   if (typeof name !== "string" || !sameLawName(name, law.lawName)) throw Error("법령 원문 명칭 불일치")
   if (info?.법령ID && law.lawId && String(info.법령ID) !== law.lawId) throw Error("법령 ID 불일치")
   const date = String(info?.시행일자 || "")
-  if (/^\d{8}$/.test(date) && (date > todayKst() || (law.effectiveDate && date !== law.effectiveDate))) throw Error("법령 시행 버전 불일치")
+  if ((efYd && date !== efYd) || (/^\d{8}$/.test(date) && date > todayKst())) throw Error("법령 시행 버전 불일치")
   const units = raw?.조문?.조문단위
   const matches = (Array.isArray(units) ? units : units ? [units] : []).filter(u =>
     u?.조문여부 === "조문" && String(u.조문번호 ?? "").padStart(4, "0") + String(u.조문가지번호 || "0").padStart(2, "0") === jo)
@@ -77,7 +81,7 @@ async function readExactArticle(api: LawApiClient, law: LawInfo, article: string
   const unit = matches[0]
   const formatted = formatArticleUnit({ ...unit, 조문번호: String(Number(unit.조문번호)), 조문가지번호: String(Number(unit.조문가지번호 || 0)) })
   if (!formatted?.body?.trim() || /^(?:제\d+조(?:의\d+)?\s*)?(?:\([^)]*\)\s*)?삭제\s*(?:<[^>]*>)?$/.test(formatted.body.trim())) throw Error("조문 본문 없음 또는 삭제")
-  return formatted
+  return { ...formatted, effectiveDate: /^\d{8}$/.test(date) ? date : undefined }
 }
 
 export async function traceStatuteReferences(api: LawApiClient, input: { law: LawInfo; articles: readonly string[]; apiKey?: string }): Promise<ToolResponse> {
@@ -100,8 +104,8 @@ export async function traceStatuteReferences(api: LawApiClient, input: { law: La
     try { record = await readExactArticle(api, node.law, node.article, input.apiKey) }
     catch (e) { rethrowIfFatal(e); missing++; lines.push(`[NOT_VERIFIED] ${node.law.lawName} ${node.article}: ${e instanceof Error ? e.message.slice(0, 120) : "조회 실패"}`); continue }
     const label = `${node.law.lawName} ${node.article}`
-    if (node.depth) { verified++; lines.push(`[TARGET_VERIFIED] 깊이 ${node.depth} | ${label} | MST ${node.law.mst}\n${record.header}\n${truncateResponse(record.body, 1300)}`) }
-    if (!node.depth) rootVerified++
+    if (node.depth) { verified++; lines.push(`[TARGET_VERIFIED] 깊이 ${node.depth} | ${label} | MST ${node.law.mst} | 시행일 ${record.effectiveDate || "미확인"}\n${record.header}\n${truncateResponse(record.body, 1300)}`) }
+    if (!node.depth) { rootVerified++; lines.push(`[ROOT_VERIFIED] ${label} | MST ${node.law.mst} | 시행일 ${record.effectiveDate || "미확인"}`) }
     const refs = extractNamedStatuteReferences(record.body)
     if (record.body.length > MAX_BODY || refs.length >= MAX_CANDIDATES) { omitted++; lines.push(`[PARTIAL] ${label}: 원문 검색 범위 상한 도달`) }
     if (!refs.length && node.depth === 0) lines.push(`[NO_EXPLICIT_MATCH] ${label}: 지원 표기에서 인용을 찾지 못함. 다른 참조가 없다는 의미는 아님.`)
@@ -137,5 +141,10 @@ export async function traceStatuteReferences(api: LawApiClient, input: { law: La
   lines.splice(2, 0, `범위: 시작 최대 ${MAX_ROOTS}조문 / 대상 최대 ${MAX_TARGETS}조문 / 깊이 ${MAX_DEPTH}. 시작 원문 확인 ${rootVerified}건, 대상 원문 확인 ${verified}건, 미확인 ${missing}건, 범위 제한 ${omitted}건.`)
   if (omitted) lines.push(`[PARTIAL] 범위 제한으로 추가 참조 ${omitted}건 이상 미추적. 전체 참조 목록이 아닙니다.`)
   if (deferred.length) lines.push("미추적 후보 (최대 10건):\n" + deferred.join("\n"))
+  if (!rootVerified) {
+    // A chain error section clips the returned text. Lead with the diagnostic.
+    const cause = lines.find(line => line.startsWith("[NOT_VERIFIED]"))
+    if (cause) lines.unshift(cause)
+  }
   return { content: [{ type: "text", text: truncateResponse(lines.join("\n\n"), 16000) }], ...(rootVerified ? {} : { isError: true }) }
 }
