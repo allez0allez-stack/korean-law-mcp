@@ -4,7 +4,7 @@ import { adminRuleXmlCache } from "../lib/admin-rule-views.js"
 import type { LawApiClient } from "../lib/api-client.js"
 const law={lawName:"시험법 시행령",mst:"123456",lawId:"000001",lawType:"대통령령",effectiveDate:"20200101"}
 const name="시험기준",serial="2100000000001"
-const payload={service:{basic:{"법령명":law.lawName,"법령일련번호":law.mst,"법령ID":law.lawId,"시행일자":law.effectiveDate},rows:[{조문번호:"제11조의2",links:[{위임행정규칙일련번호:serial,위임행정규칙제목:name,위임구분:"위임행정규칙",라인텍스트:"정하여 고시한다"}]}]}}
+const payload={lsDelegated:{법령:{법령정보:{"법령명":law.lawName,"법령일련번호":law.mst,"법령ID":law.lawId,"시행일자":law.effectiveDate},위임조문정보:[{조정보:{조문번호:"11",조문가지번호:"2"},위임정보:{위임구분:"행정규칙",위임행정규칙조문정보:{위임행정규칙일련번호:serial,위임행정규칙제목:name,라인텍스트:"정하여 고시한다",조항호목:"제11조의2제1항"}}}]}}}
 const row=(id:string,date:string)=>"<admrul><행정규칙일련번호>"+id+"</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>"+name+"</행정규칙명><행정규칙종류>고시</행정규칙종류><시행일자>"+date+"</시행일자><발령일자>"+date+"</발령일자><발령번호>1</발령번호><제개정구분명>일부개정</제개정구분명><현행연혁구분>현행</현행연혁구분></admrul>"
 function fixture({stale=false,wrongDate=false,broken=false,wrongSerial=false,wrongRuleId=false,missingIdentity=false}={}) {
   const fetchApi=vi.fn(async()=>broken?"not json":JSON.stringify(payload))
