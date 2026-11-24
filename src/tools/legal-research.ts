@@ -24,6 +24,7 @@ import {
 } from "./chains.js"
 import { throwIfRequestCancelled } from "../lib/session-state.js"
 import { truncateResponse } from "../lib/schemas.js"
+import { shouldRouteScopedResearch } from "./scoped-law-query.js"
 import { shouldReadKofiaIpoRule } from "./official-industry-rule.js"
 import { namedStatuteForTopic } from "./law-topic-articles.js"
 
@@ -211,6 +212,10 @@ export async function legalResearch(
     }
     case "full_research":
     default: {
+      if (!input.scenario && shouldRouteScopedResearch(query)) {
+        return withNote("복수 법령의 명시적 인용을 발견해 법령별 현행 근거 조회를 우선합니다. 판례·분쟁·법적 적용관계 분석은 별도 검토가 필요합니다.",
+          await chainLawSystem(apiClient, { query, articles: input.articles, apiKey }))
+      }
       if (!input.scenario && shouldPreferIpoStatutoryGrounding(query)) {
         const focused = await chainLawSystem(apiClient, { query, apiKey })
         return withNote("ℹ️ 공식 규정·참여요건 질의로 판정되어 법률→시행령→금융위원회 고시→금투협 자율규정의 근거 확인을 우선했습니다. 판례·분쟁 리서치는 task=dispute_prep으로 별도 조회하세요.", focused)
