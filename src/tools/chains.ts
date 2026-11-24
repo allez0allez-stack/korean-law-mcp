@@ -14,6 +14,9 @@ import {
   type LawInfo,
 } from "../lib/law-search.js"
 import { routeQuery } from "../lib/query-router.js"
+import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
+import { sameLawName } from "../lib/law-lineage.js"
+import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
 import { resolveChainBaseLaw } from "./chain-law-lookup.js"
 import { discoverTopicArticles } from "./law-topic-articles.js"
@@ -445,6 +448,30 @@ export async function chainLawSystem(
   apiClient: LawApiClient,
   input: z.infer<typeof chainLawSystemSchema>
 ): Promise<ToolResponse> {
+  const plan = planScopedLawQuery(input.query)
+  if (!plan) return chainLawSystemSingle(apiClient, input)
+  if (input.scenario || /\d{4}\s*년|\d{4}[-.]\d{1,2}[-.]\d{1,2}|경과조치|과거\s*법령|개정\s*이력/.test(input.query)) {
+    return { content: [{ type: "text", text: "[NOT_VERIFIED] 복수 법령의 기준일·확장 시나리오는 이 조회 경로에서 지원하지 않습니다. 법령별로 분리해 조회하십시오." }], isError: true }
+  }
+  return withChainDeadline(["═══ 복수 법령별 근거 조회 ═══"], () => runScopedLawQuery(plan, input, async name => {
+    const suffix = name.match(/\s*(시행령|시행규칙)$/)?.[1]
+    const base = suffix ? name.replace(/\s*(시행령|시행규칙)$/, "") : name
+    const alias = resolveLawAlias(base).canonical
+    const canonical = suffix ? `${alias} ${suffix}` : alias
+    const candidates = (await findLaws(apiClient, canonical, input.apiKey, 100))
+      .filter(law => law.mst && (sameLawName(law.lawName, name) || sameLawName(law.lawName, canonical)))
+    const unique = [...new Map(candidates.map(law => [law.mst, law])).values()]
+    return unique.length === 1 ? unique[0] : undefined
+  }, (law, articles) => chainLawSystemSingle(apiClient, {
+    query: `${law.lawName} ${articles.join(" ")}`, articles, apiKey: input.apiKey,
+  }, law)))
+}
+
+async function chainLawSystemSingle(
+  apiClient: LawApiClient,
+  input: z.infer<typeof chainLawSystemSchema>,
+  pinnedLaw?: LawInfo,
+): Promise<ToolResponse> {
   // 기반 법령이 정해지면 네 갈래(3단비교·조문·별표·시나리오)는 서로를 기다릴 이유가 없는데 순차였고,
   // 데드라인도 없어 한 갈래가 매달리면(재시도 포함 최악 약 122초) 60초 클라이언트 한도 안에 아무것도
   // 못 받았다. action_basis 와 같은 데드라인+동시 갈래+부분 결과로 바꾼다 (2026-09-23 리뷰 B#7).
@@ -455,7 +482,9 @@ export async function chainLawSystem(
     const aiSignals = LAW_NAME_TOKEN_RE.test(input.query) ? undefined
       : searchAiLawStructured(apiClient, { query: input.query, search: "0", display: 5, page: 1, apiKey: input.apiKey }).then(r => r.articleSignals)
     void aiSignals?.catch(() => {})  // 1·2단계에서 끝나면 아무도 기다리지 않는다
-    const baseO = await raceDeadline(dl, resolveChainBaseLaw(apiClient, input.query, input.apiKey, 3, { aiSignals }))
+    const baseO = await raceDeadline(dl, pinnedLaw
+      ? Promise.resolve({ laws: [pinnedLaw], attempts: [pinnedLaw.lawName] })
+      : resolveChainBaseLaw(apiClient, input.query, input.apiKey, 3, { aiSignals }))
     if (!baseO.ok) return expiredChainResult(expiredHeader)
     const laws = baseO.value.laws
     if (laws.length === 0) {
