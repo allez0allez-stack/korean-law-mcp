@@ -40,3 +40,28 @@ describe("explicit statutory reference evidence", () => {
   it("limits target requests and lists deferred references",async()=>{const c=mock([{law:ROOT,articles:{"001100":Array.from({length:8},(_,i)=>`「민법」 제${i+1}조`).join(" ")}},{law:B,articles:Object.fromEntries(Array.from({length:8},(_,i)=>[String(i+1).padStart(4,"0")+"00","공식 본문"]))}]);const s=(await trace(c.api,{law:ROOT,articles:["제11조"]})).content[0].text;expect(c.getLawText).toHaveBeenCalledTimes(7);expect(s).toContain("[PARTIAL]");expect(s).toContain("민법 제7조");expect(c.searchLaw).toHaveBeenCalledTimes(1)})
   it("reports complete failure to verify the root",async()=>{const c=mock([]);const r=await trace(c.api,{law:ROOT,articles:["제11조"]});expect(r.isError).toBe(true);expect(r.content[0].text).toContain("시작 원문 확인 0건")})
 })
+
+describe("effective-slice pinning for split commencement", () => {
+  beforeEach(()=>lawCache.clear())
+  const root = {...ROOT, effectiveDate:"20201112"}
+  function sliceFixture(returnedDate?: string) {
+    const searchLaw = vi.fn(async()=>`<LawSearch><totalCnt>1</totalCnt><law><법령명한글>민법</법령명한글><법령ID>${B.lawId}</법령ID><법령일련번호>${B.mst}</법령일련번호><법령구분명>법률</법령구분명><시행일자>20200317</시행일자></law></LawSearch>`)
+    const getLawText = vi.fn(async(p:{mst:string;jo:string;efYd?:string})=>JSON.stringify({법령:{기본정보:{법령명_한글:p.mst===root.mst?root.lawName:B.lawName,법령ID:p.mst,시행일자:p.mst===root.mst?returnedDate:p.efYd},조문:{조문단위:{조문여부:"조문",조문번호:p.jo.slice(0,4),조문가지번호:p.jo.slice(4),조문제목:"원문",조문내용:p.mst===root.mst?"「민법」 제750조를 준용한다.":"검증된 대상 본문"}}}}))
+    return {api:{searchLaw,getLawText} as unknown as LawApiClient,getLawText}
+  }
+  it("pins root and target effective dates from the search metadata",async()=>{
+    const c=sliceFixture("20201112");const r=await trace(c.api,{law:root,articles:["제11조"]});expect(r.isError).not.toBe(true)
+    expect(c.getLawText.mock.calls.map(([p])=>[p.mst,p.efYd])).toEqual([[root.mst,"20201112"],[B.mst,"20200317"]])
+    expect(r.content[0].text).toContain("[ROOT_VERIFIED] 건축법 제11조 | MST 991000 | 시행일 20201112")
+    expect(r.content[0].text).toContain("[TARGET_VERIFIED] 깊이 1 | 민법 제750조 | MST 991002 | 시행일 20200317")
+  })
+  it("rejects a wrong slice even if it is already in force",async()=>{
+    const c=sliceFixture("20200101");const r=await trace(c.api,{law:root,articles:["제11조"]});expect(r.isError).toBe(true);expect(r.content[0].text.startsWith("[NOT_VERIFIED] 건축법 제11조: 법령 시행 버전 불일치")).toBe(true);expect(c.getLawText).toHaveBeenCalledTimes(1)
+  })
+  it("rejects missing returned effective-date metadata when pinned",async()=>{
+    const c=sliceFixture();const r=await trace(c.api,{law:root,articles:["제11조"]});expect(r.isError).toBe(true);expect(r.content[0].text).toContain("법령 시행 버전 불일치")
+  })
+  it("refuses a future search slice before reading its text",async()=>{
+    const c=sliceFixture("29990101");const r=await trace(c.api,{law:{...root,effectiveDate:"29990101"},articles:["제11조"]});expect(r.isError).toBe(true);expect(c.getLawText).not.toHaveBeenCalled()
+  })
+})
