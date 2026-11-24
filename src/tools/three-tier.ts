@@ -114,9 +114,21 @@ export const GetThreeTierSchema = z.object({
 
 export type GetThreeTierInput = z.infer<typeof GetThreeTierSchema>
 
+const MAX_MULTI_DELEGATION_ARTICLES = 5
+const MAX_MULTI_ARTICLE_CHARS = 6000
+
+/** Internal chain helper: one official three-tier fetch for several requested articles. */
+export async function getThreeTierForArticles(
+  apiClient: LawApiClient,
+  input: { mst: string; articles: readonly string[]; apiKey?: string },
+): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
+  return getThreeTier(apiClient, { mst: input.mst, knd: "2", apiKey: input.apiKey }, input.articles)
+}
+
 export async function getThreeTier(
   apiClient: LawApiClient,
-  input: GetThreeTierInput
+  input: GetThreeTierInput,
+  requestedArticles?: readonly string[],
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   try {
     // 3단비교 응답은 조문 필터가 없어 통째로 온다(관세법 1.98 MB, JO·display 무시 실측). 같은 법령을 체인 여럿
@@ -141,7 +153,17 @@ export async function getThreeTier(
     if (input.adminRuleId && (!input.jo || input.knd === "1")) {
       return { content: [{ type: "text", text: "[INVALID_ARGUMENT] adminRuleId 검증은 위임조문(knd=2)의 특정 jo와 함께 요청해야 합니다." }], isError: true }
     }
-    const cacheKey = `thdcmp:${input.mst ? `m${input.mst}` : `i${input.lawId}`}:${input.knd || "2"}:${input.jo?.replace(/\s+/g, "") || "all"}`
+    // Multi-article mode is internal to the chain. Never conflate it with a single
+    // article or a historical/admin-rule crosscheck in the response cache.
+    const requested = requestedArticles === undefined ? undefined
+      : [...new Set(requestedArticles.map(jo => jo.replace(/\s+/g, "")))]
+    if (requested && (!requested.length || requested.length > 50 ||
+        requested.some(jo => !/^제\d+조(?:의\d+)?$/.test(jo)) ||
+        input.jo || input.asOf || input.adminRuleId || input.knd === "1")) {
+      return { content: [{ type: "text", text: "[INVALID_ARGUMENT] 복수 위임조문은 현행 위임관계(knd=2)의 정확한 조문번호 1~50개만 지원합니다." }], isError: true }
+    }
+    const multiTargets = requested?.slice(0, MAX_MULTI_DELEGATION_ARTICLES)
+    const cacheKey = `thdcmp:${input.mst ? `m${input.mst}` : `i${input.lawId}`}:${input.knd || "2"}:${requested ? "multi:" + requested.join(",") : input.jo?.replace(/\s+/g, "") || "all"}`
     const cached = lawCache.get<string>(cacheKey)
     if (cached && !input.adminRuleId) return { content: [{ type: "text", text: cached }] }
 
@@ -166,7 +188,7 @@ export async function getThreeTier(
     }
     resultText += `\n`
 
-    if (articles.length === 0) {
+    if (articles.length === 0 && !multiTargets) {
       return {
         content: [{
           type: "text",
@@ -177,9 +199,25 @@ export async function getThreeTier(
 
     // 특정 조문 요청은 원본 전체에서 정확한 조문 번호를 찾아야 한다.
     const normalizedJo = input.jo?.replace(/\s+/g, "")
-    const selected = normalizedJo
+    const targeted = Boolean(normalizedJo || multiTargets)
+    const selected = multiTargets ? multiTargets.flatMap(jo => {
+      const matches = articles.filter(article => article.joNum.replace(/\s+/g, "") === jo)
+      return matches.length === 1 ? matches : []
+    }) : normalizedJo
       ? articles.filter(article => article.joNum.replace(/\s+/g, "") === normalizedJo)
       : articles.slice(0, 5)
+    if (multiTargets) {
+      resultText += `복수 지정 조문: 요청 ${requested!.length}개 / 조회 범위 ${multiTargets.length}개 / 연결 목록 확인 ${selected.length}개\n`
+      for (const jo of multiTargets) {
+        const matches = articles.filter(article => article.joNum.replace(/\s+/g, "") === jo)
+        if (!matches.length) resultText += `[NOT_FOUND] ${jo}: 법제처 3단비교에서 연결을 확인하지 못했습니다. 위임관계 부존재를 단정하지 않습니다.\n`
+        else if (matches.length !== 1) resultText += `[AMBIGUOUS] ${jo}: 연결 목록이 중복되어 임의 선택하지 않습니다.\n`
+      }
+      if (requested!.length > multiTargets.length) {
+        resultText += `[PARTIAL] 조회 한도 ${MAX_MULTI_DELEGATION_ARTICLES}개 초과로 미조회: ${requested!.slice(MAX_MULTI_DELEGATION_ARTICLES).join(", ")}. 해당 조문은 별도 조회하세요.\n`
+      }
+      resultText += "\n"
+    }
     if (normalizedJo && selected.length === 0) {
       return { content: [{ type: "text", text: `${resultText}[NOT_FOUND] ${input.jo}의 3단 위임 연결이 확인되지 않았습니다. 다른 조문을 대신 반환하지 않습니다.` }] }
     }
@@ -190,7 +228,9 @@ export async function getThreeTier(
 
     for (let i = 0; i < maxArticles; i++) {
       const article = selected[i]
+      const articleStart = resultText.length
 
+      if (multiTargets) resultText += `▶ 위임관계 ${article.joNum}\n`
       resultText += `---\n`
       resultText += `${article.joNum}`
       if (article.title) resultText += ` ${article.title}`
@@ -231,7 +271,7 @@ export async function getThreeTier(
 
           // 고시의 실제 이름·존재·적법성은 이 조문만으로 판정할 수 없다.
           // 정확조회에서만 근거 조각을 제한적으로 표시한다.
-          if (normalizedJo && threeTierData.kndType === "위임조문" && delegation.type === "시행령") {
+          if (targeted && threeTierData.kndType === "위임조문" && delegation.type === "시행령") {
             const gazetteTexts = findSubdelegationToGazette(cleanContent)
             if (gazetteTexts.length) {
               resultText += "  재위임 문언: [고시 위임 문구 확인] 시행령 본문에서 고시 위임 표현을 확인했습니다. 특정 고시의 제정·연결·적법성은 미검증입니다.\n"
@@ -241,18 +281,21 @@ export async function getThreeTier(
             }
           }
 
-          resultText += formatDelegationBody(cleanContent, Boolean(normalizedJo))
+          resultText += formatDelegationBody(cleanContent, targeted)
         } else {
           resultText += `\n`
         }
       }
+      if (multiTargets) {
+        resultText = resultText.slice(0, articleStart) + truncateResponse(resultText.slice(articleStart), MAX_MULTI_ARTICLE_CHARS) + "\n\n"
+      }
     }
 
-    if (normalizedJo) {
+    if (targeted) {
       resultText += "※ 근거상태는 법제처 3단비교 등재 여부와 하위 조문 본문의 명시적 '법 제○조' 인용 여부만 구분합니다. 행정규칙의 위임 사슬·법률유보·위임범위의 충족 또는 미이행 여부를 자동 확정하지 않습니다.\n"
     }
 
-    if (!normalizedJo && articles.length > maxArticles) {
+    if (!targeted && articles.length > maxArticles) {
       resultText += `\n... 외 ${articles.length - maxArticles}개 조문 (생략)\n`
       resultText += `전체 ${articles.length}개 조문 중 처음 ${maxArticles}개만 표시합니다.\n`
     }
