@@ -23,7 +23,31 @@ export function parseDelegatedAdminLinks(payload: unknown, source: AdminLinkSour
   };
   const want=joKey(article,undefined);
   if(!want||!source.lawName||!/^\d+$/.test(source.mst)||!/^\d{8}$/.test(source.effectiveDate)) return fail("시작 법령·MST·시행일·조문 식별자 미확인");
-  const queue=[{node:payload,scope:"",depth:0}];
+  // Establish one source envelope before interpreting any article or link.
+  // An identity found in an unrelated sibling must never authenticate another tree.
+  const pending: Array<{node: unknown; parent: unknown; depth: number}> = [{node:payload,parent:null,depth:0}];
+  const owners = new Set<object>();
+  let inspected=0;
+  while(pending.length){
+    const {node,parent,depth}=pending.pop()!;
+    if(++inspected>50000||depth>24)return fail("응답 구조 안전 한도 초과");
+    if(!node||typeof node!=="object")continue;
+    if(Array.isArray(node)){for(const child of node)pending.push({node:child,parent:node,depth:depth+1});continue;}
+    const row=Object.fromEntries(Object.entries(node));
+    const name=scalar(row["법령명"]), mst=scalar(row["법령일련번호"]), date=scalar(row["시행일자"]);
+    if(name&&mst&&date){
+      if(nameKey(name)!==nameKey(source.lawName)||idKey(mst)!==idKey(source.mst)||date!==source.effectiveDate)return fail("공식 연결 목록의 시작 법령 또는 시행일 불일치");
+      if(source.lawId&&scalar(row["법령ID"])&&idKey(row["법령ID"])!==idKey(source.lawId))return fail("시작 법령ID 불일치");
+      // Self-contained metadata/rows or a metadata-only child of a single object.
+      const ownsContent = Object.values(row).some(value=>value!==null&&typeof value==="object")||Object.prototype.hasOwnProperty.call(row,"조문번호");
+      const owner = ownsContent||node===payload ? node : parent;
+      if(!owner||typeof owner!=="object"||Array.isArray(owner))return fail("시작 법령 메타데이터의 응답 범위 미확인");
+      owners.add(owner);
+    }
+    for(const child of Object.values(row))if(child&&typeof child==="object")pending.push({node:child,parent:node,depth:depth+1});
+  }
+  if(owners.size!==1)return fail("공식 응답의 단일 시작 법령 범위 미확인");
+  const queue=[{node:[...owners][0] as unknown,scope:"",depth:0}];
   const links=new Map<string, AdminDelegationLink>();
   let identities=0,matchedArticle=false,malformed=false,visited=0;
   while(queue.length){
