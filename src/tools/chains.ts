@@ -15,7 +15,7 @@ import {
 } from "../lib/law-search.js"
 import { routeQuery } from "../lib/query-router.js"
 import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
-import { traceStatuteReferences, wantsStatuteReferenceTrace } from "./statute-reference-trace.js"
+import { traceStatuteReferences, wantsStatuteReferenceTrace, matchesExplicitTraceRoot } from "./statute-reference-trace.js"
 import { sameLawName } from "../lib/law-lineage.js"
 import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
@@ -498,6 +498,9 @@ async function chainLawSystemSingle(
     }
 
     const p = laws[0]
+    if (wantsStatuteReferenceTrace(input.query) && !matchesExplicitTraceRoot(input.query, p.lawName)) {
+      return { content: [{ type: "text", text: "[NOT_VERIFIED] 인용 추적의 시작 법령을 정확한 공식 명칭과 대조하지 못했습니다. 법령명과 조문번호를 명시하십시오." }], isError: true }
+    }
     const parts = [
       `═══ 법체계 확인: ${p.lawName} ═══`,
       `법령ID: ${p.lawId} | MST: ${p.mst} | 구분: ${p.lawType}`,
