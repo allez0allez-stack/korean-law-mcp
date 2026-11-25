@@ -9,6 +9,7 @@
  * 의미검색(aiSearch)은 주제어를 조문으로 매핑하므로 "음주운전"에서 도로교통법을 얻는다.
  */
 import { findLaws, resolvedLawMatches, type LawInfo } from "../lib/law-search.js"
+import { canonicalLawName, sameLawName, todayKst } from "../lib/law-lineage.js"
 import { lawNameFromQuery } from "../lib/query-extract.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { searchAiLawStructured, type AiLawArticleSignal } from "./life-law.js"
@@ -70,12 +71,12 @@ export async function resolveChainBaseLaw(
   const attempts: string[] = []
   const tried = new Set<string>()
 
-  const attempt = async (q: string): Promise<LawInfo[]> => {
+  const attempt = async (q: string, limit = max): Promise<LawInfo[]> => {
     const key = q.trim()
     if (!key || tried.has(key)) return []
     tried.add(key)
     attempts.push(key)
-    return findLaws(apiClient, key, apiKey, max)
+    return findLaws(apiClient, key, apiKey, limit)
   }
 
   // An explicitly named statute followed by an article is authoritative.
@@ -83,8 +84,15 @@ export async function resolveChainBaseLaw(
   const explicit = query.trim().match(/^(.+?(?:법률|법|시행령|시행규칙|조례|규정))\s+제?\s*\d+\s*조(?:\s*의\s*\d+)?(?=\s|$)/)
   if (explicit) {
     const name = explicit[1].trim()
-    const exact = (await attempt(name)).filter(law => resolvedLawMatches(name, law.lawName))
-    return { laws: exact, searchedWith: exact.length ? name : undefined, attempts }
+    // Resolve only the base-law alias, keeping the requested subordinate-law suffix.
+    // Search all returned candidates before exact filtering: never substitute the
+    // parent law or a different decree after an upstream keyword-stripping fallback.
+    const canonical = canonicalLawName(name)
+    const exact = (await attempt(canonical, 100)).filter(law =>
+      law.mst && law.lawId && sameLawName(canonical, law.lawName) &&
+      law.status !== "연혁" && (!law.effectiveDate || (/^\d{8}$/.test(law.effectiveDate) && law.effectiveDate <= todayKst())))
+    const unique = [...new Map(exact.map(law => [JSON.stringify([law.lawId, law.mst, law.effectiveDate || ""]), law])).values()]
+    return { laws: unique.length === 1 ? unique : [], searchedWith: unique.length === 1 ? canonical : undefined, attempts }
   }
 
   // Only documented colloquial legal concepts may pin a statute.
