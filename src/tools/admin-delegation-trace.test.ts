@@ -104,6 +104,27 @@ describe("administrative delegation source and version safeguards",()=>{
     expect(s).toContain("EXACT: 제3조(보고)")
     expect(s).toContain("[PARTIAL]")
   })
+  it.each([
+    ["제11조의2제2항", "제11조의2제1항 및 제2항", "CONTEXT_LIST=1", "EXACT=0"],
+    ["제11조의2제1항제4호", "제11조의2제1항제1호부터 제4호까지", "RANGE_ENDPOINT=1", "EXACT=0"],
+    ["제11조의2제1항제2호", "제11조의2제1항제1호부터 제4호까지", "RANGE_ENDPOINT=0", "EXACT=0"],
+    ["제11조의2제1항제4호", "제11조의2제1항제1호부터 제4호", "RANGE_ENDPOINT=0", "EXACT=0"],
+    ["제11조의2제1항제1호", "제11조의2제1항제1호부터 제4호까지", "RANGE_ENDPOINT=1", "EXACT=0"],
+    ["제11조의2제2항", "제11조의2제1항 및 제2항부터 제4항까지", "CONTEXT_LIST=0", "EXACT=0"],
+    ["제11조의2제2항", "제11조의2제1항 및 제2항 단서", "CONTEXT_LIST=0", "EXACT=0"],
+    ["제11조의2제1항", "제11조의2제1항 본문", "CONTEXT_LIST=0", "EXACT=0"],
+    ["제11조의2제1항", "제11조의2제1항 각 호 외의 부분", "CONTEXT_LIST=0", "EXACT=0"],
+    ["제11조의2제1항제1호나목", "제11조의2제1항제1호가목 또는 나목", "CONTEXT_LIST=1", "EXACT=0"],
+  ])("separates contextual evidence from literal matches: %s / %s",async(location,citation,expected,literal)=>{
+    const c=fixture()
+    const p=structuredClone(payload)
+    p.lsDelegated.법령.위임조문정보[0].위임정보.위임행정규칙조문정보.조항호목=location
+    const body='제1조(목적) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(보고) 영 '+citation+'에 따른다.'
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"],officialPayload:p})).content[0].text
+    expect(s).toContain(expected)
+    expect(s).toContain(literal)
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
