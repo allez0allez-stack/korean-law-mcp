@@ -70,19 +70,44 @@ function locationRelation(official:string, citation:string):string {
   if(bb.length<aa.length&&bb.every((v,i)=>v===aa[i]))return "BROADER"
   return "SAME_ARTICLE_OTHER_LOCATION"
 }
-function preciseCitations(body:string, lawName:string, alias?:string):string[] {
+// Recover only an immediately adjacent, same-level omitted prefix. Range endpoints
+// are textual evidence, not a claim that every intervening provision exists.
+function contextualLocations(loc:string, tail:string): {kind:string;location:string;wording:string}[] {
+  const parts=locationParts(loc)
+  if(!parts)return []
+  let index=parts.length-1
+  while(index>0&&!parts[index])index--
+  if(index<1)return []
+  const suffixes=["",String.raw`제\s*\d{1,4}\s*항`,String.raw`제\s*\d{1,4}\s*호(?:\s*의\s*\d{1,2})?`,String.raw`[가-힣]\s*목`]
+  const token=suffixes[index]
+  const end=String.raw`(?!\s*(?:의\s*\d|제\s*\d+\s*(?:조|항|호)|[가-힣]\s*목|\d|례|본문|단서|각\s*호\s*외))`
+  const range=new RegExp(String.raw`^\s*부터\s*(${token})`+end+String.raw`\s*까지`).exec(tail)
+  const make=(value:string)=>parts.slice(0,index).join("")+value.replace(/\s+/g,"")
+  if(range&&locationParts(make(range[1])))return [
+    {kind:"RANGE_ENDPOINT",location:loc,wording:loc+range[0]},
+    {kind:"RANGE_ENDPOINT",location:make(range[1]),wording:loc+range[0]},
+  ]
+  const list=new RegExp(String.raw`^\s*(?:및|또는|,|ㆍ|·)\s*(${token})`+end).exec(tail)
+  if(!list || /^\s*(?:부터|내지|~|～|까지)/.test(tail.slice(list[0].length)))return []
+  const next=make(list[1])
+  return locationParts(next)?[{kind:"CONTEXT_LIST",location:next,wording:loc+list[0]}]:[]
+}
+
+function preciseCitations(body:string, lawName:string, alias?:string):{refs:string[];contextual:{kind:string;location:string;wording:string}[]} {
   const refs:string[]=[]
+  const contextual:{kind:string;location:string;wording:string}[]=[]
   const prefix=alias ? "(?:「([^」\\n]{2,150})」|(?<![가-힣A-Za-z0-9])("+alias+"))" : "(?:「([^」\\n]{2,150})」)"
   const pattern=new RegExp(prefix+"\\s*(제\\s*\\d{1,4}\\s*조(?:\\s*의\\s*\\d{1,2})?(?:\\s*제\\s*\\d+\\s*항)?(?:\\s*제\\s*\\d+\\s*호(?:\\s*의\\s*\\d+)?)?(?:\\s*[가-힣]\\s*목)?)","g")
   for(const m of body.slice(0,100000).matchAll(pattern)) {
+    if(refs.length+contextual.length>=100)break
     if(m[1]&&!sameLawName(m[1],lawName))continue
     const loc=m[m.length-1], tail=body.slice(m.index!+m[0].length,m.index!+m[0].length+80)
+    contextual.push(...contextualLocations(loc.replace(/\s+/g,""),tail))
     // Do not silently reduce a range or an incompletely parsed suffix to its first token.
-    if(/^\s*(?:부터|까지|내지|~|～|의\s*\d|제\s*\d+\s*(?:조|항|호)|[가-힣]\s*목|\d|례)/.test(tail))continue
+    if(/^\s*(?:부터|까지|내지|~|～|의\s*\d|제\s*\d+\s*(?:조|항|호)|[가-힣]\s*목|\d|례|본문|단서|각\s*호\s*외)/.test(tail))continue
     if(locationParts(loc))refs.push(loc.replace(/\s+/g,""))
-    if(refs.length>=100)break
   }
-  return refs
+  return {refs,contextual}
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
@@ -172,8 +197,15 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
         throwIfRequestCancelled()
         const body=unit.lines.join("\n")
         const precise=preciseCitations(body,law.lawName,alias?.alias)
-        if(precise.length>=100)truncated=true
-        for(const ref of precise)for(const [loc,counts] of scopeRows) {
+        if(precise.refs.length+precise.contextual.length>=100)truncated=true
+        for(const evidence of precise.contextual)for(const [loc,counts] of scopeRows) {
+          if(locationRelation(loc,evidence.location)!=="EXACT")continue
+          const key=unit.label.slice(0,100)+" | "+evidence.wording
+          const set=counts.get(evidence.kind)??new Set<string>()
+          if(set.size<100)set.add(key);else truncated=true
+          counts.set(evidence.kind,set)
+        }
+        for(const ref of precise.refs)for(const [loc,counts] of scopeRows) {
           const relation=locationRelation(loc,ref)
           if(relation==="OTHER_ARTICLE"||relation==="UNRESOLVED")continue
           const key=unit.label.slice(0,100)+" | "+ref
@@ -200,11 +232,11 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       }
       const scopeSummary=[...scopeRows].map(([loc,counts])=>{
         if(!locationParts(loc))return (loc||"위치 미제공")+" | UNRESOLVED: 공식 위치 형식 미지원"
-        const ordered=["EXACT","NARROWER","BROADER","SAME_ARTICLE_OTHER_LOCATION"]
+        const ordered=["EXACT","NARROWER","BROADER","SAME_ARTICLE_OTHER_LOCATION","CONTEXT_LIST","RANGE_ENDPOINT"]
         return loc+" | "+ordered.map(kind=>kind+"="+(counts.get(kind)?.size??0)).join(" / ")+ordered.flatMap(kind=>[...(counts.get(kind)??[])].slice(0,1).map(example=>"\n  "+kind+": "+example.slice(0,160))).join("")
       })
       // Keep location summaries ahead of long excerpts and separate stale-source evidence.
-      lines.splice(2,0,"[ADMIN_LOCATION_COMPARISON] "+linkLabel+" → 조회 본문 "+current.serial+" | "+(stale?"구버전 등재 위치와 현행 후보 비교(현행 공식 연결 아님)":"현행 등재 위치와 본문 비교")+"\n문자 그대로의 위치 비교만 수행. EXACT=동일, NARROWER=더 세분, BROADER=상위 범위, SAME_ARTICLE_OTHER_LOCATION=같은 조의 다른 위치. 지원 표기·검색 범위 내 고유 조문/인용 조합 수이며 0은 부존재 단정 아님. 범위·생략형 인용은 별도 검토.\n"+scopeSummary.join("\n"))
+      lines.splice(2,0,"[ADMIN_LOCATION_COMPARISON] "+linkLabel+" → 조회 본문 "+current.serial+" | "+(stale?"구버전 등재 위치와 현행 후보 비교(현행 공식 연결 아님)":"현행 등재 위치와 본문 비교")+"\n문자 그대로의 위치 비교만 수행. EXACT=동일, NARROWER=더 세분, BROADER=상위 범위, SAME_ARTICLE_OTHER_LOCATION=같은 조의 다른 위치. 지원 표기·검색 범위 내 고유 조문/인용 조합 수이며 0은 부존재 단정 아님. CONTEXT_LIST=인접 동일 계층 생략 인용, RANGE_ENDPOINT=명시된 범위 끝점(중간 조문 미추론). 직접 일치와 분리하며 복합 생략·본문·단서는 별도 검토.\n"+scopeSummary.join("\n"))
       if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
       if(aliasHits.length)lines.push((stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
       if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")
