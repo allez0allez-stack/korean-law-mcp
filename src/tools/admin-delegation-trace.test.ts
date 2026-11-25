@@ -272,3 +272,59 @@ describe("bounded independent administrative citation discovery",()=>{
     expect((await discoverAdminCitations(d.api,source())).content[0].text).toContain("미검색·미열람 범위 있음")
   })
 })
+
+describe("bounded expanded independent title discovery",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  const params={query:"사용자 검색",lawName:law.lawName,article:"제11조의2",expand:true}
+  const xml=(...rows:string[])=>"<AdmRulSearch><totalCnt>"+rows.length+"</totalCnt>"+rows.join("")+"</AdmRulSearch>"
+  function setup(title="위험성평가의 방법 및 절차"){
+    const c=fixture()
+    const searchLaw=vi.fn(async()=>`<LawSearch><totalCnt>1</totalCnt><law><법령명한글>${law.lawName}</법령명한글><법령ID>${law.lawId}</법령ID><법령일련번호>${law.mst}</법령일련번호><법령구분명>${law.lawType}</법령구분명><시행일자>${law.effectiveDate}</시행일자></law></LawSearch>`)
+    const getLawText=vi.fn(async()=>JSON.stringify({법령:{기본정보:{법령명_한글:law.lawName,법령ID:law.lawId,시행일자:law.effectiveDate},조문:{조문단위:{조문여부:"조문",조문번호:"11",조문가지번호:"2",조문제목:title,조문내용:"원문"}}}}))
+    return {...c,api:{...c.api,searchLaw,getLawText} as unknown as LawApiClient}
+  }
+  it("recovers a citation from a title-derived query when the user query has no rows",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(row(serial,"20200101"))).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED]")
+    expect(s).toContain("검색 경로: 위험성평가")
+    expect(c.searchAdminRule.mock.calls.slice(0,3)).toEqual(["사용자 검색","위험성평가","위험성평가의 방법 및 절차"].map(query=>[expect.objectContaining({query,nw:"1",display:10})]))
+  })
+  it("keeps search provenance but verifies duplicate lineages only once",async()=>{
+    const c=setup();const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("후보 계보 1건")
+    expect(s).toContain("검색 경로: 사용자 검색 / 위험성평가 / 위험성평가의 방법 및 절차")
+    expect(c.getAdminRule).toHaveBeenCalledTimes(1)
+  })
+  it("excludes conflicting serials in the same lineage",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce(xml(row(serial,"20200101"))).mockResolvedValueOnce(xml(row("2100000000002","20210101"))).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[CANDIDATE_IDENTITY_CONFLICT]")
+    expect(s).not.toContain("[INDEPENDENT_CITATION_VERIFIED]")
+    expect(c.getAdminRule).not.toHaveBeenCalled()
+  })
+  it("retains successful search paths when another path fails",async()=>{
+    const c=setup();c.searchAdminRule.mockRejectedValueOnce(Error("unavailable")).mockResolvedValueOnce(xml(row(serial,"20200101"))).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[TITLE_QUERY_NOT_VERIFIED] 사용자 검색")
+    expect(s).toContain("검색 실패 1개")
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED]")
+  })
+  it.each(["정의","시행일","위험성평가"])("does not issue generic or duplicate expansion terms: %s",async title=>{
+    const c=setup(title);const s=(await discoverAdminCitations(c.api,{...params,query:"위험성평가"})).content[0].text
+    expect(s).toContain("검색어 1개")
+    expect(c.searchAdminRule).toHaveBeenCalledTimes(2)
+  })
+  it("prioritizes exact user title and distributes remaining slots across search paths",async()=>{
+    const c=setup();const other=(id:string,n:string)=>row(id,"20200101").replace("9999",id.slice(-4)).replace(name,n)
+    c.searchAdminRule.mockResolvedValueOnce(xml(other("2100000000011","앞 후보"),other("2100000000012","뒤 후보"),row(serial,"20200101")))
+      .mockResolvedValueOnce(xml(other("2100000000013","확장 후보"))).mockResolvedValueOnce(xml(other("2100000000014","다른 확장 후보")))
+    const s=(await discoverAdminCitations(c.api,{...params,query:name})).content[0].text
+    expect(s).toContain("후보 계보 5건")
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED] "+name)
+    expect(s).toContain("[CANDIDATE_NOT_VERIFIED] 앞 후보")
+    expect(s).toContain("[CANDIDATE_NOT_VERIFIED] 확장 후보")
+    expect(s).not.toContain("[CANDIDATE_NOT_VERIFIED] 뒤 후보")
+    expect(c.searchAdminRule).toHaveBeenCalledTimes(6)
+  })
+})
