@@ -134,7 +134,7 @@ export const allTools: McpTool[] = [
   // === 행정규칙 ===
   {
     name: "search_admin_rule",
-    description: "[행정규칙] 훈령/예규/고시/지침 검색. knd 파라미터로 종류 필터 가능(1=훈령, 2=예규, 3=고시). 현행 0건이면 연혁을 자동 추적해 폐지(폐지사유·후속 통합 규정)·제명변경을 안내. history=true면 행정규칙ID별 발령 연혁표(옛 명칭 시절까지 — 화재안전기준 NFSC→NFPC 등). citation_law와 citation_article을 함께 입력하면 제목 검색 후보 최대 3개 계보의 현행 원문 인용 및 공식 등재 여부를 독립 검증(전수 검색·위임 효력 판정 아님).",
+    description: "[행정규칙] 훈령/예규/고시/지침 검색. knd 파라미터로 종류 필터 가능(1=훈령, 2=예규, 3=고시). 현행 0건이면 연혁을 자동 추적해 폐지(폐지사유·후속 통합 규정)·제명변경을 안내. history=true면 행정규칙ID별 발령 연혁표(옛 명칭 시절까지 — 화재안전기준 NFSC→NFPC 등). citation_law와 citation_article을 함께 입력하면 제목 검색 후보 최대 3개 계보의 현행 원문 인용 및 공식 등재 여부를 독립 검증(전수 검색·위임 효력 판정 아님). citation_expand=true면 검증된 상위 조문 제목에서 최대 2개 검색어를 추가하며 전체 원문 검증 상한은 3개 계보.",
     schema: SearchAdminRuleSchema,
     handler: searchAdminRule
   },
