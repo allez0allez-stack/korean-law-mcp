@@ -356,3 +356,40 @@ describe("compare_admin_rule_old_new — 제·개정이유 폴백 (T2)", () => {
     expect(text).not.toContain("일시 조회 실패")
   })
 })
+
+describe("administrative transition date comparison", () => {
+  const xml = (id: string) => `<AdmRulService><행정규칙일련번호>${id}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>시험고시</행정규칙명><발령일자>20261104</발령일자><시행일자>20261104</시행일자><조문내용>제1조(목적) 시험 기준을 정한다.</조문내용><부칙내용>부칙\n제1조(시행일) 발령한 날부터 시행한다.\n제2조(적용례) 2027년 1월 1일 이후 인정 신청분부터 적용한다.\n제3조(경과조치) 2027년 1월 1일 전에 인정 신청하고 승인받은 경우 종전 기준을 적용한다.</부칙내용></AdmRulService>`
+  it.each([["2100000999101","20261231","BEFORE"],["2100000999102","20270101","EQUAL"],["2100000999103","20270102","AFTER"]])("compares only calendar dates without deciding event applicability",async(id,date,relation)=>{
+    const r=await getAdminRule(detailStub(xml(id)),{id,transition_date:date,transition_keyword:"인정 신청"})
+    expect(r.isError).toBeFalsy()
+    const s=r.content[0].text
+    expect(s).toContain("[ADMIN_TRANSITION_DATE_COMPARISON]")
+    expect(s).toContain("20270101 이후 [DATE_RELATION="+relation+"]")
+    expect(s).toContain("20270101 전 [DATE_RELATION="+relation+"]")
+    expect(s).toContain("승인받은 경우")
+    expect(s).not.toContain("제1조(시행일)")
+    expect(s).toContain("사건 조건·적용 효력 판정 아님")
+  })
+  it.each(["20270229","20271301","2027-01-01"])("rejects invalid date %s",async(date)=>{
+    const r=await getAdminRule(detailStub(""),{id:"2100000999104",transition_date:date})
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).toContain("[INVALID_INPUT]")
+  })
+  it("rejects mixed views and keyword without comparison date",async()=>{
+    for(const params of [{transition_date:"20270101",jo:"제1조"},{transition_keyword:"인정"}]){
+      const r=await getAdminRule(detailStub(""),{id:"2100000999105",...params})
+      expect(r.content[0].text).toContain("[INVALID_INPUT]")
+    }
+  })
+  it("rejects mismatched returned serial before producing a comparison",async()=>{
+    const r=await getAdminRule(detailStub(xml("2100000999106")),{id:"2100000999107",transition_date:"20270101"})
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).not.toContain("DATE_RELATION=")
+  })
+  it("reports no matching heading without implying absence of transition rules",async()=>{
+    const id="2100000999108"
+    const r=await getAdminRule(detailStub(xml(id)),{id,transition_date:"20270101",transition_keyword:"계약"})
+    expect(r.content[0].text).toContain("제목 후보 0건")
+    expect(r.content[0].text).not.toContain("[ADMIN_TRANSITION_DATE_EVIDENCE]")
+  })
+})
