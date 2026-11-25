@@ -25,15 +25,32 @@ export function isHistoricalAdminTrace(query: string): boolean {
   return /\d{4}\s*년|\d{4}[-./]\d{1,2}[-./]\d{1,2}|\b\d{8}\b|경과조치|과거\s*법령|개정\s*이력/.test(query)
 }
 
-/** Resolve only an explicit, unambiguous document-wide definition in the first article. */
-function declaredAlias(text: string, firstArticle: string, lawName: string): { alias: string; definition: string } | undefined {
-  const definitions = [...firstArticle.matchAll(/「([^」\n]{2,150})」\s*\(\s*이하\s*["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다\s*\)/g)]
-  const matches = definitions.filter(m=>sameLawName(m[1],lawName))
+/** Only early general definitions and explicitly chained relative names are supported. */
+function declaredAlias(text: string, units: readonly {label:string;lines:string[]}[], lawName: string): { alias: string; definition: string } | undefined {
+  const candidates: {name:string;alias:string;definition:string}[]=[]
+  for(const [i,unit] of units.slice(0,3).entries()) {
+    if(i>0 && !/\([^)\n]*(?:정의|용어)[^)\n]*\)/.test(unit.label))continue
+    const body=unit.lines.join("\n")
+    for(const m of body.matchAll(/「([^」\n]{2,150})」\s*\(\s*이하\s*["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다\s*\)/g)) {
+      candidates.push({name:m[1],alias:m[2],definition:m[0]})
+      if(m[2]!=="법" || !/(?:법|법률)$/.test(m[1].trim()))continue
+      // Resolve only adjacent items in the same explicit definition list. Never cross prose or another named law.
+      let rest=body.slice(m.index!+m[0].length), chain=m[0]
+      for(let j=0;j<2;j++) {
+        const rel=/^(?:\s*[,ㆍ·]\s*|\s+(?:및|또는)\s+)같은\s*법\s*(시행령|시행규칙)\s*\(\s*이하\s*["“](영|규칙)["”]\s*(?:이라|라)\s*한다\s*\)/.exec(rest)
+        if(!rel || (rel[1]==="시행령"?"영":"규칙")!==rel[2])break
+        chain+=rel[0]
+        candidates.push({name:m[1]+" "+rel[1],alias:rel[2],definition:chain})
+        rest=rest.slice(rel[0].length)
+      }
+    }
+  }
+  const matches=candidates.filter(m=>sameLawName(m.name,lawName))
   if(matches.length!==1)return undefined
   const m=matches[0]
-  // Any additional scoped or global definition of the same alias makes inference unsafe.
-  const declarations=[...text.matchAll(/이하[^\n()]{0,80}["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다/g)].filter(d=>d[1]===m[2])
-  return declarations.length===1 ? {alias:m[2],definition:m[0]} : undefined
+  // Scoped redefinitions elsewhere invalidate a global inference, even across line breaks.
+  const declarations=[...text.matchAll(/이하[^()]{0,80}?["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다/g)].filter(d=>d[1]===m.alias)
+  return declarations.length===1 ? {alias:m.alias,definition:m.definition} : undefined
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
@@ -113,7 +130,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       lines.push((stale ? "[CURRENT_CANDIDATE_VERSION_VERIFIED] " : "[ADMIN_VERSION_VERIFIED] ")+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
-      const alias=declaredAlias(doc.articlesText,parsed.articles[0]?.lines.join("\n")??"",law.lawName)
+      const alias=declaredAlias(doc.articlesText,parsed.articles,law.lawName)
       const hits:string[]=[]
       const aliasHits:string[]=[]
       let truncated=parsed.articles.length>MAX_SCAN_UNITS || !parsed.articles.length
