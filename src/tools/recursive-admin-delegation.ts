@@ -49,7 +49,7 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
       const count=new Set(admin.links.map(x=>x.serial)).size
       if(ruleSlots>0){
         const limit=Math.min(ruleSlots,count);ruleSlots-=limit
-        const result=await traceAdminRuleDelegations(api,{law:node.law,articles:[node.article],apiKey:input.apiKey,officialPayload:payload,maxRules:limit})
+        const result=await traceAdminRuleDelegations(api,{law:node.law,articles:[node.article],apiKey:input.apiKey,officialPayload:payload,maxRules:limit,inspectCurrentCandidate:true})
         lines.push("▶ 고시 연결 경로: "+node.path+"\n"+result.content[0].text)
         if(result.isError)failed++
         if(count>limit)defer(label+" 추가 고시 "+(count-limit)+"종")
