@@ -146,7 +146,7 @@ function traceExtraCitations(doc:AdminRuleDoc, law:LawInfo, edges:readonly Admin
 }
 
 /** Extract dated addendum wording, not an applicability determination. */
-function traceTransitionDates(doc:AdminRuleDoc):string[] {
+export function traceTransitionDates(doc:AdminRuleDoc, referenceDate?:string, keyword?:string):string[] {
   const addenda=doc.addenda??[]
   if(!addenda.length)return []
   const evidence:string[]=[]
@@ -161,12 +161,15 @@ function traceTransitionDates(doc:AdminRuleDoc):string[] {
     for(const [j,h] of headings.entries()) {
       if(!/시행일|적용례|경과조치|특례|적용시기|적용시점/.test(h[2]))continue
       const clause=body.slice(h.index!,headings[j+1]?.index??body.length).trim()
+      if(keyword&&!clause.replace(/\s+/g,"").includes(keyword.replace(/\s+/g,"")))continue
       candidates++
       const dates:string[]=[]
       for(const m of clause.matchAll(/(?<!\d)(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일\s*(이후|이전|부터|까지|전|후|에)(?![\d])/g)) {
         const y=Number(m[1]), mo=Number(m[2]), d=Number(m[3]), utc=new Date(Date.UTC(y,mo-1,d))
         if(y<1900||y>9999||utc.getUTCFullYear()!==y||utc.getUTCMonth()!==mo-1||utc.getUTCDate()!==d)continue
-        const value=m[1]+m[2].padStart(2,"0")+m[3].padStart(2,"0")+" "+m[4]
+        const date=m[1]+m[2].padStart(2,"0")+m[3].padStart(2,"0")
+        const relation=referenceDate ? " [DATE_RELATION="+(referenceDate<date?"BEFORE":referenceDate===date?"EQUAL":"AFTER")+"]" : ""
+        const value=date+" "+m[4]+relation
         if(!dates.includes(value))dates.push(value)
       }
       if(evidence.length>=8){limited=true;continue}
@@ -176,7 +179,7 @@ function traceTransitionDates(doc:AdminRuleDoc):string[] {
       evidence.push("부칙 #"+(i+1)+" | "+header+" | "+h[1]+"("+h[2]+") | "+(dates.length?"명시 날짜: "+dates.slice(0,10).join(", "):"명시 날짜 미확인(상대일·조건 등 별도 검토)")+"\n"+excerpt)
     }
   }
-  const out=["[ADMIN_TRANSITION_SCOPE] 일련번호 "+doc.ruleSerial+" | 부칙 블록 "+scanned+"/"+addenda.length+" | 시행일·적용례·경과조치 등 제목 후보 "+candidates+"건 | 발령·시행 메타데이터와 별도. 날짜는 원문 문언이며 사안별 적용법령·효력을 확정하지 않음. 제목 없는 조항 및 복합 상대일 미지원."]
+  const out=["[ADMIN_TRANSITION_SCOPE] 일련번호 "+doc.ruleSerial+" | 부칙 블록 "+scanned+"/"+addenda.length+" | 시행일·적용례·경과조치 등 제목 후보 "+candidates+"건 | 발령·시행 메타데이터와 별도. 날짜는 원문 문언이며 사안별 적용법령·효력을 확정하지 않음. 제목 없는 조항 및 복합 상대일 미지원."+(referenceDate?" 비교 기준일 "+referenceDate+". DATE_RELATION은 기준일의 명시 날짜 대비 선후 관계만 표시(사건 유형·조건 충족·법적 적용 판정 아님)."+(keyword?" 문언 필터: "+keyword:""):"")]
   if(evidence.length)out.push("[ADMIN_TRANSITION_DATE_EVIDENCE] 일련번호 "+doc.ruleSerial+"\n"+evidence.join("\n\n"))
   if(limited)out.push("[PARTIAL] 부칙 날짜 증거 검색·표시 한도 또는 이미지 미검증")
   return out
