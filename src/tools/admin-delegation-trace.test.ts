@@ -28,6 +28,28 @@ describe("administrative delegation source and version safeguards",()=>{
     expect(s).not.toContain("[DIRECT_CITATION_WORDING]")
     expect(s).toContain("[PARTIAL]")
   })
+  it("finds a late article in a large rule using its explicitly defined alias",async()=>{
+    const c=fixture({stale:true})
+    const filler=Array.from({length:340},(_,i)=>`제${i+2}조(기준) ${"가".repeat(1000)}`).join("\n")
+    const body='제1조(목적) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n'+filler+'\n제400조(보고) 영 제11조의2제1항에 따른 보고를 한다.'
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>2100000000002</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20210101</시행일자><발령일자>20210101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
+    expect(s).toContain("[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING]")
+    expect(s).toContain("제400조(보고)")
+    expect(s).toContain("영 제11조의2제1항")
+    expect(s).not.toContain("[ADMIN_VERSION_VERIFIED]")
+  })
+  it.each([
+    '제1조(목적) 영 제11조의2에 따른다.',
+    '제1조(목적) 「다른법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(보고) 영 제11조의2에 따른다.',
+    '제1조(목적) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(보고) 「다른법 시행령」(이하 이 조에서 "영"이라 한다) 영 제11조의2에 따른다.',
+    '제1조(목적) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(보고) 영 제11조의20에 따른다.'
+  ])("does not infer an undefined, conflicting, or wrong article alias",async body=>{
+    const c=fixture()
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).not.toContain("[DECLARED_ALIAS_CITATION_WORDING]")
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text

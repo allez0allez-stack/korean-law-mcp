@@ -14,7 +14,8 @@ import { throwIfRequestCancelled } from "../lib/session-state.js"
 
 const MAX_SOURCE_ARTICLES = 3
 const MAX_RULES = 3
-const MAX_SCAN_CHARS = 300_000
+const MAX_SCAN_CHARS = 2_000_000
+const MAX_SCAN_UNITS = 3000
 const MAX_BACKLINKS = 5
 const DATE = /^\d{8}$/
 export function wantsAdminDelegationTrace(query: string): boolean {
@@ -22,6 +23,17 @@ export function wantsAdminDelegationTrace(query: string): boolean {
 }
 export function isHistoricalAdminTrace(query: string): boolean {
   return /\d{4}\s*년|\d{4}[-./]\d{1,2}[-./]\d{1,2}|\b\d{8}\b|경과조치|과거\s*법령|개정\s*이력/.test(query)
+}
+
+/** Resolve only an explicit, unambiguous document-wide definition in the first article. */
+function declaredAlias(text: string, firstArticle: string, lawName: string): { alias: string; definition: string } | undefined {
+  const definitions = [...firstArticle.matchAll(/「([^」\n]{2,150})」\s*\(\s*이하\s*["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다\s*\)/g)]
+  const matches = definitions.filter(m=>sameLawName(m[1],lawName))
+  if(matches.length!==1)return undefined
+  const m=matches[0]
+  // Any additional scoped or global definition of the same alias makes inference unsafe.
+  const declarations=[...text.matchAll(/이하[^\n()]{0,80}["“](법|영|규칙)["”]\s*(?:이라|라)\s*한다/g)].filter(d=>d[1]===m[2])
+  return declarations.length===1 ? {alias:m[2],definition:m[0]} : undefined
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
@@ -101,21 +113,33 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       lines.push((stale ? "[CURRENT_CANDIDATE_VERSION_VERIFIED] " : "[ADMIN_VERSION_VERIFIED] ")+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
+      const alias=declaredAlias(doc.articlesText,parsed.articles[0]?.lines.join("\n")??"",law.lawName)
       const hits:string[]=[]
-      let truncated=false
-      for(const unit of parsed.articles) {
+      const aliasHits:string[]=[]
+      let truncated=parsed.articles.length>MAX_SCAN_UNITS || !parsed.articles.length
+      for(const unit of parsed.articles.slice(0,MAX_SCAN_UNITS)) {
         throwIfRequestCancelled()
         const body=unit.lines.join("\n")
         const refs=extractNamedStatuteReferences(body)
         if(body.length>100000||refs.length>=100) truncated=true
         const exact=refs.filter(r=>sameLawName(r.lawName,law.lawName)&&edges.some(e=>e.sourceArticle.replace(/\s+/g,"")===r.article))
         if(exact.length) {
-          if(hits.length===MAX_BACKLINKS){truncated=true;break}
-          hits.push(unit.label+" | "+exact.map(r=>r.wording).join(" / ").slice(0,400)+"\n"+truncateResponse(body,1200))
+          if(hits.length===MAX_BACKLINKS)truncated=true
+          else hits.push(unit.label+" | "+exact.map(r=>r.wording).join(" / ").slice(0,400)+"\n"+truncateResponse(body,1200))
+        }
+        if(alias) {
+          const pattern=new RegExp(`(?<![가-힣A-Za-z0-9])${alias.alias}\\s*제\\s*(\\d{1,4})\\s*조(?:\\s*의\\s*(\\d{1,2}))?(?!\\s*의\\s*\\d|\\d|례)(?:\\s*제\\s*\\d+\\s*항)?(?:\\s*제\\s*\\d+\\s*호)?`,"g")
+          for(const m of body.slice(0,100000).matchAll(pattern)) {
+            const article=`제${Number(m[1])}조${m[2]?`의${Number(m[2])}`:""}`
+            if(!edges.some(e=>e.sourceArticle.replace(/\s+/g,"")===article))continue
+            if(aliasHits.length===MAX_BACKLINKS){truncated=true;break}
+            aliasHits.push(unit.label+" | "+m[0]+"\n"+body.slice(Math.max(0,m.index!-70),m.index!+m[0].length+200))
+          }
         }
       }
       if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
-      else lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")
+      if(aliasHits.length)lines.push((stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
+      if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")
       if(truncated)lines.push("[PARTIAL] 역인용 검색·표시 범위 제한")
       if(candidateKey) scannedCandidates.add(candidateKey)
     } catch(e) {
