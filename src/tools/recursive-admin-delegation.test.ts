@@ -92,3 +92,46 @@ describe("bounded recursive official delegation",()=>{
   it("rejects historical requests before querying official current links",async()=>{const c=fixture(records());const a=await chainLawSystem(c.api,{query:"시험법 제1조 2024년 재위임 추적"});expect(a.isError).toBe(true);expect(c.fetchApi).not.toHaveBeenCalled()})
   it("preserves multiple source clauses without reading a target twice",async()=>{const rs=records();rs[0].links=[edge(B,"2","제1조제1항"),edge(B,"2","제1조제2항")];const c=fixture(rs);const s=(await run(c)).content[0].text;expect(s).toContain("시작 위치 제1조제1항");expect(s).toContain("시작 위치 제1조제2항");expect(c.getLawText).toHaveBeenCalledTimes(3)})
 })
+
+describe("recursive target budget accounting",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  const D=law("다른법","991103"),E=law("추가법","991104"),F=law("마지막법","991105")
+  it("does not spend a new target slot on a cycle before later branches",async()=>{
+    const c=fixture([
+      {law:A,jo:"1",links:[edge(B,"2","제1조"),edge(C,"3","제1조"),edge(D,"4","제1조")]},
+      {law:B,jo:"2",links:edge(A,"1","제2조")},
+      {law:C,jo:"3",links:edge(E,"5","제3조")},
+      {law:D,jo:"4",links:edge(F,"6","제4조")},
+      {law:E,jo:"5",links:edge(A,"1","제5조")},
+      {law:F,jo:"6",links:edge(E,"5","제6조")},
+    ])
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("하위 조문 확인 5건")
+    expect(s).toContain("대상 시도 5건 / 중복·순환 재사용 3건")
+    expect(s).toContain("[DELEGATED_ARTICLE_VERIFIED] 깊이 2 | 시험법 제1조 → 다른법 제4조 → 마지막법 제6조")
+    expect(s.match(/\[ALREADY_SEEN\]/g)).toHaveLength(3)
+    expect(c.getLawText).toHaveBeenCalledTimes(6)
+    expect(s).not.toContain("미추적 후보")
+  })
+  it("preserves official source wording on a repeated queued target",async()=>{
+    const c=fixture([
+      {law:A,jo:"1",links:[edge(B,"2","제1조"),edge(C,"3","제1조")]},
+      {law:B,jo:"2",links:edge(C,"3","제2조제1항")},
+      {law:C,jo:"3",links:edge(A,"1","제3조")},
+    ])
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("대상 시도 2건 / 중복·순환 재사용 2건")
+    expect(s).toContain("시작 위치 제2조제1항")
+    expect(c.getLawText).toHaveBeenCalledTimes(3)
+  })
+  it("does not reuse a stale listed MST simply because the law name matches",async()=>{
+    const c=fixture([
+      {law:A,jo:"1",links:edge(B,"2","제1조")},
+      {law:B,jo:"2",links:edge({...A,mst:"999999"},"1","제2조")},
+    ])
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("[LINKED_LAW_MST_NOT_CURRENT]")
+    expect(s).toContain("중복·순환 재사용 0건")
+    expect(s).not.toContain("[ALREADY_SEEN]")
+  })
+})
