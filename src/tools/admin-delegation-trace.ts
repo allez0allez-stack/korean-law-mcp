@@ -330,6 +330,16 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   const maxRules = Math.max(0, Math.min(MAX_RULES, input.maxRules ?? MAX_RULES))
   if (rules.length > maxRules) lines.push("[PARTIAL] 원문 미조회 규칙: "+rules.slice(maxRules).map(([id,l])=>l[0].name+" ("+id+")").join(", "))
   const scannedCandidates = new Set<string>()
+  // Request-local reuse only after a successful identity-verified document lookup.
+  const verifiedHistories = new Map<string, Awaited<ReturnType<typeof fetchAdminRuleHistory>>>()
+  const emittedEvidence = new Set<string>()
+  const emitEvidence = (serial: string, block: string, front = false) => {
+    const key = JSON.stringify([serial, block])
+    if (emittedEvidence.has(key)) return
+    emittedEvidence.add(key)
+    if (front) lines.splice(2,0,block)
+    else lines.push(block)
+  }
   for (const [serial,edges] of rules.slice(0,maxRules)) {
     throwIfRequestCancelled()
     const name = edges[0].name
@@ -337,7 +347,9 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
     if (edges.some(e=>!sameLawName(e.name,name))) {lines.push("[NOT_VERIFIED] "+linkLabel+" — 제목 충돌");continue}
     lines.push("[OFFICIAL_LINK_LISTED] "+linkLabel+"\n"+edges.map(e=>e.sourceArticle+" "+e.location+" | 목록 문언: "+(e.wording||"미제공")).join("\n"))
     try {
-      const history = await fetchAdminRuleHistory(api,name,apiKey)
+      const cached = verifiedHistories.get(name)
+      const history = cached && [...cached.groups.values()].some(g=>g.some(v=>v.serial===serial&&sameLawName(v.name,name)))
+        ? cached : await fetchAdminRuleHistory(api,name,apiKey)
       if (history.truncated) {lines.push("[NOT_VERIFIED] "+linkLabel+" — 연혁 페이지 한도 초과");continue}
       const groups = [...history.groups.values()].filter(g=>g.some(v=>v.serial===serial&&sameLawName(v.name,name)))
       if (groups.length!==1) {lines.push("[NOT_VERIFIED] "+linkLabel+" — 정확한 행정규칙 연혁 계보 미확인");continue}
@@ -359,11 +371,14 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       if (!identityMatches||!sameLawName(doc.ruleName,current.name)||doc.efDate!==current.efYd||!doc.issuedDate||doc.issuedDate!==current.issuedYd||!doc.hasContent||doc.imgInfo.imageOnly) {
         lines.push("[NOT_VERIFIED] "+linkLabel+" — 원문 일련번호·행정규칙ID·명칭·시행일·발령일 또는 텍스트 검증 실패");continue
       }
+      verifiedHistories.set(name,history)
       lines.push((stale ? "[CURRENT_CANDIDATE_VERSION_VERIFIED] " : "[ADMIN_VERSION_VERIFIED] ")+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
       const extraEvidence=traceExtraCitations(doc,law,edges)
+      // Supplementary exact-location classifications depend on the listed positions;
+      // preserve their group context. Transition wording is document-level evidence.
       if(extraEvidence.length)lines.splice(2,0,...extraEvidence)
       const transitionEvidence=traceTransitionDates(doc)
-      if(transitionEvidence.length)lines.splice(2,0,...transitionEvidence)
+      for(const block of [...transitionEvidence].reverse())emitEvidence(current.serial,block,true)
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
       const alias=declaredAlias(doc.articlesText,parsed.articles,law.lawName)
@@ -416,8 +431,8 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       })
       // Keep location summaries ahead of long excerpts and separate stale-source evidence.
       lines.splice(2,0,"[ADMIN_LOCATION_COMPARISON] "+linkLabel+" → 조회 본문 "+current.serial+" | "+(stale?"구버전 등재 위치와 현행 후보 비교(현행 공식 연결 아님)":"현행 등재 위치와 본문 비교")+"\n문자 그대로의 위치 비교만 수행. EXACT=동일, NARROWER=더 세분, BROADER=상위 범위, SAME_ARTICLE_OTHER_LOCATION=같은 조의 다른 위치. 지원 표기·검색 범위 내 고유 조문/인용 조합 수이며 0은 부존재 단정 아님. CONTEXT_LIST=인접 동일 계층 생략 인용, RANGE_ENDPOINT=명시된 범위 끝점(중간 조문 미추론). 직접 일치와 분리하며 복합 생략·본문·단서는 별도 검토.\n"+scopeSummary.join("\n"))
-      if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
-      if(aliasHits.length)lines.push((stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
+      if(hits.length)emitEvidence(current.serial,(stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+" | 조회 본문 "+current.serial+"\n"+hits.join("\n\n"))
+      if(aliasHits.length)emitEvidence(current.serial,(stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+" | 조회 본문 "+current.serial+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
       if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 본문 인용 표기에서 정확한 상위 조문 역인용 미확인. 별표·부칙 증거는 별도 집계하며 복합 인용·비조문형 본문은 별도 검토 필요.")
       if(truncated)lines.push("[PARTIAL] 역인용 검색·표시 범위 제한")
       if(candidateKey) scannedCandidates.add(candidateKey)
