@@ -26,14 +26,18 @@ export function isHistoricalAdminTrace(query: string): boolean {
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean
-}): Promise<ToolResponse> {
+}): Promise<ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" }> {
   const {law,apiKey} = input
   const today = todayKst()
   const lines = [
     "[OFFICIAL_ADMIN_DELEGATION_TRACE] 공식 위임행정규칙 연결 조회",
     "※ 시작 조문에 직접 등재된 공식 연결 목록만 조회합니다. 법률→시행령→고시의 다단계 재위임, 본문 검색 보완, 자율규정의 포괄 검색은 별도 범위입니다. 등재·직접 인용 문언은 위임의 적법성이나 실제 사안 적용을 확정하지 않습니다.",
   ]
-  const result = (isError = false): ToolResponse => ({content:[{type:"text",text:truncateResponse(lines.join("\n\n"),12000)}], ...(isError ? {isError:true} : {})})
+  const result = (isError = false): ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" } => {
+    const text = lines.join("\n\n")
+    const coverage = isError ? "NOT_VERIFIED" : text.length + 100 > 12000 || lines.some(line => /^\[(?:PARTIAL|NOT_VERIFIED|LINKED_SERIAL_NOT_CURRENT)\]/.test(line)) ? "PARTIAL" : "COMPLETE"
+    return {content:[{type:"text",text:truncateResponse("[ADMIN_TRACE_COVERAGE] "+coverage+" (공식 연결·지원 본문 범위)\n\n"+text,12000)}], coverage, ...(isError ? {isError:true} : {})}
+  }
   if (!law.mst || !law.effectiveDate || !DATE.test(law.effectiveDate) || law.effectiveDate > today || !input.articles.length) {
     lines.unshift("[NOT_VERIFIED] 현행 시작 법령의 정확한 MST·시행일·조문이 필요합니다.")
     return result(true)
@@ -81,13 +85,13 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       if (!selected.version||selected.note) {lines.push("[NOT_VERIFIED] "+linkLabel+" — 기준일 시행 버전 미확정 또는 분리시행 위험");continue}
       const current=selected.version
       const stale = current.serial !== serial
+      let candidateKey: string | undefined
       if(stale) {
         lines.push("[LINKED_SERIAL_NOT_CURRENT] "+linkLabel+" — 현재 시행 후보 "+current.name+" ("+current.serial+", 시행 "+current.efYd+"). 다른 버전의 연결을 현행 연결로 승계하지 않습니다.")
         if (!input.inspectCurrentCandidate) continue
         lines.push("[PARTIAL] 등재 연결은 구버전입니다. 같은 연혁의 현행 후보 원문만 독립적으로 확인합니다.")
-        const candidateKey = JSON.stringify([current.serial, current.efYd, [...new Set(edges.map(e=>e.sourceArticle))].sort()])
+        candidateKey = JSON.stringify([current.serial, current.efYd, [...new Set(edges.map(e=>e.sourceArticle))].sort()])
         if (scannedCandidates.has(candidateKey)) {lines.push("[CURRENT_CANDIDATE_ALREADY_SCANNED] 동일 현행 후보 및 시작 조문 재조회 생략");continue}
-        scannedCandidates.add(candidateKey)
       }
       const doc = await loadAdminRuleDoc(api,current.serial,apiKey)
       const identityMatches = doc.ruleSerial === current.serial && !!doc.ruleId && /^\d+$/.test(doc.ruleId) && /^\d+$/.test(current.ruleId) && doc.ruleId.replace(/^0+(?=\d)/, "") === current.ruleId.replace(/^0+(?=\d)/, "")
@@ -113,6 +117,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
       else lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")
       if(truncated)lines.push("[PARTIAL] 역인용 검색·표시 범위 제한")
+      if(candidateKey) scannedCandidates.add(candidateKey)
     } catch(e) {
       rethrowIfFatal(e)
       lines.push("[NOT_VERIFIED] "+linkLabel+" — 연혁 또는 원문 조회 실패")
