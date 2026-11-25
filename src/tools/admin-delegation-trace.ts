@@ -53,6 +53,38 @@ function declaredAlias(text: string, units: readonly {label:string;lines:string[
   return declarations.length===1 ? {alias:m.alias,definition:m.definition} : undefined
 }
 
+// Literal location comparison only; it is not a finding of delegated authority.
+const LOCATION = /^(제[1-9]\d{0,3}조(?:의[1-9]\d?)?)(제[1-9]\d{0,3}항)?(제[1-9]\d{0,3}호(?:의[1-9]\d?)?)?([가-힣]목)?$/
+function locationParts(value:string):string[]|undefined {
+  const m=LOCATION.exec(value.replace(/\s+/g,""))
+  return m ? m.slice(1).map(v=>v??"") : undefined
+}
+function locationRelation(official:string, citation:string):string {
+  const a=locationParts(official), b=locationParts(citation)
+  if(!a||!b)return "UNRESOLVED"
+  if(a[0]!==b[0])return "OTHER_ARTICLE"
+  if(a.every((v,i)=>v===b[i]))return "EXACT"
+  // Missing hierarchy components never imply an omitted paragraph or item number.
+  const aa=a.filter(Boolean), bb=b.filter(Boolean)
+  if(aa.length<bb.length&&aa.every((v,i)=>v===bb[i]))return "NARROWER"
+  if(bb.length<aa.length&&bb.every((v,i)=>v===aa[i]))return "BROADER"
+  return "SAME_ARTICLE_OTHER_LOCATION"
+}
+function preciseCitations(body:string, lawName:string, alias?:string):string[] {
+  const refs:string[]=[]
+  const prefix=alias ? "(?:「([^」\\n]{2,150})」|(?<![가-힣A-Za-z0-9])("+alias+"))" : "(?:「([^」\\n]{2,150})」)"
+  const pattern=new RegExp(prefix+"\\s*(제\\s*\\d{1,4}\\s*조(?:\\s*의\\s*\\d{1,2})?(?:\\s*제\\s*\\d+\\s*항)?(?:\\s*제\\s*\\d+\\s*호(?:\\s*의\\s*\\d+)?)?(?:\\s*[가-힣]\\s*목)?)","g")
+  for(const m of body.slice(0,100000).matchAll(pattern)) {
+    if(m[1]&&!sameLawName(m[1],lawName))continue
+    const loc=m[m.length-1], tail=body.slice(m.index!+m[0].length,m.index!+m[0].length+80)
+    // Do not silently reduce a range or an incompletely parsed suffix to its first token.
+    if(/^\s*(?:부터|까지|내지|~|～|의\s*\d|제\s*\d+\s*(?:조|항|호)|[가-힣]\s*목|\d|례)/.test(tail))continue
+    if(locationParts(loc))refs.push(loc.replace(/\s+/g,""))
+    if(refs.length>=100)break
+  }
+  return refs
+}
+
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean
 }): Promise<ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" }> {
@@ -119,7 +151,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
         lines.push("[LINKED_SERIAL_NOT_CURRENT] "+linkLabel+" — 현재 시행 후보 "+current.name+" ("+current.serial+", 시행 "+current.efYd+"). 다른 버전의 연결을 현행 연결로 승계하지 않습니다.")
         if (!input.inspectCurrentCandidate) continue
         lines.push("[PARTIAL] 등재 연결은 구버전입니다. 같은 연혁의 현행 후보 원문만 독립적으로 확인합니다.")
-        candidateKey = JSON.stringify([current.serial, current.efYd, [...new Set(edges.map(e=>e.sourceArticle))].sort()])
+        candidateKey = JSON.stringify([current.serial, current.efYd, [...new Set(edges.map(e=>e.sourceArticle+"|"+e.location))].sort()])
         if (scannedCandidates.has(candidateKey)) {lines.push("[CURRENT_CANDIDATE_ALREADY_SCANNED] 동일 현행 후보 및 시작 조문 재조회 생략");continue}
       }
       const doc = await loadAdminRuleDoc(api,current.serial,apiKey)
@@ -131,12 +163,24 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
       const alias=declaredAlias(doc.articlesText,parsed.articles,law.lawName)
+      const locations=[...new Set(edges.map(e=>e.location))]
+      const scopeRows = new Map(locations.slice(0,20).map(loc=>[loc,new Map<string,Set<string>>()]))
       const hits:string[]=[]
       const aliasHits:string[]=[]
-      let truncated=parsed.articles.length>MAX_SCAN_UNITS || !parsed.articles.length
+      let truncated=parsed.articles.length>MAX_SCAN_UNITS || !parsed.articles.length || locations.length>20
       for(const unit of parsed.articles.slice(0,MAX_SCAN_UNITS)) {
         throwIfRequestCancelled()
         const body=unit.lines.join("\n")
+        const precise=preciseCitations(body,law.lawName,alias?.alias)
+        if(precise.length>=100)truncated=true
+        for(const ref of precise)for(const [loc,counts] of scopeRows) {
+          const relation=locationRelation(loc,ref)
+          if(relation==="OTHER_ARTICLE"||relation==="UNRESOLVED")continue
+          const key=unit.label.slice(0,100)+" | "+ref
+          const set=counts.get(relation)??new Set<string>()
+          if(set.size<100)set.add(key);else truncated=true
+          counts.set(relation,set)
+        }
         const refs=extractNamedStatuteReferences(body)
         if(body.length>100000||refs.length>=100) truncated=true
         const exact=refs.filter(r=>sameLawName(r.lawName,law.lawName)&&edges.some(e=>e.sourceArticle.replace(/\s+/g,"")===r.article))
@@ -154,6 +198,13 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
           }
         }
       }
+      const scopeSummary=[...scopeRows].map(([loc,counts])=>{
+        if(!locationParts(loc))return (loc||"위치 미제공")+" | UNRESOLVED: 공식 위치 형식 미지원"
+        const ordered=["EXACT","NARROWER","BROADER","SAME_ARTICLE_OTHER_LOCATION"]
+        return loc+" | "+ordered.map(kind=>kind+"="+(counts.get(kind)?.size??0)).join(" / ")+ordered.flatMap(kind=>[...(counts.get(kind)??[])].slice(0,1).map(example=>"\n  "+kind+": "+example.slice(0,160))).join("")
+      })
+      // Keep location summaries ahead of long excerpts and separate stale-source evidence.
+      lines.splice(2,0,"[ADMIN_LOCATION_COMPARISON] "+linkLabel+" → 조회 본문 "+current.serial+" | "+(stale?"구버전 등재 위치와 현행 후보 비교(현행 공식 연결 아님)":"현행 등재 위치와 본문 비교")+"\n문자 그대로의 위치 비교만 수행. EXACT=동일, NARROWER=더 세분, BROADER=상위 범위, SAME_ARTICLE_OTHER_LOCATION=같은 조의 다른 위치. 지원 표기·검색 범위 내 고유 조문/인용 조합 수이며 0은 부존재 단정 아님. 범위·생략형 인용은 별도 검토.\n"+scopeSummary.join("\n"))
       if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
       if(aliasHits.length)lines.push((stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
       if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")

@@ -71,6 +71,39 @@ describe("administrative delegation source and version safeguards",()=>{
     const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
     expect(s).not.toContain("[DECLARED_ALIAS_CITATION_WORDING]")
   })
+  it.each([
+    ["제11조의2제1항제4호", "제11조의2제1항제4호", "EXACT=1"],
+    ["제11조의2제1항제4호", "제11조의2제1항", "BROADER=1"],
+    ["제11조의2제1항", "제11조의2제1항제4호", "NARROWER=1"],
+    ["제11조의2제1항제4호", "제11조의2제2항제4호", "SAME_ARTICLE_OTHER_LOCATION=1"],
+    ["제11조의2제1항제4호가목", "제11조의2제1항제4호가목", "EXACT=1"],
+    ["제11조의2제1항제4호가목", "제11조의2제1항제4호나목", "SAME_ARTICLE_OTHER_LOCATION=1"],
+    ["제11조의2제1항제4호의2", "제11조의2제1항제4호의2", "EXACT=1"],
+    ["제11조의2제4호", "제11조의2제1항제4호", "SAME_ARTICLE_OTHER_LOCATION=1"],
+    ["제11조의2제1항", "제11조의20제1항", "EXACT=0 / NARROWER=0 / BROADER=0 / SAME_ARTICLE_OTHER_LOCATION=0"],
+    ["제11조의2제1항", "제11조의2제1항부터 제3항까지", "EXACT=0 / NARROWER=0 / BROADER=0 / SAME_ARTICLE_OTHER_LOCATION=0"],
+    ["제11조의2제1항 각 호 외의 부분", "제11조의2제1항", "UNRESOLVED: 공식 위치 형식 미지원"],
+  ])("compares literal official and cited locations: %s / %s",async (location,citation,expected)=>{
+    const c=fixture()
+    const p=structuredClone(payload)
+    p.lsDelegated.법령.위임조문정보[0].위임정보.위임행정규칙조문정보.조항호목=location
+    const body='제1조(목적) 「시험법 시행령」 '+citation+'에 따른다.'
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"],officialPayload:p})).content[0].text
+    expect(s).toContain("[ADMIN_LOCATION_COMPARISON]")
+    expect(s).toContain(expected)
+    if(expected!=="EXACT=1")expect(s).not.toContain("EXACT=1")
+  })
+  it("finds an exact alias citation after the displayed excerpt limit without counting repeated citations twice",async()=>{
+    const c=fixture()
+    const body='제1조(목적) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(다른 항) '+Array.from({length:8},(_,i)=>'영 제11조의2제2항제'+(i+1)+'호').join(' 및 ')+'에 따른다.\n제3조(보고) 영 제11조의2제1항 및 영 제11조의2제1항에 따른다.'
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("EXACT=1")
+    expect(s).toContain("SAME_ARTICLE_OTHER_LOCATION=8")
+    expect(s).toContain("EXACT: 제3조(보고)")
+    expect(s).toContain("[PARTIAL]")
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
