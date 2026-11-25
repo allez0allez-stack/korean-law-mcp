@@ -28,6 +28,19 @@ describe("bounded recursive official delegation",()=>{
   beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
   it("opts in explicitly and does not change existing direct lookup",()=>{expect(wants("시험법 제1조 다단계 고시 추적")).toBe(true);expect(wants("시험법 제1조 재위임 추적")).toBe(true);expect(wants("시험법 제1조 다단계 위임 추적")).toBe(true);expect(wants("시험법 제1조 고시 추적")).toBe(false)})
   it("verifies act -> decree -> rule -> notice with a bounded official path",async()=>{const c=fixture(records());const s=(await run(c)).content[0].text;expect(s).toContain("[DELEGATED_ARTICLE_VERIFIED] 깊이 2 | 시험법 제1조 → 시험법 시행령 제2조 → 시험법 시행규칙 제3조");expect(s).toContain("[ADMIN_VERSION_VERIFIED]");expect(c.fetchApi).toHaveBeenCalledTimes(3);expect(c.getLawText).toHaveBeenCalledTimes(3);expect(c.getAdminRule).toHaveBeenCalledTimes(1);expect(c.getLawText.mock.calls.every(([p])=>p.efYd==="20200101")).toBe(true)})
+  it("propagates unverified administrative detail into the overall coverage",async()=>{
+    const c=fixture(records());c.getAdminRule.mockResolvedValueOnce("<AdmRulService/>")
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("행정규칙 미완결 경로 1건")
+    expect(s).toContain("[ADMIN_TRACE_COVERAGE] PARTIAL")
+    expect(s.indexOf("[PARTIAL] 일부 경로")).toBeLessThan(s.indexOf("[DELEGATION_ROOT_VERIFIED]"))
+  })
+  it("keeps an entirely verified bounded path out of partial coverage",async()=>{
+    const s=(await run(fixture(records()))).content[0].text
+    expect(s).toContain("행정규칙 미완결 경로 0건")
+    expect(s).toContain("[ADMIN_TRACE_COVERAGE] COMPLETE")
+    expect(s).not.toContain("[PARTIAL] 일부 경로")
+  })
   it("does not silently promote a stale listed subordinate MST",async()=>{const rs=records();rs[0].links=edge({...B,mst:"999999"},"2","제1조");const c=fixture(rs);const s=(await run(c)).content[0].text;expect(s).toContain("[LINKED_LAW_MST_NOT_CURRENT]");expect(c.getLawText).toHaveBeenCalledTimes(1);expect(c.getAdminRule).not.toHaveBeenCalled()})
   it("rejects an incorrect effective slice before following its links",async()=>{const c=fixture(records().map(r=>r.law===B?{...r,wrongDate:true}:r));const s=(await run(c)).content[0].text;expect(s).toContain("[NOT_VERIFIED] 시험법 시행령 제2조");expect(s).not.toContain("[ADMIN_VERSION_VERIFIED]");expect(c.fetchApi).toHaveBeenCalledTimes(1)})
   it("rejects a missing returned source law ID",async()=>{const c=fixture(records().map(r=>r.law===A?{...r,wrongId:true}:r));expect((await run(c)).isError).toBe(true);expect(c.fetchApi).not.toHaveBeenCalled()})
