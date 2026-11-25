@@ -50,6 +50,27 @@ describe("administrative delegation source and version safeguards",()=>{
     const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
     expect(s).not.toContain("[DECLARED_ALIAS_CITATION_WORDING]")
   })
+  it.each([
+    '제1조(목적) 기준을 정한다.\n제2조(정의) 「시험법 시행령」(이하 "영"이라 한다)에서 정하는 바에 따른다.\n제3조(보고) 영 제11조의2에 따른다.',
+    '제1조(목적) 기준을 정한다.\n제2조(정의) 「시험법」(이하 "법"이라 한다), 같은 법 시행령(이하 "영"이라 한다), 같은 법 시행규칙(이하 "규칙"이라 한다)에 따른다.\n제3조(보고) 영 제11조의2에 따른다.'
+  ])("resolves an early definition and a relative decree name",async body=>{
+    const c=fixture()
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("[DECLARED_ALIAS_CITATION_WORDING]")
+    expect(s).toContain("제3조(보고)")
+  })
+  it.each([
+    '제1조(목적) 기준을 정한다.\n제2조(정의) 「다른법」(이하 "법"이라 한다), 같은 법 시행령(이하 "영"이라 한다)에 따른다.\n제3조(보고) 영 제11조의2에 따른다.',
+    '제1조(목적) 기준을 정한다.\n제2조(정의) 「시험법」(이하 "법"이라 한다)에 따른다. 같은 법 시행령(이하 "영"이라 한다)에 따른다.\n제3조(보고) 영 제11조의2에 따른다.',
+    '제1조(목적) 기준을 정한다.\n제2조(특례) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제3조(보고) 영 제11조의2에 따른다.',
+    '제1조(목적) 기준을 정한다.\n제2조(정의) 「시험법」(이하 "법"이라 한다), 같은 법 시행령(이하 "영"이라 한다)에 따른다.\n제3조(보고) 「다른법 시행령」(이하 이 조에서\n"영"이라 한다) 영 제11조의2에 따른다.'
+  ])("rejects an unsafe relative or scoped definition",async body=>{
+    const c=fixture()
+    c.getAdminRule.mockResolvedValueOnce(`<AdmRulService><행정규칙일련번호>${serial}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20200101</시행일자><발령일자>20200101</발령일자><조문내용>${body}</조문내용></AdmRulService>`)
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).not.toContain("[DECLARED_ALIAS_CITATION_WORDING]")
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
