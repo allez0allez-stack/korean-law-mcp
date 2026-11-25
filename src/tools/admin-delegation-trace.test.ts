@@ -161,6 +161,48 @@ describe("administrative delegation source and version safeguards",()=>{
     expect(r.content[0].text).toContain("첨부 1건 미열람")
     expect(r.content[0].text).toContain("별표·부칙 텍스트/표시 한도")
   })
+  it("extracts explicit application and transition date wording without deciding applicability",async()=>{
+    const c=fixture(), xml=await c.getAdminRule.getMockImplementation()!()
+    const extra='<부칙내용>부칙 [제2026-73호, 2026. 11. 4.]\n제1조(시행일) 이 고시는 발령한 날부터 시행한다.\n제2조(인정심사에 관한 적용례) 별표의 개정규정은 2027년 1월 1일 이후 인정 또는 재인정을 신청하는 경우부터 적용한다.\n제3조(인정사업장 사후점검에 관한 경과조치) 2027년 1월 1일 전에 인정 또는 재인정을 신청한 사업장은 종전의 별표에 따른다.</부칙내용>'
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("[ADMIN_TRANSITION_DATE_EVIDENCE]")
+    expect(s).toContain("20270101 이후")
+    expect(s).toContain("20270101 전")
+    expect(s).toContain("명시 날짜 미확인")
+    expect(s).toContain("인정 또는 재인정을 신청하는 경우")
+    expect(s).toContain("사안별 적용법령·효력을 확정하지 않음")
+    expect(s).not.toContain("20261104 이후")
+  })
+  it.each([
+    ["제2조(경과조치) 2027년 2월 29일 이후 신청에 적용한다.","20270229 이후"],
+    ["제2조(경과조치) 2027년 13월 1일 이후 신청에 적용한다.","20271301 이후"],
+    ["제2조(기타) 2027년 1월 1일 이후 신청에 적용한다.","20270101 이후"],
+  ])("does not normalize invalid dates or unrelated headings",async(body,wrong)=>{
+    const c=fixture(), xml=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</AdmRulService>","<부칙내용>부칙\n"+body+"</부칙내용></AdmRulService>"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("[ADMIN_TRANSITION_SCOPE]")
+    expect(s).not.toContain(wrong)
+  })
+  it("preserves multiple valid dates and does not resolve relative dates",async()=>{
+    const c=fixture(), xml=await c.getAdminRule.getMockImplementation()!()
+    const extra='<부칙내용>부칙\n제1조(시행일) 2028년 2월 29일부터 시행한다. 다만 제2조는 2028년 3월 1일부터 시행한다.\n제2조(적용례) 시행일부터 3개월 이후 신청분에 적용한다.</부칙내용>'
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("20280229 부터, 20280301 부터")
+    expect(s).toContain("명시 날짜 미확인")
+    expect(s).toContain("다만 제2조")
+  })
+  it("flags capped transition evidence rather than claiming full coverage",async()=>{
+    const c=fixture(), xml=await c.getAdminRule.getMockImplementation()!()
+    const extra='<부칙내용>부칙\n'+Array.from({length:9},(_,i)=>'제'+(i+1)+'조(경과조치) 2027년 1월 1일 이후 신청분에 적용한다.').join('\n')+'</부칙내용>'
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const r=await trace(c.api,{law,articles:["제11조의2"]})
+    expect(r.coverage).toBe("PARTIAL")
+    expect(r.content[0].text).toContain("제목 후보 9건")
+    expect(r.content[0].text).toContain("[PARTIAL] 부칙 날짜 증거")
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
