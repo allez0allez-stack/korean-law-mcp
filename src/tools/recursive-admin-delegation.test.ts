@@ -44,6 +44,41 @@ describe("bounded recursive official delegation",()=>{
   it("does not silently promote a stale listed subordinate MST",async()=>{const rs=records();rs[0].links=edge({...B,mst:"999999"},"2","제1조");const c=fixture(rs);const s=(await run(c)).content[0].text;expect(s).toContain("[LINKED_LAW_MST_NOT_CURRENT]");expect(c.getLawText).toHaveBeenCalledTimes(1);expect(c.getAdminRule).not.toHaveBeenCalled()})
   it("rejects an incorrect effective slice before following its links",async()=>{const c=fixture(records().map(r=>r.law===B?{...r,wrongDate:true}:r));const s=(await run(c)).content[0].text;expect(s).toContain("[NOT_VERIFIED] 시험법 시행령 제2조");expect(s).not.toContain("[ADMIN_VERSION_VERIFIED]");expect(c.fetchApi).toHaveBeenCalledTimes(1)})
   it("rejects a missing returned source law ID",async()=>{const c=fixture(records().map(r=>r.law===A?{...r,wrongId:true}:r));expect((await run(c)).isError).toBe(true);expect(c.fetchApi).not.toHaveBeenCalled()})
+  it.each([
+    ["마감재료[제2조제1항의 자재를 포함한다]는 「시험법 시행령」 제5조에 따른다.","제2조제1항",true],
+    ["마감재료[제2조제1항의 자재를 포함한다]는 「시험법 시행령」 제2조에 따른다.","제2조제1항",false],
+    ["「시험법 시행령」 제2조제1항에 따른다.","제2조제1항",false],
+    ["마감재료[제2조의2제1항의 자재를 포함한다]에 따른다.","제2조",false],
+    ["마감재료[제2조제11항의 자재를 포함한다]에 따른다.","제2조제1항",false],
+    ["마감재료[제2조제1항의 자재를 포함한다]에 따른다.","제2조제1항에 따른다",false],
+  ])("verifies a bounded independent source-law candidate only for corroborated bare bracket references",async(body,wording,expected)=>{
+    const rs=records();rs[0].links={...edge(B,"2","제1조"),위임법령조문정보:{...edge(B,"2","제1조").위임법령조문정보,라인텍스트:wording}}
+    const c=fixture(rs)
+    const original=c.getLawText.getMockImplementation()!
+    c.getLawText.mockImplementation(async p=>{
+      const raw=JSON.parse(await original(p));const unit=raw.법령.조문.조문단위
+      if(p.mst===A.mst&&p.jo==="000100")unit.조문내용=body
+      if(p.mst===B.mst)unit.조문번호="9999"
+      if(p.mst===A.mst&&p.jo==="000200")unit.조문번호="2"
+      return JSON.stringify(raw)
+    })
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("[NOT_VERIFIED] 시험법 시행령 제2조")
+    expect(s).toContain("[PARTIAL]")
+    expect(s.includes("[SOURCE_LAW_CANDIDATE_VERIFIED] 시험법 제2조")).toBe(expected)
+    expect(s).not.toContain("[DELEGATED_ARTICLE_VERIFIED]")
+    expect(c.getLawText).toHaveBeenCalledTimes(expected?3:2)
+    expect(c.fetchApi).toHaveBeenCalledTimes(1)
+  })
+  it("does not replace an official target whose exact article is verified",async()=>{
+    const rs=records();rs[0].links={...edge(B,"2","제1조"),위임법령조문정보:{...edge(B,"2","제1조").위임법령조문정보,라인텍스트:"제2조"}}
+    const c=fixture(rs);const original=c.getLawText.getMockImplementation()!
+    c.getLawText.mockImplementation(async p=>{const raw=JSON.parse(await original(p));if(p.mst===A.mst)raw.법령.조문.조문단위.조문내용="자재[제2조의 자재]";return JSON.stringify(raw)})
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("[DELEGATED_ARTICLE_VERIFIED]")
+    expect(s).not.toContain("[SOURCE_LAW_CANDIDATE_VERIFIED]")
+    expect(c.getLawText).toHaveBeenCalledTimes(3)
+  })
   it("rejects a wrong target article",async()=>{const c=fixture(records().map(r=>r.law===B?{...r,wrongBody:true}:r));expect((await run(c)).content[0].text).not.toContain("[DELEGATED_ARTICLE_VERIFIED]");expect(c.getAdminRule).not.toHaveBeenCalled()})
   it("does not use an envelope from another effective slice",async()=>{const c=fixture(records().map(r=>r.law===B?{...r,wrongEnvelope:true}:r));expect((await run(c)).content[0].text).toContain("공식 연결 범위 미확인");expect(c.getAdminRule).not.toHaveBeenCalled()})
   it("prevents circular rereads",async()=>{const rs=records().slice(0,2);rs[1].links=edge(A,"1","제2조");const c=fixture(rs);expect((await run(c)).content[0].text).toContain("[ALREADY_SEEN]");expect(c.getLawText).toHaveBeenCalledTimes(2)})
