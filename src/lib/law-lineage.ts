@@ -30,7 +30,7 @@ const INTERPUNCT_RE = new RegExp(`[${INTERPUNCT_CHARS}]`, "g")
 const nameKey = (s: string) => s.replace(/\s+/g, "").replace(INTERPUNCT_RE, "")
 
 /** 약칭 해소. 표는 통째 이름만 알아서 "소방시설법 시행령"처럼 하위법령 접미가 붙으면 앞부분만 풀고 다시 붙인다 */
-function canonicalLawName(lawName: string): string {
+export function canonicalLawName(lawName: string): string {
   const trimmed = lawName.replace(/\s+/g, " ").trim()
   const m = trimmed.match(/^(.+?)\s*(시행령|시행규칙)$/)
   const base = m ? m[1] : trimmed
