@@ -1,13 +1,14 @@
 /** Opt-in current-law administrative rule discovery from official lsDelegated links. */
 import type { LawApiClient } from "../lib/api-client.js"
-import type { LawInfo } from "../lib/law-search.js"
+import { findLaws, type LawInfo } from "../lib/law-search.js"
 import type { ToolResponse } from "../lib/types.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
-import { fetchAdminRuleHistory, adminVersionAt } from "../lib/admin-rule-history.js"
+import { fetchAdminRuleHistory, adminVersionAt, parseAdminRuleRows } from "../lib/admin-rule-history.js"
 import { loadAdminRuleDoc, adminRuleParsed, type AdminRuleDoc } from "../lib/admin-rule-doc.js"
 import { adminRuleSourceUrl, INLINE_IMAGE_MARK, markInlineImages } from "../lib/image-only-body.js"
 import { parseDelegatedAdminLinks, type AdminDelegationLink } from "../lib/admin-delegation-links.js"
-import { extractNamedStatuteReferences } from "./statute-reference-trace.js"
+import { extractNamedStatuteReferences, readExactArticle } from "./statute-reference-trace.js"
+import { extractTag } from "../lib/xml-parser.js"
 import { truncateResponse } from "../lib/schemas.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { throwIfRequestCancelled } from "../lib/session-state.js"
@@ -183,6 +184,74 @@ export function traceTransitionDates(doc:AdminRuleDoc, referenceDate?:string, ke
   if(evidence.length)out.push("[ADMIN_TRANSITION_DATE_EVIDENCE] 일련번호 "+doc.ruleSerial+"\n"+evidence.join("\n\n"))
   if(limited)out.push("[PARTIAL] 부칙 날짜 증거 검색·표시 한도 또는 이미지 미검증")
   return out
+}
+
+/** Explicit opt-in title search plus independently verified body citations. */
+export async function discoverAdminCitations(api:LawApiClient,input:{query:string;lawName:string;article:string;knd?:string;apiKey?:string}):Promise<ToolResponse> {
+  const fail=(message:string):ToolResponse=>({content:[{type:"text",text:"[NOT_VERIFIED] "+message}],isError:true})
+  const article=input.article.replace(/\s+/g,"")
+  if(!/^제[1-9]\d{0,3}조(?:의[1-9]\d?)?$/.test(article)||!input.query.trim()||input.query.length>100||!input.lawName.trim()||input.lawName.length>150)return fail("행정규칙 제목 검색어, 정확한 상위 법령명 및 조 번호 필요")
+  const today=todayKst(), lines=["[INDEPENDENT_ADMIN_CITATION_SEARCH] 제목 검색 후보의 현행 원문 인용 확인", "제목 검색 상위 10개 행 중 최대 3개 계보만 확인. 전 행정규칙 본문 검색이나 위임 효력 판정 아님. 공식 연결 미등재와 공식 목록 부존재는 다름."]
+  let law:LawInfo
+  try{
+    const matches=(await findLaws(api,input.lawName,input.apiKey,100)).filter(l=>sameLawName(l.lawName,input.lawName)&&/^\d+$/.test(l.mst)&&/^\d+$/.test(l.lawId)&&l.effectiveDate&&DATE.test(l.effectiveDate)&&l.effectiveDate<=today&&l.status!=="연혁")
+    const unique=[...new Map(matches.map(l=>[JSON.stringify([l.mst,l.lawId,l.effectiveDate]),l])).values()]
+    if(unique.length!==1)return fail("상위 현행 법령 정확 식별 실패")
+    law=unique[0]
+    await readExactArticle(api,law,article,input.apiKey,true)
+  }catch(e){rethrowIfFatal(e);return fail("상위 조문 원문 검증 실패")}
+  lines.push("[SOURCE_ARTICLE_VERIFIED] "+law.lawName+" "+article+" | MST "+law.mst+" | 시행 "+law.effectiveDate)
+  let official:ReturnType<typeof parseDelegatedAdminLinks>|undefined
+  try{
+    const raw=await api.fetchApi({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:law.mst},apiKey:input.apiKey})
+    if(raw.length<=5_000_000)official=parseDelegatedAdminLinks(JSON.parse(raw),{...law,effectiveDate:law.effectiveDate!},article)
+  }catch(e){rethrowIfFatal(e)}
+  lines.push("[OFFICIAL_COMPARISON_SCOPE] "+(official?.status??"NOT_VERIFIED"))
+  let rows:ReturnType<typeof parseAdminRuleRows>, total:number
+  try{
+    const raw=await api.searchAdminRule({query:input.query,knd:input.knd,nw:"1",display:10,apiKey:input.apiKey})
+    const count=extractTag(raw,"totalCnt")
+    if(raw.length>1_000_000||!/<AdmRulSearch[\s>]/.test(raw)||!/^\d+$/.test(count))return fail("행정규칙 검색 응답 미검증")
+    rows=parseAdminRuleRows(raw);total=Number(count)
+    if(!Number.isSafeInteger(total)||total<rows.length||(total>0&&!rows.length))return fail("행정규칙 검색 행·건수 불일치")
+  }catch(e){rethrowIfFatal(e);return fail("행정규칙 제목 검색 실패")}
+  const candidates=[...new Map(rows.slice(0,10).filter(r=>/^\d{13}$/.test(r.serial)&&/^\d+$/.test(r.ruleId)&&r.name&&r.name.length<=200).map(r=>[r.ruleId,r])).values()]
+  let verified=0, found=0, failed=0, limited=total>rows.length||rows.length>10||candidates.length>3||rows.length!==candidates.length
+  for(const row of candidates.slice(0,3)){
+    throwIfRequestCancelled()
+    try{
+      const history=await fetchAdminRuleHistory(api,row.name,input.apiKey)
+      const group=history.groups.get(row.ruleId)
+      if(history.truncated||!group||!group.some(v=>v.serial===row.serial&&sameLawName(v.name,row.name))||group.some(v=>!DATE.test(v.efYd)||!DATE.test(v.issuedYd)))throw Error("연혁 미확인")
+      const selected=adminVersionAt(group,today), current=selected.version
+      if(!current||selected.note||current.serial!==row.serial||!sameLawName(current.name,row.name))throw Error("현행 검색·연혁 불일치")
+      const doc=await loadAdminRuleDoc(api,current.serial,input.apiKey)
+      if(doc.ruleSerial!==current.serial||!/^\d+$/.test(doc.ruleId??"")||Number(doc.ruleId)!==Number(current.ruleId)||!sameLawName(doc.ruleName,current.name)||doc.efDate!==current.efYd||doc.issuedDate!==current.issuedYd||!doc.hasContent||doc.imgInfo.imageOnly)throw Error("원문 식별 실패")
+      verified++
+      const listed=official?.links.some(e=>e.serial===current.serial&&sameLawName(e.name,current.name))?"LISTED_CURRENT_SERIAL":official?.links.some(e=>group.some(v=>v.serial===e.serial&&sameLawName(v.name,e.name)))?"LISTED_LINEAGE_OTHER_VERSION":official?.status==="LINKS_FOUND"||official?.status==="NO_LINK_IN_RESPONSE"?"NOT_LISTED_IN_RESPONSE":"OFFICIAL_STATUS_UNRESOLVED"
+      const label=current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | "+listed+"\n"+adminRuleSourceUrl(current.serial)
+      const hits:string[]=[]
+      if(doc.articlesText.length>MAX_SCAN_CHARS){limited=true;lines.push("[CANDIDATE_SCAN_LIMIT] "+label);continue}
+      const units=adminRuleParsed(doc).articles, alias=declaredAlias(doc.articlesText,units,law.lawName)
+      if(!units.length||units.length>MAX_SCAN_UNITS||doc.attachments.length||doc.annexes?.length||doc.addenda?.length||doc.articlesText.includes(INLINE_IMAGE_MARK))limited=true
+      for(const unit of units.slice(0,MAX_SCAN_UNITS)){
+        throwIfRequestCancelled()
+        const body=unit.lines.join("\n")
+        if(body.length>100000){limited=true;continue}
+        const refs=preciseCitations(body,law.lawName,alias?.alias)
+        if(refs.refs.length+refs.contextual.length>=100)limited=true
+        for(const loc of new Set(refs.refs)){
+          if(locationParts(loc)?.[0]!==article)continue
+          if(hits.length>=5){limited=true;continue}
+          hits.push(unit.label.slice(0,150)+" | "+loc)
+        }
+      }
+      if(hits.length){found++;lines.push("[INDEPENDENT_CITATION_VERIFIED] "+label+"\n"+(alias?"약칭 정의: "+alias.definition+"\n":"")+hits.join("\n"))}
+      else lines.push("[CANDIDATE_NO_SUPPORTED_CITATION] "+label+" — 지원 본문 표기에서 인용 미확인(부존재 아님)")
+    }catch(e){rethrowIfFatal(e);failed++;lines.push("[CANDIDATE_NOT_VERIFIED] "+row.name+" | "+row.serial+" — 연혁 또는 원문 검증 실패")}
+  }
+  lines.splice(2,0,"[PARTIAL] 제한 검색. 제목 검색 "+total+"건 / 수신 "+rows.length+"건 / 후보 계보 "+candidates.length+"건 / 원문 확인 "+verified+"건 / 인용 확인 "+found+"건 / 검증 실패 "+failed+"건"+(limited?" / 미검색·미열람 범위 있음":"")+". 공식 위임 누락 또는 법적 효력 확정 아님.")
+  return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),12000)}]}
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
