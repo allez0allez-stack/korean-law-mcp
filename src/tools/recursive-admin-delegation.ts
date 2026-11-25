@@ -35,8 +35,8 @@ const key=(law:LawInfo, article:string)=>JSON.stringify([law.mst,law.effectiveDa
 const valid=(law:LawInfo)=>Boolean(/^\d+$/.test(law.mst)&&/^\d+$/.test(law.lawId)&&law.effectiveDate&&/^\d{8}$/.test(law.effectiveDate)&&law.effectiveDate<=todayKst()&&law.status!=="연혁")
 export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{law:LawInfo;articles:readonly string[];apiKey?:string}):Promise<ToolResponse>{
   const lines=["[RECURSIVE_ADMIN_DELEGATION_TRACE] 공식 위임 연결 다단계 조회", "※ 공식 등재된 연결만 따라갑니다. 하위법령의 정확한 현행 MST·ID·시행일 및 조문 본문을 대조합니다. 연결 등재와 법적 위임의 적법성·범위·실제 적용은 구분합니다. 과거 적용관계·본문검색·기관규정은 별도 검토 대상입니다."]
-  const queue:Node[]=[], seen=new Set<string>(), payloads=new Map<string,unknown>(), resolved=new Map<string,LawInfo|undefined>()
-  let roots=0, targets=0, verified=0, deferred=0, failed=0, adminIncomplete=0, localVerified=0, localAttempts=0, ruleSlots=MAX_RULES
+  const queue:Node[]=[], seen=new Set<string>(), payloads=new Map<string,unknown>(), resolved=new Map<string,LawInfo|undefined>(), knownByMst=new Map<string,LawInfo>()
+  let roots=0, targets=0, verified=0, deferred=0, failed=0, adminIncomplete=0, localVerified=0, localAttempts=0, reused=0, ruleSlots=MAX_RULES
   const omitted:string[]=[]
   const defer=(label:string)=>{deferred++;if(omitted.length<10)omitted.push(label)}
   const articles=[...new Set(input.articles)]
@@ -51,6 +51,7 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
     let body:string
     try{
       body=(await readExactArticle(api,node.law,node.article,input.apiKey,true)).body
+      knownByMst.set(node.law.mst,node.law)
       if(node.depth)verified++;else roots++
       lines.push("["+(node.depth?"DELEGATED_ARTICLE_VERIFIED":"DELEGATION_ROOT_VERIFIED")+"] 깊이 "+node.depth+" | "+node.path+" | MST "+node.law.mst+" | 시행 "+node.law.effectiveDate)
     }catch(e){rethrowIfFatal(e);failed++;lines.push("[NOT_VERIFIED] "+label+" — 조문 원문 검증 실패")
@@ -95,6 +96,16 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
     for(const edges of localEdges.values()){
       const link=edges[0]
       const edge=node.path+" → "+link.name+" "+link.article
+      const recordListed=()=>{
+        lines.push("[OFFICIAL_LAW_LINK_LISTED] "+edge+" | 등재 MST "+link.mst+"\n"+edges.slice(0,5).map(e=>"시작 위치 "+(e.location||"미제공")+" | 목록 문언: "+(e.wording||"미제공")).join("\n"))
+        if(edges.length>5)defer(edge+" 추가 위임 위치 "+(edges.length-5)+"개")
+      }
+      // Repeated paths to an already scheduled, identity-resolved article consume no new target slot.
+      // Compare the listed name as well as MST; never treat stale or conflicting IDs as equivalent.
+      const known=knownByMst.get(link.mst)
+      if(known&&sameLawName(known.lawName,link.name)&&seen.has(key(known,link.article))){
+        recordListed();reused++;lines.push("[ALREADY_SEEN] "+edge+" — 중복·순환 재조회 생략 (기존 예약·시도 경로)");continue
+      }
       if(node.depth>=MAX_DEPTH||targets>=MAX_TARGETS){defer(edge);continue}
       targets++
       const lookup=link.name
@@ -110,14 +121,14 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
       if(!law){failed++;lines.push("[NOT_VERIFIED] "+edge+" — 대상 현행 식별 실패 (등재 MST "+link.mst+")");continue}
       if(law.mst!==link.mst){failed++;lines.push("[LINKED_LAW_MST_NOT_CURRENT] "+edge+" — 등재 MST "+link.mst+", 현행 후보 "+law.mst+"; 현행 연결로 승계하지 않음");continue}
       const k=key(law,link.article)
-      lines.push("[OFFICIAL_LAW_LINK_LISTED] "+edge+" | 등재 MST "+link.mst+"\n"+edges.slice(0,5).map(e=>"시작 위치 "+(e.location||"미제공")+" | 목록 문언: "+(e.wording||"미제공")).join("\n"))
-      if(edges.length>5)defer(edge+" 추가 위임 위치 "+(edges.length-5)+"개")
-      if(seen.has(k)){lines.push("[ALREADY_SEEN] "+edge+" — 중복·순환 재조회 생략");continue}
+      recordListed()
+      knownByMst.set(law.mst,law)
+      if(seen.has(k)){targets--;reused++;lines.push("[ALREADY_SEEN] "+edge+" — 중복·순환 재조회 생략 (기존 예약·시도 경로)");continue}
       const localCandidate=edges.map(e=>localCitationCandidate(body,node.law,e)).find(c=>c!==undefined)
       seen.add(k);queue.push({law,article:link.article,depth:node.depth+1,path:edge,localCandidate})
     }
   }
-  lines.splice(2,0,"시작 확인 "+roots+"건 / 하위 조문 확인 "+verified+"건 / 법령·응답 미검증 "+failed+"건 / 행정규칙 미완결 경로 "+adminIncomplete+"건 / 독립 동일 법령 후보 확인 "+localVerified+"건 / 제한 "+deferred+"건. 상한: 시작 "+MAX_ROOTS+", 대상 시도 "+MAX_TARGETS+", 깊이 "+MAX_DEPTH+", 행정규칙 원문 조회 시도 "+MAX_RULES+"건. 개별 고시의 현행성·미검증 여부는 하단 경로별로 표시합니다.")
+  lines.splice(2,0,"시작 확인 "+roots+"건 / 하위 조문 확인 "+verified+"건 / 법령·응답 미검증 "+failed+"건 / 행정규칙 미완결 경로 "+adminIncomplete+"건 / 독립 동일 법령 후보 확인 "+localVerified+"건 / 대상 시도 "+targets+"건 / 중복·순환 재사용 "+reused+"건 / 제한 "+deferred+"건. 상한: 시작 "+MAX_ROOTS+", 대상 시도 "+MAX_TARGETS+", 깊이 "+MAX_DEPTH+", 행정규칙 원문 조회 시도 "+MAX_RULES+"건. 개별 고시의 현행성·미검증 여부는 하단 경로별로 표시합니다.")
   if(failed||deferred||adminIncomplete)lines.splice(2,0,"[PARTIAL] 일부 경로 미확인·미추적. 전체 위임관계가 아닙니다.")
   if(omitted.length)lines.push("미추적 후보(최대 10개):\n"+omitted.join("\n"))
   return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),18000)}],...(!roots?{isError:true}:{})}
