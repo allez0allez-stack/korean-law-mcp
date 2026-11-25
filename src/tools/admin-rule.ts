@@ -24,6 +24,7 @@ export const SearchAdminRuleSchema = z.object({
   display: z.number().optional().default(20).describe("최대 결과 개수"),
   citation_law: z.string().trim().min(1).max(150).optional().describe("독립 인용 검증 대상 상위 현행 법령 정식 명칭. citation_article과 함께 사용"),
   citation_article: z.string().trim().min(1).max(30).optional().describe("독립 인용 검증할 상위 조 번호(제N조 또는 제N조의M). query 제목 검색 상위 후보만 확인"),
+  citation_expand: z.boolean().optional().describe("독립 인용 검증 시 확인된 상위 조문 제목에서 최대 2개 추가 검색어 생성. 전체 원문 검증은 최대 3개 계보"),
   history: z.boolean().optional().describe("true면 발령 연혁표 — 행정규칙ID별로 옛 명칭 시절(예: 화재안전기준 NFSC → NFPC)까지 전 버전의 시행일·발령번호·일련번호. 기준일 시행 버전 판단은 legal_analysis(mode=\"applicable_law\", lawName, date)"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 })
@@ -35,9 +36,9 @@ export async function searchAdminRule(
   input: SearchAdminRuleInput
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   try {
-    if(input.citation_law!==undefined||input.citation_article!==undefined){
+    if(input.citation_law!==undefined||input.citation_article!==undefined||input.citation_expand===true){
       if(!input.citation_law||!input.citation_article||input.history)return {content:[{type:"text",text:"[INVALID_INPUT] citation_law와 citation_article을 함께 입력하세요. history와 병용 불가."}],isError:true}
-      return await discoverAdminCitations(apiClient,{query:input.query,lawName:input.citation_law,article:input.citation_article,knd:input.knd,apiKey:input.apiKey})
+      return await discoverAdminCitations(apiClient,{query:input.query,lawName:input.citation_law,article:input.citation_article,knd:input.knd,apiKey:input.apiKey,expand:input.citation_expand})
     }
     if (input.history) return await formatAdminRuleHistory(apiClient, input)
 
