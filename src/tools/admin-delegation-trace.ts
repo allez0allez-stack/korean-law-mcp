@@ -187,18 +187,18 @@ export function traceTransitionDates(doc:AdminRuleDoc, referenceDate?:string, ke
 }
 
 /** Explicit opt-in title search plus independently verified body citations. */
-export async function discoverAdminCitations(api:LawApiClient,input:{query:string;lawName:string;article:string;knd?:string;apiKey?:string}):Promise<ToolResponse> {
+export async function discoverAdminCitations(api:LawApiClient,input:{query:string;lawName:string;article:string;knd?:string;apiKey?:string;expand?:boolean}):Promise<ToolResponse> {
   const fail=(message:string):ToolResponse=>({content:[{type:"text",text:"[NOT_VERIFIED] "+message}],isError:true})
   const article=input.article.replace(/\s+/g,"")
   if(!/^제[1-9]\d{0,3}조(?:의[1-9]\d?)?$/.test(article)||!input.query.trim()||input.query.length>100||!input.lawName.trim()||input.lawName.length>150)return fail("행정규칙 제목 검색어, 정확한 상위 법령명 및 조 번호 필요")
-  const today=todayKst(), lines=["[INDEPENDENT_ADMIN_CITATION_SEARCH] 제목 검색 후보의 현행 원문 인용 확인", "제목 검색 상위 10개 행 중 최대 3개 계보만 확인. 전 행정규칙 본문 검색이나 위임 효력 판정 아님. 공식 연결 미등재와 공식 목록 부존재는 다름."]
-  let law:LawInfo
+  const today=todayKst(), lines=["[INDEPENDENT_ADMIN_CITATION_SEARCH] 제목 검색 후보의 현행 원문 인용 확인", "검색어별 상위 10개 행, 전체 최대 3개 계보만 확인. 전 행정규칙 본문 검색이나 위임 효력 판정 아님. 공식 연결 미등재와 공식 목록 부존재는 다름."]
+  let law:LawInfo, header:string
   try{
     const matches=(await findLaws(api,input.lawName,input.apiKey,100)).filter(l=>sameLawName(l.lawName,input.lawName)&&/^\d+$/.test(l.mst)&&/^\d+$/.test(l.lawId)&&l.effectiveDate&&DATE.test(l.effectiveDate)&&l.effectiveDate<=today&&l.status!=="연혁")
     const unique=[...new Map(matches.map(l=>[JSON.stringify([l.mst,l.lawId,l.effectiveDate]),l])).values()]
     if(unique.length!==1)return fail("상위 현행 법령 정확 식별 실패")
     law=unique[0]
-    await readExactArticle(api,law,article,input.apiKey,true)
+    header=(await readExactArticle(api,law,article,input.apiKey,true)).header
   }catch(e){rethrowIfFatal(e);return fail("상위 조문 원문 검증 실패")}
   lines.push("[SOURCE_ARTICLE_VERIFIED] "+law.lawName+" "+article+" | MST "+law.mst+" | 시행 "+law.effectiveDate)
   let official:ReturnType<typeof parseDelegatedAdminLinks>|undefined
@@ -207,16 +207,47 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
     if(raw.length<=5_000_000)official=parseDelegatedAdminLinks(JSON.parse(raw),{...law,effectiveDate:law.effectiveDate!},article)
   }catch(e){rethrowIfFatal(e)}
   lines.push("[OFFICIAL_COMPARISON_SCOPE] "+(official?.status??"NOT_VERIFIED"))
-  let rows:ReturnType<typeof parseAdminRuleRows>, total:number
-  try{
-    const raw=await api.searchAdminRule({query:input.query,knd:input.knd,nw:"1",display:10,apiKey:input.apiKey})
-    const count=extractTag(raw,"totalCnt")
-    if(raw.length>1_000_000||!/<AdmRulSearch[\s>]/.test(raw)||!/^\d+$/.test(count))return fail("행정규칙 검색 응답 미검증")
-    rows=parseAdminRuleRows(raw);total=Number(count)
-    if(!Number.isSafeInteger(total)||total<rows.length||(total>0&&!rows.length))return fail("행정규칙 검색 행·건수 불일치")
-  }catch(e){rethrowIfFatal(e);return fail("행정규칙 제목 검색 실패")}
-  const candidates=[...new Map(rows.slice(0,10).filter(r=>/^\d{13}$/.test(r.serial)&&/^\d+$/.test(r.ruleId)&&r.name&&r.name.length<=200).map(r=>[r.ruleId,r])).values()]
-  let verified=0, found=0, failed=0, limited=total>rows.length||rows.length>10||candidates.length>3||rows.length!==candidates.length
+  const queries=[input.query.trim()]
+  if(input.expand){
+    const title=header.startsWith(article+" ")?header.slice(article.length).trim():""
+    // Only derive literal wording from the identity-verified article title; no invented synonyms.
+    const topic=title.split(/[,ㆍ·]|\s+(?:및|또는)\s+|의\s+/)[0].trim()
+    for(const term of [topic,title])if(term.length>=3&&term.length<=100&&/^[가-힣0-9 ,ㆍ·()]+$/.test(term)&&!/^(?:목적|정의|기준|방법|절차|특례|적용범위|시행일|기타|준용)$/.test(term)&&!queries.some(q=>q.replace(/\s+/g,"")===term.replace(/\s+/g,"")))queries.push(term)
+  }
+  type Row=ReturnType<typeof parseAdminRuleRows>[number]
+  const batches:{query:string;rows:Row[]}[]=[]
+  let total=0, received=0, searchFailures=0, limited=false
+  for(const query of queries){
+    throwIfRequestCancelled()
+    try{
+      const raw=await api.searchAdminRule({query,knd:input.knd,nw:"1",display:10,apiKey:input.apiKey})
+      const count=extractTag(raw,"totalCnt")
+      if(raw.length>1_000_000||!/<AdmRulSearch[\s>]/.test(raw)||!/^\d+$/.test(count))throw Error("검색 응답 미검증")
+      const rows=parseAdminRuleRows(raw), n=Number(count)
+      if(!Number.isSafeInteger(n)||n<rows.length||(n>0&&!rows.length))throw Error("검색 행·건수 불일치")
+      total+=n;received+=rows.length
+      const valid=rows.slice(0,10).filter(r=>/^\d{13}$/.test(r.serial)&&/^\d+$/.test(r.ruleId)&&r.name&&r.name.length<=200)
+      if(n>rows.length||rows.length>10||valid.length!==rows.length)limited=true
+      batches.push({query,rows:valid})
+      if(input.expand)lines.push("[TITLE_QUERY] "+query+" | 검색 "+n+"건 / 수신 "+rows.length+"건")
+    }catch(e){rethrowIfFatal(e);searchFailures++;limited=true;lines.push("[TITLE_QUERY_NOT_VERIFIED] "+query)}
+  }
+  if(!batches.length)return fail("행정규칙 제목 검색 응답 또는 호출 미검증")
+  const byId=new Map<string,Row>(), provenance=new Map<string,Set<string>>(), conflicts=new Set<string>()
+  for(const batch of batches)for(const row of batch.rows){
+    const prior=byId.get(row.ruleId)
+    if(prior&&(prior.serial!==row.serial||!sameLawName(prior.name,row.name)))conflicts.add(row.ruleId)
+    else if(!prior)byId.set(row.ruleId,row)
+    const sources=provenance.get(row.ruleId)??new Set<string>();sources.add(batch.query);provenance.set(row.ruleId,sources)
+  }
+  for(const id of conflicts){byId.delete(id);limited=true;lines.push("[CANDIDATE_IDENTITY_CONFLICT] 행정규칙ID "+id+" — 검색 행 불일치, 원문 검증 제외")}
+  const candidates:Row[]=[], queued=new Set<string>()
+  const add=(row:Row)=>{if(byId.has(row.ruleId)&&!queued.has(row.ruleId)){queued.add(row.ruleId);candidates.push(row)}}
+  // Preserve exact user title, then distribute the bounded slots across distinct query streams.
+  if(input.expand)for(const row of batches.find(b=>b.query===queries[0])?.rows??[])if(sameLawName(row.name,queries[0]))add(row)
+  for(let i=0;i<10;i++)for(const batch of batches){const row=batch.rows[i];if(row)add(row)}
+  let verified=0, found=0, failed=0
+  if(candidates.length>3)limited=true
   for(const row of candidates.slice(0,3)){
     throwIfRequestCancelled()
     try{
@@ -229,7 +260,7 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
       if(doc.ruleSerial!==current.serial||!/^\d+$/.test(doc.ruleId??"")||Number(doc.ruleId)!==Number(current.ruleId)||!sameLawName(doc.ruleName,current.name)||doc.efDate!==current.efYd||doc.issuedDate!==current.issuedYd||!doc.hasContent||doc.imgInfo.imageOnly)throw Error("원문 식별 실패")
       verified++
       const listed=official?.links.some(e=>e.serial===current.serial&&sameLawName(e.name,current.name))?"LISTED_CURRENT_SERIAL":official?.links.some(e=>group.some(v=>v.serial===e.serial&&sameLawName(v.name,e.name)))?"LISTED_LINEAGE_OTHER_VERSION":official?.status==="LINKS_FOUND"||official?.status==="NO_LINK_IN_RESPONSE"?"NOT_LISTED_IN_RESPONSE":"OFFICIAL_STATUS_UNRESOLVED"
-      const label=current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | "+listed+"\n"+adminRuleSourceUrl(current.serial)
+      const label=current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | "+listed+"\n"+adminRuleSourceUrl(current.serial)+(input.expand?"\n검색 경로: "+[...(provenance.get(row.ruleId)??[])].join(" / "):"")
       const hits:string[]=[]
       if(doc.articlesText.length>MAX_SCAN_CHARS){limited=true;lines.push("[CANDIDATE_SCAN_LIMIT] "+label);continue}
       const units=adminRuleParsed(doc).articles, alias=declaredAlias(doc.articlesText,units,law.lawName)
@@ -250,7 +281,7 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
       else lines.push("[CANDIDATE_NO_SUPPORTED_CITATION] "+label+" — 지원 본문 표기에서 인용 미확인(부존재 아님)")
     }catch(e){rethrowIfFatal(e);failed++;lines.push("[CANDIDATE_NOT_VERIFIED] "+row.name+" | "+row.serial+" — 연혁 또는 원문 검증 실패")}
   }
-  lines.splice(2,0,"[PARTIAL] 제한 검색. 제목 검색 "+total+"건 / 수신 "+rows.length+"건 / 후보 계보 "+candidates.length+"건 / 원문 확인 "+verified+"건 / 인용 확인 "+found+"건 / 검증 실패 "+failed+"건"+(limited?" / 미검색·미열람 범위 있음":"")+". 공식 위임 누락 또는 법적 효력 확정 아님.")
+  lines.splice(2,0,"[PARTIAL] 제한 검색. 제목 검색 "+total+"건 / 수신 "+received+"건"+(input.expand?" (검색어별 합계, 중복 포함) / 검색어 "+queries.length+"개 / 검색 실패 "+searchFailures+"개":"")+" / 후보 계보 "+candidates.length+"건 / 원문 확인 "+verified+"건 / 인용 확인 "+found+"건 / 검증 실패 "+failed+"건"+(limited?" / 미검색·미열람 범위 있음":"")+". 공식 위임 누락 또는 법적 효력 확정 아님.")
   return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),12000)}]}
 }
 
