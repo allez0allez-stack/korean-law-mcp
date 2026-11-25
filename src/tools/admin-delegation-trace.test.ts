@@ -125,6 +125,42 @@ describe("administrative delegation source and version safeguards",()=>{
     expect(s).toContain(expected)
     expect(s).toContain(literal)
   })
+  it.each([
+    ['<부칙내용>부칙 제2조(경과조치) 「시험법 시행령」 제11조의2제1항에 따른다.</부칙내용>', "ADDENDUM | 부칙 #1 | 제11조의2제1항 | EXACT_TEXT_LOCATION"],
+    ['<별표제목>별표 1</별표제목><별표내용>「시험법 시행령」 제11조의2제1항에 따른 기준</별표내용>', "ANNEX | 별표 #1 별표 1 | 제11조의2제1항 | EXACT_TEXT_LOCATION"],
+    ['<별표내용>「시험법 시행령」 제11조의2제2항에 따른 기준</별표내용>', "ANNEX | 별표 #1 | 제11조의2제2항 | ARTICLE_TEXT_REFERENCE"],
+  ])("keeps supplementary citations separate from operative article counts",async(extra,expected)=>{
+    const c=fixture()
+    const xml=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("[ADMIN_EXTRA_CITATION_EVIDENCE] 일련번호 "+serial+"\n"+expected)
+    expect(s).toContain("제11조의2제1항 | EXACT=0 / NARROWER=0 / BROADER=1")
+    expect(s).toContain("경과조치 효력")
+  })
+  it.each([
+    '<부칙내용>영 제11조의2제1항에 따른다.</부칙내용>',
+    '<별표내용>「다른법 시행령」 제11조의2제1항에 따른다.</별표내용>',
+    '<별표제목>「시험법 시행령」 제11조의2제1항</별표제목><별표내용>별도의 기준</별표내용>',
+    '<별표내용>「시험법 시행령」 제11조의20제1항에 따른다.</별표내용>',
+  ])("does not transfer current aliases, foreign laws, titles or adjacent article numbers to extra evidence",async extra=>{
+    const c=fixture()
+    const xml=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("제1조(목적)", '제1조(목적) 「시험법 시행령」(이하 "영"이라 한다).').replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"]})).content[0].text
+    expect(s).toContain("고유 블록·인용 0건")
+    expect(s).not.toContain("[ADMIN_EXTRA_CITATION_EVIDENCE]")
+  })
+  it("reports uninspected images, attachments and capped extra text",async()=>{
+    const c=fixture()
+    const xml=await c.getAdminRule.getMockImplementation()!()
+    const extra='<별표내용>&lt;img id="123"&gt;</별표내용><부칙내용>'+"가".repeat(100001)+'</부칙내용><첨부파일링크>https://www.law.go.kr/sample.pdf</첨부파일링크>'
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("</조문내용>","가".repeat(120)+"</조문내용>").replace("</AdmRulService>",extra+"</AdmRulService>"))
+    const r=await trace(c.api,{law,articles:["제11조의2"]})
+    expect(r.coverage).toBe("PARTIAL")
+    expect(r.content[0].text).toContain("첨부 1건 미열람")
+    expect(r.content[0].text).toContain("별표·부칙 텍스트/표시 한도")
+  })
   it("rejects a current candidate with the wrong returned identity",async()=>{
     const c=fixture({stale:true})
     const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
