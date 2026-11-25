@@ -328,3 +328,43 @@ describe("bounded expanded independent title discovery",()=>{
     expect(c.searchAdminRule).toHaveBeenCalledTimes(6)
   })
 })
+
+
+describe("benchmark-driven evidence compaction",()=>{
+  beforeEach(()=>adminRuleXmlCache.clear())
+  const older="2100000000002", current="2100000000003"
+  function setup(){
+    const c=fixture()
+    const p=structuredClone(payload), item=p.lsDelegated.법령.위임조문정보[0].위임정보
+    const second=structuredClone(item)
+    second.위임행정규칙조문정보.위임행정규칙일련번호=older
+    second.위임행정규칙조문정보.조항호목="제11조의2제2항"
+    Object.assign(p.lsDelegated.법령.위임조문정보[0],{위임정보:[item,second]})
+    const history="<AdmRulSearch><totalCnt>3</totalCnt>"+row(serial,"20200101")+row(older,"20210101")+row(current,"20220101")+"</AdmRulSearch>"
+    c.searchAdminRule.mockResolvedValue(history)
+    const body='제1조(정의) 「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(기준) 영 제11조의2제1항 및 영 제11조의2제2항에 따른다.'
+    const doc=`<AdmRulService><행정규칙일련번호>${current}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>${name}</행정규칙명><시행일자>20220101</시행일자><발령일자>20220101</발령일자><조문내용>${body}</조문내용><부칙내용>부칙\n제1조(시행일) 2022년 1월 1일부터 시행한다.</부칙내용></AdmRulService>`
+    c.getAdminRule.mockResolvedValue(doc)
+    return {c,p}
+  }
+  it("reuses verified history and emits document-level wording once while keeping each listed location",async()=>{
+    const {c,p}=setup()
+    const r=await trace(c.api,{law,articles:["제11조의2"],officialPayload:p,inspectCurrentCandidate:true}),s=r.content[0].text
+    expect(c.searchAdminRule).toHaveBeenCalledTimes(1)
+    expect(c.getAdminRule).toHaveBeenCalledTimes(1)
+    expect(s.match(/\[ADMIN_LOCATION_COMPARISON\]/g)).toHaveLength(2)
+    expect(s).toContain("제11조의2제1항 | EXACT=1")
+    expect(s).toContain("제11조의2제2항 | EXACT=1")
+    expect(s.match(/\[OFFICIAL_LINK_LISTED\]/g)).toHaveLength(2)
+    expect(s.match(/\[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING\]/g)).toHaveLength(1)
+    expect(s.match(/\[ADMIN_TRANSITION_DATE_EVIDENCE\]/g)).toHaveLength(1)
+    expect(r.coverage).toBe("PARTIAL")
+  })
+  it("does not reuse a failed history request",async()=>{
+    const {c,p}=setup();c.searchAdminRule.mockRejectedValueOnce(Error("unavailable"))
+    const s=(await trace(c.api,{law,articles:["제11조의2"],officialPayload:p,inspectCurrentCandidate:true})).content[0].text
+    expect(c.searchAdminRule).toHaveBeenCalledTimes(2)
+    expect(s).toContain("[NOT_VERIFIED]")
+    expect(s).toContain("제11조의2제2항 | EXACT=1")
+  })
+})
