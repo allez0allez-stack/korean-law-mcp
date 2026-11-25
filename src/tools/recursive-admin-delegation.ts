@@ -19,7 +19,7 @@ const valid=(law:LawInfo)=>Boolean(/^\d+$/.test(law.mst)&&/^\d+$/.test(law.lawId
 export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{law:LawInfo;articles:readonly string[];apiKey?:string}):Promise<ToolResponse>{
   const lines=["[RECURSIVE_ADMIN_DELEGATION_TRACE] 공식 위임 연결 다단계 조회", "※ 공식 등재된 연결만 따라갑니다. 하위법령의 정확한 현행 MST·ID·시행일 및 조문 본문을 대조합니다. 연결 등재와 법적 위임의 적법성·범위·실제 적용은 구분합니다. 과거 적용관계·본문검색·기관규정은 별도 검토 대상입니다."]
   const queue:Node[]=[], seen=new Set<string>(), payloads=new Map<string,unknown>(), resolved=new Map<string,LawInfo|undefined>()
-  let roots=0, targets=0, verified=0, deferred=0, failed=0, ruleSlots=MAX_RULES
+  let roots=0, targets=0, verified=0, deferred=0, failed=0, adminIncomplete=0, ruleSlots=MAX_RULES
   const omitted:string[]=[]
   const defer=(label:string)=>{deferred++;if(omitted.length<10)omitted.push(label)}
   const articles=[...new Set(input.articles)]
@@ -49,9 +49,10 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
       const count=new Set(admin.links.map(x=>x.serial)).size
       if(ruleSlots>0){
         const limit=Math.min(ruleSlots,count);ruleSlots-=limit
-        const result=await traceAdminRuleDelegations(api,{law:node.law,articles:[node.article],apiKey:input.apiKey,officialPayload:payload,maxRules:limit})
+        const result=await traceAdminRuleDelegations(api,{law:node.law,articles:[node.article],apiKey:input.apiKey,officialPayload:payload,maxRules:limit,inspectCurrentCandidate:true})
         lines.push("▶ 고시 연결 경로: "+node.path+"\n"+result.content[0].text)
         if(result.isError)failed++
+        if(result.coverage!=="COMPLETE")adminIncomplete++
         if(count>limit)defer(label+" 추가 고시 "+(count-limit)+"종")
       }else defer(label+" 고시 "+count+"종 (원문 조회 한도)")
     }
@@ -84,8 +85,8 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
       seen.add(k);queue.push({law,article:link.article,depth:node.depth+1,path:edge})
     }
   }
-  lines.splice(2,0,"시작 확인 "+roots+"건 / 하위 조문 확인 "+verified+"건 / 법령·응답 미검증 "+failed+"건 / 제한 "+deferred+"건. 상한: 시작 "+MAX_ROOTS+", 대상 시도 "+MAX_TARGETS+", 깊이 "+MAX_DEPTH+", 행정규칙 원문 조회 시도 "+MAX_RULES+"건. 개별 고시의 현행성·미검증 여부는 하단 경로별로 표시합니다.")
-  if(failed||deferred)lines.push("[PARTIAL] 일부 경로 미확인·미추적. 전체 위임관계가 아닙니다.")
+  lines.splice(2,0,"시작 확인 "+roots+"건 / 하위 조문 확인 "+verified+"건 / 법령·응답 미검증 "+failed+"건 / 행정규칙 미완결 경로 "+adminIncomplete+"건 / 제한 "+deferred+"건. 상한: 시작 "+MAX_ROOTS+", 대상 시도 "+MAX_TARGETS+", 깊이 "+MAX_DEPTH+", 행정규칙 원문 조회 시도 "+MAX_RULES+"건. 개별 고시의 현행성·미검증 여부는 하단 경로별로 표시합니다.")
+  if(failed||deferred||adminIncomplete)lines.splice(2,0,"[PARTIAL] 일부 경로 미확인·미추적. 전체 위임관계가 아닙니다.")
   if(omitted.length)lines.push("미추적 후보(최대 10개):\n"+omitted.join("\n"))
   return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),18000)}],...(!roots?{isError:true}:{})}
 }

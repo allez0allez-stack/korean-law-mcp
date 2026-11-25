@@ -16,6 +16,26 @@ describe("administrative delegation source and version safeguards",()=>{
   beforeEach(()=>adminRuleXmlCache.clear())
   it("uses the documented official endpoint and verifies a linked current version",async()=>{const c=fixture();const r=await trace(c.api,{law,articles:["제11조의2"]});expect(c.fetchApi).toHaveBeenCalledWith(expect.objectContaining({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:law.mst}}));expect(r.content[0].text).toContain("[ADMIN_VERSION_VERIFIED]");expect(r.content[0].text).toContain("[DIRECT_CITATION_WORDING]")})
   it("does not silently promote a stale listed serial",async()=>{const c=fixture({stale:true});const r=await trace(c.api,{law,articles:["제11조의2"]});expect(r.content[0].text).toContain("[LINKED_SERIAL_NOT_CURRENT]");expect(c.getAdminRule).not.toHaveBeenCalled()})
+  it("separately verifies the current candidate after a stale listing, without promoting the link",async()=>{
+    const c=fixture({stale:true})
+    c.getAdminRule.mockResolvedValueOnce("<AdmRulService><행정규칙일련번호>2100000000002</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>"+name+"</행정규칙명><시행일자>20210101</시행일자><발령일자>20210101</발령일자><조문내용>제1조(목적) 「시험법 시행령」 제11조의2에 따른 기준을 정한다.</조문내용></AdmRulService>")
+    const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
+    expect(c.getAdminRule).toHaveBeenCalledWith("2100000000002",undefined)
+    expect(s).toContain("[LINKED_SERIAL_NOT_CURRENT]")
+    expect(s).toContain("[CURRENT_CANDIDATE_VERSION_VERIFIED]")
+    expect(s).toContain("[CURRENT_CANDIDATE_CITATION_WORDING]")
+    expect(s).not.toContain("[ADMIN_VERSION_VERIFIED]")
+    expect(s).not.toContain("[DIRECT_CITATION_WORDING]")
+    expect(s).toContain("[PARTIAL]")
+  })
+  it("rejects a current candidate with the wrong returned identity",async()=>{
+    const c=fixture({stale:true})
+    const s=(await trace(c.api,{law,articles:["제11조의2"],inspectCurrentCandidate:true})).content[0].text
+    expect(s).toContain("[LINKED_SERIAL_NOT_CURRENT]")
+    expect(s).toContain("[NOT_VERIFIED]")
+    expect(s).not.toContain("[CURRENT_CANDIDATE_VERSION_VERIFIED]")
+    expect(s).not.toContain("[CURRENT_CANDIDATE_CITATION_WORDING]")
+  })
   it("rejects a mismatched returned effective date",async()=>{const c=fixture({wrongDate:true});const r=await trace(c.api,{law,articles:["제11조의2"]});expect(r.content[0].text).toContain("[NOT_VERIFIED]");expect(r.content[0].text).not.toContain("[ADMIN_VERSION_VERIFIED]")})
   it("rejects a wrong returned administrative-rule serial even if title and dates match",async()=>{const c=fixture({wrongSerial:true});const r=await trace(c.api,{law,articles:["제11조의2"]});expect(r.content[0].text).toContain("[NOT_VERIFIED]");expect(r.content[0].text).not.toContain("[ADMIN_VERSION_VERIFIED]")})
   it("rejects a wrong returned lineage ID",async()=>{const c=fixture({wrongRuleId:true});const r=await trace(c.api,{law,articles:["제11조의2"]});expect(r.content[0].text).not.toContain("[ADMIN_VERSION_VERIFIED]")})
