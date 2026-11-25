@@ -145,6 +145,43 @@ function traceExtraCitations(doc:AdminRuleDoc, law:LawInfo, edges:readonly Admin
   return out
 }
 
+/** Extract dated addendum wording, not an applicability determination. */
+function traceTransitionDates(doc:AdminRuleDoc):string[] {
+  const addenda=doc.addenda??[]
+  if(!addenda.length)return []
+  const evidence:string[]=[]
+  let scanned=0, remaining=300_000, candidates=0, limited=addenda.length>100
+  for(const [i,raw] of addenda.slice(0,100).entries()) {
+    throwIfRequestCancelled()
+    const body=markInlineImages(raw)
+    if(body.length>Math.min(100_000,remaining)||body.includes(INLINE_IMAGE_MARK)){limited=true;continue}
+    remaining-=body.length;scanned++
+    const headings=[...body.matchAll(/^\s*(제\d{1,4}조(?:의\d{1,2})?)\s*\(([^)\n]{1,100})\)/gm)]
+    const header=body.split("\n",1)[0].trim().slice(0,100)
+    for(const [j,h] of headings.entries()) {
+      if(!/시행일|적용례|경과조치|특례|적용시기|적용시점/.test(h[2]))continue
+      const clause=body.slice(h.index!,headings[j+1]?.index??body.length).trim()
+      candidates++
+      const dates:string[]=[]
+      for(const m of clause.matchAll(/(?<!\d)(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일\s*(이후|이전|부터|까지|전|후|에)(?![\d])/g)) {
+        const y=Number(m[1]), mo=Number(m[2]), d=Number(m[3]), utc=new Date(Date.UTC(y,mo-1,d))
+        if(y<1900||y>9999||utc.getUTCFullYear()!==y||utc.getUTCMonth()!==mo-1||utc.getUTCDate()!==d)continue
+        const value=m[1]+m[2].padStart(2,"0")+m[3].padStart(2,"0")+" "+m[4]
+        if(!dates.includes(value))dates.push(value)
+      }
+      if(evidence.length>=8){limited=true;continue}
+      // The heading and exact clause text preserve the event/condition, including exceptions.
+      const excerpt=clause.length>700?clause.slice(0,700)+" … [발췌 제한]":clause
+      if(clause.length>700||dates.length>10)limited=true
+      evidence.push("부칙 #"+(i+1)+" | "+header+" | "+h[1]+"("+h[2]+") | "+(dates.length?"명시 날짜: "+dates.slice(0,10).join(", "):"명시 날짜 미확인(상대일·조건 등 별도 검토)")+"\n"+excerpt)
+    }
+  }
+  const out=["[ADMIN_TRANSITION_SCOPE] 일련번호 "+doc.ruleSerial+" | 부칙 블록 "+scanned+"/"+addenda.length+" | 시행일·적용례·경과조치 등 제목 후보 "+candidates+"건 | 발령·시행 메타데이터와 별도. 날짜는 원문 문언이며 사안별 적용법령·효력을 확정하지 않음. 제목 없는 조항 및 복합 상대일 미지원."]
+  if(evidence.length)out.push("[ADMIN_TRANSITION_DATE_EVIDENCE] 일련번호 "+doc.ruleSerial+"\n"+evidence.join("\n\n"))
+  if(limited)out.push("[PARTIAL] 부칙 날짜 증거 검색·표시 한도 또는 이미지 미검증")
+  return out
+}
+
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean
 }): Promise<ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" }> {
@@ -222,6 +259,8 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       lines.push((stale ? "[CURRENT_CANDIDATE_VERSION_VERIFIED] " : "[ADMIN_VERSION_VERIFIED] ")+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
       const extraEvidence=traceExtraCitations(doc,law,edges)
       if(extraEvidence.length)lines.splice(2,0,...extraEvidence)
+      const transitionEvidence=traceTransitionDates(doc)
+      if(transitionEvidence.length)lines.splice(2,0,...transitionEvidence)
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
       const alias=declaredAlias(doc.articlesText,parsed.articles,law.lawName)
