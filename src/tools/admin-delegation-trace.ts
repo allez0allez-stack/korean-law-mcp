@@ -4,8 +4,8 @@ import type { LawInfo } from "../lib/law-search.js"
 import type { ToolResponse } from "../lib/types.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { fetchAdminRuleHistory, adminVersionAt } from "../lib/admin-rule-history.js"
-import { loadAdminRuleDoc, adminRuleParsed } from "../lib/admin-rule-doc.js"
-import { adminRuleSourceUrl } from "../lib/image-only-body.js"
+import { loadAdminRuleDoc, adminRuleParsed, type AdminRuleDoc } from "../lib/admin-rule-doc.js"
+import { adminRuleSourceUrl, INLINE_IMAGE_MARK, markInlineImages } from "../lib/image-only-body.js"
 import { parseDelegatedAdminLinks, type AdminDelegationLink } from "../lib/admin-delegation-links.js"
 import { extractNamedStatuteReferences } from "./statute-reference-trace.js"
 import { truncateResponse } from "../lib/schemas.js"
@@ -110,6 +110,41 @@ function preciseCitations(body:string, lawName:string, alias?:string):{refs:stri
   return {refs,contextual}
 }
 
+/** Supplementary evidence is independent of the operative article comparison.
+ * Do not carry a current body alias into an older addendum or annex. */
+function traceExtraCitations(doc:AdminRuleDoc, law:LawInfo, edges:readonly AdminDelegationLink[]):string[] {
+  const blocks=[...(doc.addenda??[]).map((text,i)=>({kind:"ADDENDUM",label:"부칙 #"+(i+1),text:markInlineImages(text)})),
+    ...(doc.annexes??[]).map((a,i)=>({kind:"ANNEX",label:"별표 #"+(i+1)+(a.title?" "+a.title.slice(0,100):""),text:a.content}))]
+  const out:string[]=[]
+  if(!blocks.length&&!doc.attachments.length)return out
+  let scanned=0, remaining=300_000, limited=blocks.length>30||doc.attachments.length>0, hits=0
+  const examples:string[]=[]
+  const articleSet=new Set(edges.map(e=>e.sourceArticle.replace(/\s+/g,"")))
+  for(const block of blocks.slice(0,30)) {
+    throwIfRequestCancelled()
+    if(!block.text.trim()){limited=true;continue}
+    if(remaining<=0){limited=true;break}
+    const cap=Math.min(100_000,remaining)
+    if(block.text.length>cap){limited=true;continue}
+    const body=block.text
+    remaining-=body.length;scanned++
+    if(body.includes(INLINE_IMAGE_MARK))limited=true
+    const refs=preciseCitations(body,law.lawName)
+    if(refs.refs.length+refs.contextual.length>=100)limited=true
+    for(const ref of new Set(refs.refs)) {
+      if(!articleSet.has(locationParts(ref)?.[0]??""))continue
+      hits++
+      if(examples.length>=5){limited=true;continue}
+      const exact=edges.some(e=>locationRelation(e.location,ref)==="EXACT")
+      examples.push(block.kind+" | "+block.label+" | "+ref+" | "+(exact?"EXACT_TEXT_LOCATION":"ARTICLE_TEXT_REFERENCE"))
+    }
+  }
+  out.push("[ADMIN_EXTRA_CITATION_SCOPE] 일련번호 "+doc.ruleSerial+" | 별표·부칙의 명시적 정식 법령명 인용(본문 위치 집계와 별도) | 블록 "+scanned+"/"+blocks.length+" | 고유 블록·인용 "+hits+"건 | 첨부 "+doc.attachments.length+"건 미열람. 부칙의 적용시점·경과조치 효력 및 별표 수치·범위는 확정하지 않음. 약칭·복합 인용 미지원. 0건은 부존재 단정 아님.")
+  if(examples.length)out.push("[ADMIN_EXTRA_CITATION_EVIDENCE] 일련번호 "+doc.ruleSerial+"\n"+examples.join("\n"))
+  if(limited)out.push("[PARTIAL] 별표·부칙 텍스트/표시 한도, 이미지 또는 첨부파일 미검증 — 원문 별도 확인 필요")
+  return out
+}
+
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean
 }): Promise<ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" }> {
@@ -185,6 +220,8 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
         lines.push("[NOT_VERIFIED] "+linkLabel+" — 원문 일련번호·행정규칙ID·명칭·시행일·발령일 또는 텍스트 검증 실패");continue
       }
       lines.push((stale ? "[CURRENT_CANDIDATE_VERSION_VERIFIED] " : "[ADMIN_VERSION_VERIFIED] ")+current.name+" | 일련번호 "+current.serial+" | 시행 "+current.efYd+" | 소관 "+(current.org||doc.orgName||"미확인")+"\n"+adminRuleSourceUrl(current.serial))
+      const extraEvidence=traceExtraCitations(doc,law,edges)
+      if(extraEvidence.length)lines.splice(2,0,...extraEvidence)
       if(doc.articlesText.length>MAX_SCAN_CHARS){lines.push("[PARTIAL] 행정규칙 원문은 확인했으나 본문 크기 상한으로 역인용 검색 생략");continue}
       const parsed=adminRuleParsed(doc)
       const alias=declaredAlias(doc.articlesText,parsed.articles,law.lawName)
@@ -239,7 +276,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
       lines.splice(2,0,"[ADMIN_LOCATION_COMPARISON] "+linkLabel+" → 조회 본문 "+current.serial+" | "+(stale?"구버전 등재 위치와 현행 후보 비교(현행 공식 연결 아님)":"현행 등재 위치와 본문 비교")+"\n문자 그대로의 위치 비교만 수행. EXACT=동일, NARROWER=더 세분, BROADER=상위 범위, SAME_ARTICLE_OTHER_LOCATION=같은 조의 다른 위치. 지원 표기·검색 범위 내 고유 조문/인용 조합 수이며 0은 부존재 단정 아님. CONTEXT_LIST=인접 동일 계층 생략 인용, RANGE_ENDPOINT=명시된 범위 끝점(중간 조문 미추론). 직접 일치와 분리하며 복합 생략·본문·단서는 별도 검토.\n"+scopeSummary.join("\n"))
       if(hits.length)lines.push((stale ? "[CURRENT_CANDIDATE_CITATION_WORDING] 현행 후보의 명시적 인용 문언(현행 공식 위임 연결 확인 아님)" : "[DIRECT_CITATION_WORDING] 행정규칙 본문의 명시적 상위 조문 인용")+"\n"+hits.join("\n\n"))
       if(aliasHits.length)lines.push((stale?"[CURRENT_CANDIDATE_DECLARED_ALIAS_WORDING] 현행 후보의 정의된 약칭 인용(현행 공식 위임 연결 확인 아님)":"[DECLARED_ALIAS_CITATION_WORDING] 원문에서 정의된 약칭 인용")+"\n정의 문언: "+alias!.definition+"\n"+aliasHits.join("\n\n"))
-      if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 인용 표기에서 정확한 상위 조문 역인용 미확인. 약칭·생략형·별표·부칙 또는 비조문형 본문은 별도 검토 필요.")
+      if(!hits.length&&!aliasHits.length)lines.push((stale ? "[CURRENT_CANDIDATE_NO_EXPLICIT_BACKLINK] " : "[NO_EXPLICIT_BACKLINK] ")+"지원 본문 인용 표기에서 정확한 상위 조문 역인용 미확인. 별표·부칙 증거는 별도 집계하며 복합 인용·비조문형 본문은 별도 검토 필요.")
       if(truncated)lines.push("[PARTIAL] 역인용 검색·표시 범위 제한")
       if(candidateKey) scannedCandidates.add(candidateKey)
     } catch(e) {
