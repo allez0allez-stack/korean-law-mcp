@@ -96,3 +96,37 @@ describe("#105 체인 기반 법령 탐색", () => {
     expect(r.attempts.length).toBeGreaterThan(0)
   })
 })
+
+describe("explicit subordinate-law aliases and exact identity", () => {
+  const canonical = "자본시장과 금융투자업에 관한 법률"
+  it.each([
+    ["자본시장법 시행령 제129조의4 고시 추적", canonical + " 시행령"],
+    ["산안법 시행규칙 제210조 고시 추적", "산업안전보건법 시행규칙"],
+    ["중처법 시행령 제4조 확인", "중대재해 처벌 등에 관한 법률 시행령"],
+    ["자본시장법 제249조의7 조회", canonical],
+  ])("resolves %s to the exact requested statute", async (query, expected) => {
+    lawCache.clear()
+    const c = fakeClient({ known: [expected, "민법"], aiLawName: "민법" })
+    const r = await resolveChainBaseLaw(c, query)
+    expect(r.laws.map(l => l.lawName)).toEqual([expected])
+    expect(r.attempts).toEqual([expected])
+    expect(c.aiQueries).toHaveLength(0)
+  })
+  it("does not substitute the parent act when the requested decree is absent", async () => {
+    lawCache.clear()
+    const c = fakeClient({ known: [canonical], aiLawName: canonical })
+    const r = await resolveChainBaseLaw(c, "자본시장법 시행령 제129조의4 고시 추적")
+    expect(r.laws).toEqual([])
+    expect(c.aiQueries).toHaveLength(0)
+  })
+  it("does not promote a subordinate law when the act was requested", async () => {
+    lawCache.clear()
+    const c = fakeClient({ known: [canonical + " 시행령"] })
+    expect((await resolveChainBaseLaw(c, "자본시장법 제249조의7 조회")).laws).toEqual([])
+  })
+  it("rejects ambiguous identical names with different identifiers", async () => {
+    lawCache.clear()
+    const c = fakeClient({ known: [canonical, canonical] })
+    expect((await resolveChainBaseLaw(c, "자본시장법 제249조의7 조회")).laws).toEqual([])
+  })
+})
