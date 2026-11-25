@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { traceAdminRuleDelegations as trace, wantsAdminDelegationTrace, isHistoricalAdminTrace } from "./admin-delegation-trace.js"
+import { traceAdminRuleDelegations as trace, discoverAdminCitations, wantsAdminDelegationTrace, isHistoricalAdminTrace } from "./admin-delegation-trace.js"
+import { lawCache } from "../lib/cache.js"
 import { adminRuleXmlCache } from "../lib/admin-rule-views.js"
 import type { LawApiClient } from "../lib/api-client.js"
 const law={lawName:"시험법 시행령",mst:"123456",lawId:"000001",lawType:"대통령령",effectiveDate:"20200101"}
@@ -218,4 +219,56 @@ describe("administrative delegation source and version safeguards",()=>{
   it("never converts transport or schema failure into an empty link result",async()=>{const c=fixture({broken:true});const r=await trace(c.api,{law,articles:["제11조의2"]});expect(r.isError).toBe(true);expect(c.searchAdminRule).not.toHaveBeenCalled()})
   it("does not fetch an unverified source date",async()=>{const c=fixture();const r=await trace(c.api,{law:{...law,effectiveDate:""},articles:["제11조의2"]});expect(r.isError).toBe(true);expect(c.fetchApi).not.toHaveBeenCalled()})
   it("keeps opt-in intent separate from historical cases",()=>{expect(wantsAdminDelegationTrace("건축법 제11조 고시 추적")).toBe(true);expect(wantsAdminDelegationTrace("건축법 제11조")).toBe(false);expect(isHistoricalAdminTrace("2024년 건축법 제11조 고시 추적")).toBe(true)})
+})
+
+describe("bounded independent administrative citation discovery",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  const source=()=>({query:"시험기준",lawName:law.lawName,article:"제11조의2"})
+  function setup(){
+    const c=fixture()
+    const searchLaw=vi.fn(async()=>`<LawSearch><totalCnt>1</totalCnt><law><법령명한글>${law.lawName}</법령명한글><법령ID>${law.lawId}</법령ID><법령일련번호>${law.mst}</법령일련번호><법령구분명>${law.lawType}</법령구분명><시행일자>${law.effectiveDate}</시행일자></law></LawSearch>`)
+    const getLawText=vi.fn(async()=>JSON.stringify({법령:{기본정보:{법령명_한글:law.lawName,법령ID:law.lawId,시행일자:law.effectiveDate},조문:{조문단위:{조문여부:"조문",조문번호:"11",조문가지번호:"2",조문제목:"기준",조문내용:"원문"}}}}))
+    return {...c,api:{...c.api,searchLaw,getLawText},searchLaw,getLawText}
+  }
+  it.each(["current","older","absent","unknown"])("keeps independent citations separate from official status %s",async(kind)=>{
+    const c=setup(), p=structuredClone(payload)
+    if(kind==="older"){
+      p.lsDelegated.법령.위임조문정보[0].위임정보.위임행정규칙조문정보.위임행정규칙일련번호="2100000000009"
+      c.searchAdminRule.mockResolvedValueOnce("<AdmRulSearch><totalCnt>1</totalCnt>"+row(serial,"20200101")+"</AdmRulSearch>").mockResolvedValueOnce("<AdmRulSearch><totalCnt>2</totalCnt>"+row(serial,"20200101")+row("2100000000009","20190101")+"</AdmRulSearch>")
+    }
+    if(kind==="absent")c.fetchApi.mockResolvedValueOnce(JSON.stringify({...p,lsDelegated:{법령:{...p.lsDelegated.법령,위임조문정보:[{조정보:{조문번호:"11",조문가지번호:"2"},위임정보:{위임구분:"법령"}}]}}}))
+    else c.fetchApi.mockResolvedValueOnce(kind==="unknown"?"{}":JSON.stringify(p))
+    const s=(await discoverAdminCitations(c.api,source())).content[0].text
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED]")
+    expect(s).toContain(({current:"LISTED_CURRENT_SERIAL",older:"LISTED_LINEAGE_OTHER_VERSION",absent:"NOT_LISTED_IN_RESPONSE",unknown:"OFFICIAL_STATUS_UNRESOLVED"})[kind])
+    expect(s).not.toContain("[OFFICIAL_LINK_LISTED]")
+    expect(s).toContain("[PARTIAL]")
+  })
+  it.each(["영 제11조의2에 따른다.","「다른법 시행령」 제11조의2에 따른다.","「시험법 시행령」 제11조의20에 따른다."])("rejects ambiguous or different citations",async body=>{
+    const c=setup(), xml=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("「시험법 시행령」 제11조의2에 따른 기준을 정한다.",body))
+    const s=(await discoverAdminCitations(c.api,source())).content[0].text
+    expect(s).toContain("[CANDIDATE_NO_SUPPORTED_CITATION]")
+    expect(s).not.toContain("[INDEPENDENT_CITATION_VERIFIED]")
+  })
+  it("verifies an explicitly defined alias",async()=>{
+    const c=setup(), xml=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(xml.replace("「시험법 시행령」 제11조의2에 따른 기준을 정한다.",'「시험법 시행령」(이하 "영"이라 한다)에 따른다.\n제2조(기준) 영 제11조의2제1항에 따른다.'))
+    const s=(await discoverAdminCitations(c.api,source())).content[0].text
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED]")
+    expect(s).toContain("제11조의2제1항")
+  })
+  it("rejects mismatched rule identity and unverified source article",async()=>{
+    const c=setup();c.getAdminRule.mockResolvedValueOnce("<AdmRulService/>")
+    expect((await discoverAdminCitations(c.api,source())).content[0].text).toContain("[CANDIDATE_NOT_VERIFIED]")
+    const d=setup();d.getLawText.mockResolvedValueOnce("{}")
+    expect((await discoverAdminCitations(d.api,source())).isError).toBe(true)
+    expect(d.searchAdminRule).not.toHaveBeenCalled()
+  })
+  it("reports malformed search or capped candidates without a false negative",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce("<AdmRulSearch><totalCnt>4</totalCnt></AdmRulSearch>")
+    expect((await discoverAdminCitations(c.api,source())).isError).toBe(true)
+    const d=setup();d.searchAdminRule.mockResolvedValueOnce("<AdmRulSearch><totalCnt>20</totalCnt>"+row(serial,"20200101")+"</AdmRulSearch>")
+    expect((await discoverAdminCitations(d.api,source())).content[0].text).toContain("미검색·미열람 범위 있음")
+  })
 })
