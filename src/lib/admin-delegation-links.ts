@@ -59,3 +59,53 @@ export function parseDelegatedAdminLinks(payload: unknown, source: AdminLinkSour
   const found=[...links.values()].sort((a,b)=>a.serial.localeCompare(b.serial))
   return {status:partial?"PARTIAL":found.length?"LINKS_FOUND":"NO_LINK_IN_RESPONSE",links:found,reason:partial?"일부 연결 행 식별 실패":found.length?"공식 위임행정규칙조문정보 등재 확인(원문·효력 별도 검증)":"해당 응답 범위에서 연결 미확인(부존재 단정 금지)"}
 }
+
+export interface DelegatedLawLink {
+  mst: string; name: string; article: string; location: string; wording: string
+}
+export interface DelegatedLawResult { status: AdminLinkResult["status"]; links: DelegatedLawLink[]; reason: string }
+/** Read only official nested statutory link rows. No inferred target or version. */
+export function parseDelegatedLawLinks(payload: unknown, source: AdminLinkSource, article: string): DelegatedLawResult {
+  const fail = (reason: string): DelegatedLawResult => ({status:"NOT_VERIFIED",links:[],reason})
+  const want = joKey(article)
+  const envelope = object(object(object(payload)?.lsDelegated)?.법령)
+  const meta = object(envelope?.법령정보)
+  if (!want || !meta || !source.lawName || !/^\d+$/.test(source.mst) || !source.lawId || !/^\d+$/.test(source.lawId) || !/^\d{8}$/.test(source.effectiveDate)) return fail("시작 법령 식별정보 미확인")
+  if (nameKey(meta.법령명)!==nameKey(source.lawName) || idKey(meta.법령일련번호)!==idKey(source.mst) || idKey(meta.법령ID)!==idKey(source.lawId) || scalar(meta.시행일자)!==source.effectiveDate) return fail("시작 법령·ID·MST·시행일 불일치")
+  const articles=rows(envelope?.위임조문정보)
+  if (articles.length>5000) return fail("조문 목록 한도 초과")
+  const found=new Map<string,DelegatedLawLink>(), names=new Map<string,string>()
+  let matched=false, partial=false, visited=0
+  for (const item of articles) {
+    const row=object(item), jo=object(row?.조정보)
+    const scope=joKey(jo?.조문번호,jo?.조문가지번호)
+    if (!scope) {partial=true;continue}
+    if (scope!==want) continue
+    matched=true
+    for (const entry of rows(row?.위임정보)) {
+      if (++visited>5000) return fail("위임 목록 한도 초과")
+      const d=object(entry)
+      if (!d) {partial=true;continue}
+      if (!Object.prototype.hasOwnProperty.call(d,"위임법령조문정보")) continue
+      if (Object.prototype.hasOwnProperty.call(d,"위임행정규칙조문정보") || Object.prototype.hasOwnProperty.call(d,"위임규정조문정보")) {partial=true;continue}
+      const mst=scalar(d.위임법령일련번호), name=scalar(d.위임법령제목)
+      if (!/^\d{1,12}$/.test(mst)||!name||name.length>200) {partial=true;continue}
+      if (names.has(mst)&&names.get(mst)!==nameKey(name)) return fail("같은 대상 MST의 명칭 충돌")
+      names.set(mst,nameKey(name))
+      const entries=rows(d.위임법령조문정보)
+      if (!entries.length) partial=true
+      for (const item of entries) {
+        if (++visited>5000) return fail("위임 조문 한도 초과")
+        const link=object(item), target=joKey(link?.위임법령조문번호,link?.위임법령조문가지번호)
+        const location=scalar(link?.조항호목), loc=location.match(/^제\s*\d+\s*조(?:\s*의\s*\d+)?/)
+        if (!target||(loc&&joKey(loc[0])!==want)) {partial=true;continue}
+        const branch=Number(target.slice(4)), targetArticle="제"+Number(target.slice(0,4))+"조"+(branch?"의"+branch:"")
+        const wording=scalar(link?.라인텍스트).slice(0,500)
+        found.set(JSON.stringify([mst,targetArticle,location,wording]),{mst,name,article:targetArticle,location:location.slice(0,100),wording})
+      }
+    }
+  }
+  if (!matched) return fail("공식 목록에서 정확한 시작 조문 미확인")
+  const links=[...found.values()]
+  return {status:partial?"PARTIAL":links.length?"LINKS_FOUND":"NO_LINK_IN_RESPONSE",links,reason:partial?"일부 법령 연결 행 미식별":links.length?"공식 위임법령조문정보 등재 확인(현행 원문 별도 검증)":"해당 응답 범위에서 법령 연결 미확인"}
+}

@@ -18,14 +18,14 @@ const MAX_SCAN_CHARS = 300_000
 const MAX_BACKLINKS = 5
 const DATE = /^\d{8}$/
 export function wantsAdminDelegationTrace(query: string): boolean {
-  return /(?:고시|행정규칙|재위임)\s*(?:관계\s*)?(?:추적|조회|발굴)/.test(query)
+  return /(?:고시|행정규칙|재위임|다단계\s*위임)\s*(?:관계\s*)?(?:추적|조회|발굴)/.test(query)
 }
 export function isHistoricalAdminTrace(query: string): boolean {
   return /\d{4}\s*년|\d{4}[-./]\d{1,2}[-./]\d{1,2}|\b\d{8}\b|경과조치|과거\s*법령|개정\s*이력/.test(query)
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
-  law: LawInfo; articles: readonly string[]; apiKey?: string
+  law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number
 }): Promise<ToolResponse> {
   const {law,apiKey} = input
   const today = todayKst()
@@ -44,7 +44,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   let payload: unknown
   try {
     throwIfRequestCancelled()
-    payload = JSON.parse(await api.fetchApi({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:law.mst},apiKey}))
+    payload = input.officialPayload ?? JSON.parse(await api.fetchApi({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:law.mst},apiKey}))
   } catch(e) {
     rethrowIfFatal(e)
     lines.unshift("[NOT_VERIFIED] 공식 위임법령 API 호출 또는 JSON 해석 실패. 연결 부존재로 간주하지 않습니다.")
@@ -62,8 +62,9 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
   const grouped = new Map<string,AdminDelegationLink[]>()
   for(const link of links) grouped.set(link.serial,[...(grouped.get(link.serial)??[]),link])
   const rules = [...grouped.entries()]
-  if (rules.length > MAX_RULES) lines.push("[PARTIAL] 원문 미조회 규칙: "+rules.slice(MAX_RULES).map(([id,l])=>l[0].name+" ("+id+")").join(", "))
-  for (const [serial,edges] of rules.slice(0,MAX_RULES)) {
+  const maxRules = Math.max(0, Math.min(MAX_RULES, input.maxRules ?? MAX_RULES))
+  if (rules.length > maxRules) lines.push("[PARTIAL] 원문 미조회 규칙: "+rules.slice(maxRules).map(([id,l])=>l[0].name+" ("+id+")").join(", "))
+  for (const [serial,edges] of rules.slice(0,maxRules)) {
     throwIfRequestCancelled()
     const name = edges[0].name
     const linkLabel = name+" | 등재 일련번호 "+serial

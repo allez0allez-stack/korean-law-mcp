@@ -61,17 +61,19 @@ interface Node { law: LawInfo; article: string; depth: number }
 const keyFor = (law: LawInfo, article: string) => `${law.mst}:${buildJO(article)}`
 
 /** Read the exact article from structured official JSON; never scan a formatted tool summary. */
-async function readExactArticle(api: LawApiClient, law: LawInfo, article: string, apiKey?: string): Promise<ArticleRecord> {
+export async function readExactArticle(api: LawApiClient, law: LawInfo, article: string, apiKey?: string, requireIdentity = false): Promise<ArticleRecord> {
   const jo = buildJO(article)
   // A single proclamation MST can have several effective-date slices.
   // The current search row, not an MST-only response, identifies the slice.
   const efYd = law.effectiveDate
+  if (requireIdentity && (!law.lawId || !efYd)) throw Error("법령 ID 또는 시행일 미확인")
   if (efYd && (!/^\d{8}$/.test(efYd) || efYd > todayKst())) throw Error("현행 검색 시행일 미확인 또는 시행 예정")
   const raw = JSON.parse(await api.getLawText({ mst: law.mst, jo, ...(efYd ? { efYd } : {}), apiKey }))?.법령
   const info = raw?.기본정보
   const name = info?.법령명_한글 || info?.법령명한글 || info?.법령명
   if (typeof name !== "string" || !sameLawName(name, law.lawName)) throw Error("법령 원문 명칭 불일치")
-  if (info?.법령ID && law.lawId && String(info.법령ID) !== law.lawId) throw Error("법령 ID 불일치")
+  if (requireIdentity && (!/^\d+$/.test(String(info?.법령ID || "")) || !/^\d+$/.test(law.lawId) || Number(info.법령ID) !== Number(law.lawId))) throw Error("법령 ID 불일치 또는 미확인")
+  if (!requireIdentity && info?.법령ID && law.lawId && String(info.법령ID) !== law.lawId) throw Error("법령 ID 불일치")
   const date = String(info?.시행일자 || "")
   if ((efYd && date !== efYd) || (/^\d{8}$/.test(date) && date > todayKst())) throw Error("법령 시행 버전 불일치")
   const units = raw?.조문?.조문단위

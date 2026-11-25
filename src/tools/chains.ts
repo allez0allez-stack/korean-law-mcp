@@ -17,6 +17,7 @@ import { routeQuery } from "../lib/query-router.js"
 import { planScopedLawQuery, runScopedLawQuery } from "./scoped-law-query.js"
 import { traceStatuteReferences, wantsStatuteReferenceTrace, matchesExplicitTraceRoot } from "./statute-reference-trace.js"
 import { traceAdminRuleDelegations, wantsAdminDelegationTrace, isHistoricalAdminTrace } from "./admin-delegation-trace.js"
+import { traceRecursiveAdminDelegations, wantsRecursiveAdminTrace } from "./recursive-admin-delegation.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { resolveLawAlias } from "../lib/search-normalizer.js"
 import { extractArticleNumbers } from "../lib/query-extract.js"
@@ -573,7 +574,7 @@ async function chainLawSystemSingle(
         ? callTool(traceStatuteReferences, apiClient, { law: p, articles, apiKey: input.apiKey })
         : Promise.resolve(null)),
       raceDeadline(dl, wantsAdminTrace && wantsArticles
-        ? callTool(traceAdminRuleDelegations, apiClient, { law: p, articles, apiKey: input.apiKey })
+        ? callTool(wantsRecursiveAdminTrace(input.query) ? traceRecursiveAdminDelegations : traceAdminRuleDelegations, apiClient, { law: p, articles, apiKey: input.apiKey })
         : Promise.resolve(null)),
     ])
 
