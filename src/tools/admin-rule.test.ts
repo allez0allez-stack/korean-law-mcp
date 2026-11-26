@@ -393,3 +393,54 @@ describe("administrative transition date comparison", () => {
     expect(r.content[0].text).not.toContain("[ADMIN_TRANSITION_DATE_EVIDENCE]")
   })
 })
+
+// Event dates are user-provided facts, never independently verified by the rule lookup.
+describe("bounded administrative transition event comparison",()=>{
+  const xml=(id:string,blocks:string[])=>`<AdmRulService><행정규칙일련번호>${id}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>시험고시</행정규칙명><발령번호>2026-73</발령번호><발령일자>20261104</발령일자><시행일자>20261104</시행일자><조문내용>제1조(목적) 시험 기준을 정한다.</조문내용>${blocks.map(b=>`<부칙내용><![CDATA[${b}]]></부칙내용>`).join("")}</AdmRulService>`
+  const current="부칙 <제2026-73호, 2026. 11. 4.>\n제2조(인정심사에 관한 적용례) 별표의 개정규정은 2027년 1월 1일 이후 인정 또는 재인정을 신청하는 경우부터 적용한다.\n제3조(경과조치) 2027년 1월 1일 전에 인정 또는 재인정을 신청한 사업장이 인정받은 경우, 종전의 별표에 따른다."
+  const run=async(id:string,blocks:string[],events:{phrase:string;date:string}[])=>getAdminRule(detailStub(xml(id,blocks)),{id,transition_events:events})
+  it("compares separate events only against directly adjacent date wording and retains co-conditions",async()=>{
+    const r=await run("2100000999201",[current],[{phrase:"인정 또는 재인정을 신청",date:"20261231"},{phrase:"인정받은",date:"20270102"}]);const s=r.content[0].text
+    expect(s).toContain("[ADMIN_TRANSITION_EVENT_COMPARISON]")
+    expect(s).toContain("20270101 이후 | DATE_RELATION=BEFORE | DATE_WORDING_NOT_MATCH")
+    expect(s).toContain("20270101 전 | DATE_RELATION=BEFORE | DATE_WORDING_MATCH")
+    expect(s).toContain('[EVENT_MENTION_ONLY] {"phrase":"인정받은","date":"20270102"}')
+    expect(s).toContain('[EVENT_NOT_PAIRED] {"phrase":"인정받은","date":"20270102"}')
+    expect(s).toContain("종전의 별표에 따른다")
+    expect(s).toContain("효력 판정 아님")
+    expect(s.match(/\[EVENT_DATE_RELATION\]/g)).toHaveLength(2)
+  })
+  it.each([["이후",true],["이전",true],["부터",true],["까지",true],["전",false],["후",false]] as const)("preserves boundary meaning of %s",async(word,match)=>{
+    const id="21000009992"+String(10+["이후","이전","부터","까지","전","후"].indexOf(word)).padStart(2,"0")
+    const s=(await run(id,[`부칙\n제1조(적용례) 2027년 1월 1일 ${word} 계약을 체결하는 경우 적용한다.`],[{phrase:"계약을 체결",date:"20270101"}])).content[0].text
+    expect(s).toContain("DATE_RELATION=EQUAL | "+(match?"DATE_WORDING_MATCH":"DATE_WORDING_NOT_MATCH"))
+  })
+  it("does not compare events appearing elsewhere or overlapping ambiguous phrases",async()=>{
+    const s=(await run("2100000999202",[current],[{phrase:"인정 또는",date:"20270101"},{phrase:"인정 또는 재인정을 신청",date:"20270101"}])).content[0].text
+    expect(s).toContain("복수 일치");expect(s).not.toContain("[EVENT_DATE_RELATION]")
+  })
+  it("does not interpret a word prefix, relative date, or an unrelated date as a bound predicate",async()=>{
+    const s=(await run("2100000999203",["부칙\n제1조(경과조치) 2027년 1월 1일 전환권을 행사한 경우, 시행일부터 3개월 내 신청한 경우에 적용한다.\n제2조(적용례) 2027년 1월 1일 이후 다른 조건을 충족하고 전환권을 행사한 경우 적용한다."],[{phrase:"환권을 행사",date:"20270101"},{phrase:"신청한 경우",date:"20270101"}])).content[0].text
+    expect(s).not.toContain("[EVENT_DATE_RELATION]");expect(s).toContain("[EVENT_MENTION_ONLY]");expect(s).toContain("상대일")
+  })
+  it("prioritizes a uniquely matched issuance header even beyond the first 100 blocks",async()=>{
+    const old=Array.from({length:101},(_,i)=>`부칙 <제2000-${i+1}호, 2000. 1. 1.>\n제1조(적용례) 2000년 1월 1일 이후 인정 또는 재인정을 신청하는 경우 적용한다.`)
+    const s=(await run("2100000999204",[...old,current],[{phrase:"인정 또는 재인정을 신청",date:"20270101"}])).content[0].text
+    expect(s).toContain("부칙 #102 | 부칙 <제2026-73호, 2026. 11. 4.>")
+    expect(s.indexOf("부칙 #102")).toBeLessThan(s.indexOf("부칙 #1 |"));expect(s).toContain("[PARTIAL]")
+  })
+  it("rejects mixed modes, duplicate event phrases, invalid dates and excessive inputs before reading",async()=>{
+    const base={id:"2100000999205",transition_events:[{phrase:"계약 체결",date:"20270101"}]}
+    for(const p of [{...base,transition_date:"20270101"},{...base,jo:"제1조"},{...base,transition_events:[{phrase:"계약 체결",date:"20270229"}]},{...base,transition_events:[...base.transition_events,{phrase:"계약체결",date:"20270102"}]},{...base,transition_events:Array(5).fill(base.transition_events[0])}]){
+      const r=await getAdminRule(detailStub(""),p);expect(r.isError).toBe(true);expect(r.content[0].text).toContain("[INVALID_INPUT]")
+    }
+  })
+  it("does not compare dates from a mismatched returned document",async()=>{
+    const r=await getAdminRule(detailStub(xml("2100000999206",[current])),{id:"2100000999207",transition_events:[{phrase:"인정 또는 재인정을 신청",date:"20270101"}]})
+    expect(r.isError).toBe(true);expect(r.content[0].text).not.toContain("[EVENT_DATE_RELATION]")
+  })
+  it("reports an unmatched event rather than inferring non-applicability",async()=>{
+    const s=(await run("2100000999208",[current],[{phrase:"계약 체결",date:"20270101"}])).content[0].text
+    expect(s).toContain("[EVENT_NOT_PAIRED]");expect(s).toContain("조건 부존재 단정 금지");expect(s).toContain("[PARTIAL]")
+  })
+})

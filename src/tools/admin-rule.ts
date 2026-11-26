@@ -15,6 +15,7 @@ import { adminVersionAt, fetchAdminRuleHistory, pickAdminRuleGroup } from "../li
 import { adminRuleSourceUrl, buildImageOnlyWarning } from "../lib/image-only-body.js"
 import { buildPartialBody, pickPartialMode, PARTIAL_HINT } from "../lib/admin-rule-views.js"
 import { loadAdminRuleDoc, adminRuleExtrasText, adminRuleExtraBlocks, adminRuleParsed } from "../lib/admin-rule-doc.js"
+import { TransitionEventsSchema, validTransitionDate, validTransitionEvents, traceTransitionEvents } from "../lib/transition-events.js"
 import { traceTransitionDates, discoverAdminCitations } from "./admin-delegation-trace.js"
 
 // search_admin_rule 스키마
@@ -140,7 +141,8 @@ export const GetAdminRuleSchema = z.object({
   max_results: z.number().optional().describe("keyword와 함께 사용 — 최대 조문 수 (기본 10, 최대 30)"),
   page: z.number().optional().describe("전문을 청크로 페이징 조회 (1부터). 응답에 page/total_pages 표기"),
   transition_date: z.string().regex(/^\d{8}$/).optional().describe("부칙의 명시 날짜와 비교할 사건 기준일 YYYYMMDD. 일련번호로 지정한 문서만 검토하며 법적 적용은 확정하지 않음. 조문·장·검색·페이지 모드와 병용 불가"),
-  transition_keyword: z.string().trim().min(1).max(100).optional().describe("transition_date와 함께 부칙 조항 원문의 문자 그대로 검색할 조건(예: 인정 또는 재인정). 공백 차이만 무시"),
+  transition_events: TransitionEventsSchema.optional().describe("부칙 사건 문언·날짜 최대 4개 비교. transition_date 및 조문·장·본문 검색·페이지 모드와 병용 불가. 적용 효력 판정 아님"),
+  transition_keyword: z.string().trim().min(1).max(100).optional().describe("transition_date 또는 transition_events와 함께 부칙 조항 원문의 문자 그대로 검색할 조건(예: 인정 또는 재인정). 공백 차이만 무시"),
   apiKey: z.string().optional().describe("법제처 Open API 인증키(OC). 사용자가 제공한 경우 전달")
 })
 
@@ -167,19 +169,15 @@ function emptyBodyHint(id: string, ruleName: string, joForm: string): string {
   return `[NOT_FOUND] '${ruleName}'의 전문을 조회할 수 없습니다.\n\n` + noGuess
 }
 
-function validTransitionDate(value:string):boolean {
-  if(!/^\d{8}$/.test(value))return false
-  const y=Number(value.slice(0,4)), m=Number(value.slice(4,6)), d=Number(value.slice(6,8))
-  const date=new Date(Date.UTC(y,m-1,d))
-  return y>=1900&&y<=9999&&date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d
-}
-
 export async function getAdminRule(
   apiClient: LawApiClient,
   input: GetAdminRuleInput
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   try {
-    if(input.transition_keyword!==undefined&&input.transition_date===undefined || input.transition_date!==undefined&&(!validTransitionDate(input.transition_date)||input.jo!==undefined||input.chapter!==undefined||input.keyword!==undefined||input.page!==undefined))return {content:[{type:"text",text:"[INVALID_INPUT] transition_date는 유효한 YYYYMMDD이며 조문·장·본문 검색·페이지 모드와 병용할 수 없습니다. transition_keyword는 transition_date와 함께 사용하세요."}],isError:true}
+    const eventMode=input.transition_events!==undefined
+    const transitionMode=eventMode||input.transition_date!==undefined
+    const events=eventMode?TransitionEventsSchema.safeParse(input.transition_events):undefined
+    if(input.transition_keyword!==undefined&&!transitionMode || input.transition_date!==undefined&&(!validTransitionDate(input.transition_date)||eventMode) || events&&(!events.success||!validTransitionEvents(events.data)) || transitionMode&&(input.jo!==undefined||input.chapter!==undefined||input.keyword!==undefined||input.page!==undefined))return {content:[{type:"text",text:"[INVALID_INPUT] transition_date 또는 transition_events 중 하나만 사용하세요. 날짜는 유효한 YYYYMMDD, 사건 문언은 중복 없이 최대 4개이며 조문·장·본문 검색·페이지 모드와 병용 불가. transition_keyword는 날짜 비교 모드와 함께 사용하세요."}],isError:true}
     // 전문 문서 캐시 — jo → keyword → page 연속 조회 시 Open API 재호출·XML 재파싱 방지
     const doc = await loadAdminRuleDoc(apiClient, input.id, input.apiKey)
     const { ruleName: ruleNameRaw, promDate, promNo, orgName, ruleType, joForm, efDate, revision, isCurrent } = doc
@@ -194,10 +192,15 @@ export async function getAdminRule(
     if (isCurrent === "N") resultText += `⚠️ 연혁본(현행 아님) — 현행 기준 답변에는 search_admin_rule로 현행 일련번호를 다시 확인할 것\n`
     resultText += `\n---\n\n`
 
-    if(input.transition_date!==undefined){
+    if(transitionMode){
       if(!/^\d{13}$/.test(input.id)||doc.ruleSerial!==input.id||!doc.ruleName||!doc.ruleId||!/^\d+$/.test(doc.ruleId)||!validTransitionDate(doc.efDate)||!validTransitionDate(doc.issuedDate))return {content:[{type:"text",text:"[NOT_VERIFIED] 요청한 행정규칙일련번호·ID·명칭·발령일·시행일 원문 검증 실패. 날짜 비교를 수행하지 않았습니다."}],isError:true}
-      const evidence=traceTransitionDates(doc,input.transition_date,input.transition_keyword)
-      const scope="[ADMIN_TRANSITION_DATE_COMPARISON] 지정 문서 "+doc.ruleSerial+" | 기준일 "+input.transition_date+" | 문서 시행일 "+doc.efDate+"\n기준일의 문서 시행일 대비 DATE_RELATION="+(input.transition_date<doc.efDate?"BEFORE":input.transition_date===doc.efDate?"EQUAL":"AFTER")+". 지정 버전의 문언 비교이며 기준일에 시행 중이던 버전 선정은 legal_analysis(mode=applicable_law)로 별도 확인. 사건 조건·적용 효력 판정 아님.\n"+adminRuleSourceUrl(input.id)
+      if(events?.success){
+        const evidence=traceTransitionEvents(doc,events.data,input.transition_keyword)
+        return {content:[{type:"text",text:truncateResponse(resultText+adminRuleSourceUrl(input.id)+"\n\n"+evidence.join("\n\n"),18000)}]}
+      }
+      const referenceDate=input.transition_date!
+      const evidence=traceTransitionDates(doc,referenceDate,input.transition_keyword)
+      const scope="[ADMIN_TRANSITION_DATE_COMPARISON] 지정 문서 "+doc.ruleSerial+" | 기준일 "+referenceDate+" | 문서 시행일 "+doc.efDate+"\n기준일의 문서 시행일 대비 DATE_RELATION="+(referenceDate<doc.efDate?"BEFORE":referenceDate===doc.efDate?"EQUAL":"AFTER")+". 지정 버전의 문언 비교이며 기준일에 시행 중이던 버전 선정은 legal_analysis(mode=applicable_law)로 별도 확인. 사건 조건·적용 효력 판정 아님.\n"+adminRuleSourceUrl(input.id)
       return {content:[{type:"text",text:truncateResponse(resultText+scope+"\n\n"+(evidence.length?evidence.join("\n\n"):"[NOT_VERIFIED] 부칙 텍스트 미확보. 부칙 부존재 단정 금지.")+(doc.attachments.length?"\n\n[PARTIAL] 첨부파일 "+doc.attachments.length+"건 미열람":""))}]}
     }
 

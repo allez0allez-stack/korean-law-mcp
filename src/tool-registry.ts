@@ -141,7 +141,7 @@ export const allTools: McpTool[] = [
   },
   {
     name: "get_admin_rule",
-    description: "[행정규칙] 행정규칙 전문 조회. 전문이 긴 규칙(외국환거래규정 등)은 jo(조문 단위, 예: '제9-5조', 화재안전기술기준은 절 번호 '2.7.3')·chapter(장)·keyword(본문 검색)·page(페이징) 파라미터로 부분 조회 — 파라미터 없이 호출하면 앞부분 5만 자에서 잘린다. 연혁 일련번호를 넣으면 그 시절 본문(연혁본 표시). transition_date(YYYYMMDD)로 지정 버전 부칙의 명시 날짜와 사건 기준일 선후 비교, transition_keyword로 문언 조건 필터(적용 효력은 별도 검토).",
+    description: "[행정규칙] 행정규칙 전문 조회. 전문이 긴 규칙(외국환거래규정 등)은 jo(조문 단위, 예: '제9-5조', 화재안전기술기준은 절 번호 '2.7.3')·chapter(장)·keyword(본문 검색)·page(페이징) 파라미터로 부분 조회 — 파라미터 없이 호출하면 앞부분 5만 자에서 잘린다. 연혁 일련번호를 넣으면 그 시절 본문(연혁본 표시). transition_date(YYYYMMDD)로 지정 버전 부칙의 명시 날짜와 사건 기준일 선후 비교, transition_events(사건 문언 phrase·날짜 date 최대 4개)로 직접 연결된 날짜 문언 비교, transition_keyword로 문언 조건 필터(적용 효력은 별도 검토).",
     schema: GetAdminRuleSchema,
     handler: getAdminRule
   },
