@@ -67,3 +67,35 @@ describe("applicable_law: 조문 표기와 부칙 실패 상태", () => {
     expect(r.content[0].text).not.toContain("[FAILED]")
   })
 })
+
+
+describe("applicable_law: long requested article evidence", () => {
+  beforeEach(() => lawCache.clear())
+  const runLong = async (length: number) => {
+    const getLawText = vi.fn(async () => article("가. " + "내용 ".repeat(length) + "과세특례 적용 대상 소득에서 제외한다."))
+    const client = {
+      searchLaw: async () => `<LawSearch>${row("20210101")}</LawSearch>`,
+      fetchApi: async (input: { target: string }) => input.target === "eflaw"
+        ? lineage : JSON.stringify({ 법령: { 부칙: { 부칙단위: [] } } }),
+      getLawText,
+    } as unknown as LawApiClient
+    return applicableLaw(client, { lawName: "검토법", date: "2020-06-01", jo: "제1조" })
+  }
+  it("preserves material end-of-article exceptions beyond the old 2000-character limit", async () => {
+    const result = await runLong(1000)
+    const text = result.content[0].text
+    expect(result.isError).toBeFalsy()
+    expect(text).toContain("과세특례 적용 대상 소득에서 제외한다.")
+    expect(text).not.toContain("…(생략)")
+  })
+  it("labels any bounded excerpt and points to the exact historical slice before the excerpt", async () => {
+    const result = await runLong(5000)
+    const text = result.content[0].text
+    expect(result.isError).toBeFalsy()
+    expect(text).toContain('[PARTIAL] 기준일 조문 본문 12000자 발췌')
+    expect(text).toContain('get_law_text(mst="900001", jo="제1조", efYd="20200101")')
+    expect(text.indexOf('[PARTIAL] 기준일 조문')).toBeLessThan(text.indexOf('…(생략)'))
+    expect(text).not.toContain("과세특례 적용 대상 소득에서 제외한다.")
+    expect(text).toContain("적용 법령 판단 시 주의")
+  })
+})
