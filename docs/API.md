@@ -367,7 +367,6 @@ legal_analysis(mode="amendment_table",
 - [ARCHITECTURE.md](ARCHITECTURE.md) - 시스템 아키텍처
 - [DEVELOPMENT.md](DEVELOPMENT.md) - 개발자 가이드
 
-
 ### 금투협 고정 개정본 기본기간 산정 (`kofia_sanction_base`)
 
 `execute_tool`로 호출: `{"tool_name":"kofia_sanction_base","params":{"version":"20261112","violation":"ipo_nonpayment","violation_amount_krw":150000000}}`.
