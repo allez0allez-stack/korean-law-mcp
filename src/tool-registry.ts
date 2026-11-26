@@ -18,6 +18,7 @@ import { V3_EXPOSED, TOOL_TITLES } from "./lib/tool-profiles.js"
 import { searchDecisions, SearchDecisionsSchema, getDecisionText, GetDecisionTextSchema } from "./tools/unified-decisions.js"
 
 // Tool imports
+import { fssDisclosureForm, FssDisclosureFormSchema } from "./tools/fss-disclosure-form.js"
 import { kofiaSanctionScenario, KofiaSanctionScenarioSchema } from "./tools/kofia-sanction-scenario.js"
 import { kofiaSanctionBase, KofiaSanctionBaseSchema } from "./tools/kofia-sanction-base.js"
 import { continueDelegationTrace, ContinueDelegationSchema } from "./tools/recursive-admin-delegation.js"
@@ -740,6 +741,13 @@ export const allTools: McpTool[] = [
     description: "[금융투자 자율규제] 고정 20261112 별표 1·1-2 IPO/무보증사채 가중·감면, 복수 심의, 환매비율, 확약위반 경제적 이익, 사전청약 기본기간 및 재량 상한 시나리오. 현행성·최종 제재 미확정.",
     schema: KofiaSanctionScenarioSchema,
     handler: kofiaSanctionScenario
+  },
+
+  {
+    name: "fss_disclosure_form",
+    description: "[금감원 공시서식] 제공된 20260930 CB/BW/EB 별지 38-24~26 원문 파싱 행·기재상 주의 검색 및 20261113 IPO 개정 범위. mode=form 또는 amendment_scope. 현행성·적용례 미확정.",
+    schema: FssDisclosureFormSchema,
+    handler: fssDisclosureForm
   },
 
   // === 메타 도구 (lite 프로필용) ===
