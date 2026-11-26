@@ -115,6 +115,7 @@ export const TOOL_ALIASES: Record<string, string[]> = {
   "행위시법": ["applicable_law", "당시 법령", "적용 법령 판단", "경과조치", "부칙"],
   "영향그래프": ["impact_map", "조문 영향", "파급효과", "인용한 판례"],
   "문서분석": ["analyze_document", "chain_document_review", "계약서 검토", "약관 검토"],
+  "금융투자자율규제": ["금투협", "불성실 수요예측", "불성실 사전청약", "kofia_sanction_base"],
   "처분기준": ["chain_action_basis", "과태료 기준", "과징금 기준", "영업정지 기간"],
   "절차매뉴얼": ["chain_procedure_detail", "처리 절차", "신청 방법", "수수료"],
 }
@@ -157,6 +158,7 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
   // chain_*는 하위호환으로 병기 — execute_tool 경유 2-hop이지만 파라미터가 단순하다.
   "문서분석": ["legal_research", "analyze_document", "chain_document_review"],
   "처분기준": ["legal_research", "chain_action_basis"],
+  "금융투자자율규제": ["kofia_sanction_base"],
   "절차매뉴얼": ["legal_research", "chain_procedure_detail"],
   // legal_analysis 의 네 mode 에 대응하는 카테고리도 같은 정책을 따른다 —
   // 별칭이 곧 mode 의도라 1-hop 진입점이 답이고, 원본 도구는 하위호환 병기다.

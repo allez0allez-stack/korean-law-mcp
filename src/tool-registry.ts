@@ -18,6 +18,7 @@ import { V3_EXPOSED, TOOL_TITLES } from "./lib/tool-profiles.js"
 import { searchDecisions, SearchDecisionsSchema, getDecisionText, GetDecisionTextSchema } from "./tools/unified-decisions.js"
 
 // Tool imports
+import { kofiaSanctionBase, KofiaSanctionBaseSchema } from "./tools/kofia-sanction-base.js"
 import { continueDelegationTrace, ContinueDelegationSchema } from "./tools/recursive-admin-delegation.js"
 import { searchLaw, SearchLawSchema } from "./tools/search.js"
 import { searchLawBulk, SearchLawBulkSchema } from "./tools/search-bulk.js"
@@ -725,6 +726,13 @@ export const allTools: McpTool[] = [
     description: "[법령연계] 미추적 조문 후속 선택 조회. 시작 법령의 현행 ID·MST·시행일·조문과 공식 연결을 재검증하고 지정한 직접 연결 최대 5개 원문 확인. 전체 경로 및 위임 효력 확정 아님.",
     schema: ContinueDelegationSchema,
     handler: continueDelegationTrace
+  },
+
+  {
+    name: "kofia_sanction_base",
+    description: "[금융투자 자율규제] 사용자 제공 2026-11-12 개정 금투협 별표 1·1-2의 금액 기반 기본기간 시나리오. version=20261112, violation, violation_amount_krw 필수. 가중·감면·현행성·최종 제재 미확정. 잔여 단위 처리 미확정 시 절사/올림 가정 병기.",
+    schema: KofiaSanctionBaseSchema,
+    handler: kofiaSanctionBase
   },
 
   // === 메타 도구 (lite 프로필용) ===
