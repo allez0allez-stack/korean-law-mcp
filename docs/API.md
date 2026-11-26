@@ -387,3 +387,5 @@ legal_analysis(mode="amendment_table",
 ### 금감원 기업공시서식 스냅샷 (`fss_disclosure_form`)
 
 `execute_tool`로 `mode=form, version=20260930, instrument=CB|BW|EB`를 지정합니다. `keyword`는 공백 무시 문자열 검색, `start_line`은 결과 목록 1부터 시작하는 페이지 오프셋이며 `nextStartLine`으로 계속 조회합니다. `mode=amendment_scope, version=20261113`은 제공 개정본문의 IPO 개정 범위를 반환합니다. 고정 제공본의 파싱 결과이며 원본 바이너리·최신성·행위시 적용을 확정하지 않습니다.
+
+`mode=regulatory_basis, instrument=CB|BW|EB, topic=filing|attachments|issuance|pricing|refixing_down|refixing_up|option_disclosure|option_attachments`는 조회시점 공식 법령·고시 조문을 별도 반환합니다. 법 제161조와 시행령 제171조는 공통 근거, BW는 준용 근거를 함께 조회하고 EB에 CB/BW 특례를 임의 적용하지 않습니다. 공식 행정규칙의 정식 명칭·소관·시행일·조문 제목을 확인하며 누락은 PARTIAL 또는 NOT_VERIFIED. 서식 최신성 및 발행 당시 적용례는 미확정입니다.
