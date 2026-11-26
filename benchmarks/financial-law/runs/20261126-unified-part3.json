@@ -1,0 +1,11 @@
+{
+  "baseline": "2b10d5e0955fbb928a1a46a2bce9e0fb1ff19ba8",
+  "results": [
+    {
+      "id": "FIN-03",
+      "status": "ok",
+      "elapsedMs": 13007,
+      "text": "[INDEPENDENT_ADMIN_CITATION_SEARCH] 제목 검색 후보의 현행 원문 인용 확인\n\n검색어별 상위 10개 행, 전체 최대 3개 계보만 확인. 전 행정규칙 본문 검색이나 위임 효력 판정 아님. 공식 연결 미등재와 공식 목록 부존재는 다름.\n\n[PARTIAL] 제한 검색. 제목 검색 1건 / 수신 1건 / 후보 계보 1건 / 원문 확인 1건 / 인용 확인 1건 / 검증 실패 0건 / 미검색·미열람 범위 있음. 공식 위임 누락 또는 법적 효력 확정 아님.\n\n[SOURCE_ARTICLE_VERIFIED] 자본시장과 금융투자업에 관한 법률 시행령 제271조의10 | MST 291669 | 시행 20261113\n\n[OFFICIAL_COMPARISON_SCOPE] LINKS_FOUND\n\n[CANDIDATE_PRIORITY_SCOPE] 제목·공식 목록·검색 메타데이터를 이용한 열람 순서. 적용범위·법적 효력 판단 아님. 원문 검증 최대 3개 유지.\n\n[CANDIDATE_SELECTED] 1. 금융투자업규정 | 2100000285020 | 요청 제목 정확일치\n\n[INDEPENDENT_CITATION_VERIFIED] 금융투자업규정 | 일련번호 2100000285020 | 시행 20260909 | LISTED_LINEAGE_OTHER_VERSION\nhttps://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020\n약칭 정의: 「자본시장과 금융투자업에 관한 법률 시행령」(이하 \"영\"이라 한다)\n제7-41조의7(일반 사모집합투자기구의 보고 서류 등) | 제271조의10제2항\n제7-41조의7(일반 사모집합투자기구의 보고 서류 등) | 제271조의10제13항제4호\n제7-41조의7(일반 사모집합투자기구의 보고 서류 등) | 제271조의10제13항\n제7-41조의7(일반 사모집합투자기구의 보고 서류 등) | 제271조의10제15항제6호"
+    }
+  ]
+}
