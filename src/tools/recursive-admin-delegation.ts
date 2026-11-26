@@ -1,6 +1,8 @@
 /** Bounded current-law delegation graph using official lsDelegated only. */
 import type { LawApiClient } from "../lib/api-client.js"
-import { findLaws, type LawInfo } from "../lib/law-search.js"
+import { z } from "zod"
+import { extractTag } from "../lib/xml-parser.js"
+import { findLaws, parseLawXml, type LawInfo } from "../lib/law-search.js"
 import { sameLawName, todayKst } from "../lib/law-lineage.js"
 import { parseDelegatedAdminLinks, parseDelegatedLawLinks } from "../lib/admin-delegation-links.js"
 import { buildJO } from "../lib/law-parser.js"
@@ -38,6 +40,8 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
   const queue:Node[]=[], seen=new Set<string>(), payloads=new Map<string,unknown>(), resolved=new Map<string,LawInfo|undefined>(), knownByMst=new Map<string,LawInfo>()
   let roots=0, targets=0, verified=0, deferred=0, failed=0, adminIncomplete=0, localVerified=0, localAttempts=0, reused=0, ruleSlots=MAX_RULES
   const omitted:string[]=[]
+  const pending=new Map<string,{law:LawInfo;article:string;targets:TargetSelector[]}>()
+  let pendingCount=0, pendingOverflow=0
   const defer=(label:string)=>{deferred++;if(omitted.length<10)omitted.push(label)}
   const articles=[...new Set(input.articles)]
   if(valid(input.law))for(const article of articles.slice(0,MAX_ROOTS)){
@@ -106,7 +110,13 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
       if(known&&sameLawName(known.lawName,link.name)&&seen.has(key(known,link.article))){
         recordListed();reused++;lines.push("[ALREADY_SEEN] "+edge+" — 중복·순환 재조회 생략 (기존 예약·시도 경로)");continue
       }
-      if(node.depth>=MAX_DEPTH||targets>=MAX_TARGETS){defer(edge);continue}
+      if(node.depth>=MAX_DEPTH||targets>=MAX_TARGETS){
+        defer(edge)
+        const sourceKey=key(node.law,node.article)
+        const batch=pending.get(sourceKey)??{law:node.law,article:node.article,targets:[]}
+        if(pendingCount<10){batch.targets.push({name:link.name,mst:link.mst,article:link.article});pending.set(sourceKey,batch);pendingCount++}else pendingOverflow++
+        continue
+      }
       targets++
       const lookup=link.name
       let law:LawInfo|undefined
@@ -130,6 +140,75 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
   }
   lines.splice(2,0,"시작 확인 "+roots+"건 / 하위 조문 확인 "+verified+"건 / 법령·응답 미검증 "+failed+"건 / 행정규칙 미완결 경로 "+adminIncomplete+"건 / 독립 동일 법령 후보 확인 "+localVerified+"건 / 대상 시도 "+targets+"건 / 중복·순환 재사용 "+reused+"건 / 제한 "+deferred+"건. 상한: 시작 "+MAX_ROOTS+", 대상 시도 "+MAX_TARGETS+", 깊이 "+MAX_DEPTH+", 행정규칙 원문 조회 시도 "+MAX_RULES+"건. 개별 고시의 현행성·미검증 여부는 하단 경로별로 표시합니다.")
   if(failed||deferred||adminIncomplete)lines.splice(2,0,"[PARTIAL] 일부 경로 미확인·미추적. 전체 위임관계가 아닙니다.")
+  if(pendingCount){
+    const batches:string[]=[]
+    for(const batch of pending.values())for(let i=0;i<batch.targets.length;i+=MAX_TARGETS)batches.push("[FOLLOWUP_BATCH] "+JSON.stringify(batchFor(batch.law,batch.article,batch.targets.slice(i,i+MAX_TARGETS))))
+    lines.splice(4,0,"미추적 법령 조문 선택자 "+pendingCount+"건 / 추가 미표시 "+pendingOverflow+"건. 등재 후보일 뿐 원문·현행성 미확인. execute_tool(tool_name=\"continue_delegation_trace\", params=FOLLOWUP_BATCH의 JSON)으로 직접 연결 재검증.",...batches)
+  }
   if(omitted.length)lines.push("미추적 후보(최대 10개):\n"+omitted.join("\n"))
   return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),18000)}],...(!roots?{isError:true}:{})}
+}
+
+
+// Stateless, bounded continuation. Client-supplied batches are selectors, not trusted evidence.
+const articleSelector=z.string().regex(/^제[1-9]\d{0,3}조(?:의[1-9]\d?)?$/)
+const mstSelector=z.string().regex(/^\d{1,12}$/)
+const nameSelector=z.string().trim().min(1).max(200)
+const targetSelector=z.object({name:nameSelector,mst:mstSelector,article:articleSelector}).strict()
+export const ContinueDelegationSchema=z.object({
+  source_name:nameSelector,source_mst:mstSelector,source_id:mstSelector,
+  source_effective_date:z.string().regex(/^\d{8}$/),source_article:articleSelector,
+  targets:z.array(targetSelector).min(1).max(MAX_TARGETS),apiKey:z.string().optional(),
+}).strict()
+type FollowupInput=z.infer<typeof ContinueDelegationSchema>
+type TargetSelector=z.infer<typeof targetSelector>
+const selectorKey=(target:TargetSelector)=>JSON.stringify([target.mst,buildJO(target.article)])
+const batchFor=(law:LawInfo,article:string,targets:TargetSelector[])=>({source_name:law.lawName,source_mst:law.mst,source_id:law.lawId,source_effective_date:law.effectiveDate!,source_article:article,targets})
+async function freshExactLaw(api:LawApiClient,name:string,apiKey?:string):Promise<LawInfo>{
+  const xml=await api.searchLaw(name,apiKey,100)
+  const count=extractTag(xml,"totalCnt")
+  if(xml.length>2_000_000||!/<LawSearch[\s>]/.test(xml)||!/^\d+$/.test(count))throw Error("검색 응답 미검증")
+  const rows=parseLawXml(xml,101), total=Number(count)
+  if(!Number.isSafeInteger(total)||total!==rows.length||total>100)throw Error("검색 범위 미완결")
+  const exact=rows.filter(l=>sameLawName(l.lawName,name)&&valid(l))
+  const unique=[...new Map(exact.map(l=>[JSON.stringify([l.lawId,l.mst,l.effectiveDate]),l])).values()]
+  if(unique.length!==1)throw Error("현행 법령 식별 미확정")
+  return unique[0]
+}
+export async function continueDelegationTrace(api:LawApiClient,input:FollowupInput):Promise<ToolResponse>{
+  const lines=["[DELEGATION_FOLLOWUP] 미추적 조문 선택 조회", "이전 상태를 신뢰하지 않고 시작 법령의 현행 버전·조문·공식 연결을 재검증합니다. 지정한 직접 연결만 확인하며 과거 경로 전체의 유효성 또는 법적 위임 효력을 확정하지 않습니다."]
+  const fail=(reason:string):ToolResponse=>({content:[{type:"text",text:lines.join("\n\n")+"\n\n[NOT_VERIFIED] "+reason}],isError:true})
+  const selectors=new Map<string,TargetSelector>()
+  for(const target of input.targets){const k=selectorKey(target),prior=selectors.get(k);if(prior&&!sameLawName(prior.name,target.name))return fail("동일 대상 식별자 명칭 충돌");selectors.set(k,target)}
+  let source:LawInfo, links:ReturnType<typeof parseDelegatedLawLinks>
+  try{
+    throwIfRequestCancelled()
+    source=await freshExactLaw(api,input.source_name,input.apiKey)
+    if(source.mst!==input.source_mst||source.lawId!==input.source_id||source.effectiveDate!==input.source_effective_date)return fail("시작 법령 버전 변경 또는 식별정보 불일치 — 새 추적 필요")
+    await readExactArticle(api,source,input.source_article,input.apiKey,true)
+    const raw=await api.fetchApi({endpoint:"lawService.do",target:"lsDelegated",type:"JSON",extraParams:{MST:source.mst},apiKey:input.apiKey})
+    if(raw.length>5_000_000)throw Error("응답 크기 제한")
+    links=parseDelegatedLawLinks(JSON.parse(raw),{...source,effectiveDate:source.effectiveDate!},input.source_article)
+    if(links.status==="NOT_VERIFIED")return fail("시작 공식 연결 범위 미검증")
+  }catch(e){rethrowIfFatal(e);return fail("시작 현행 검색·조문·공식 응답 검증 실패")}
+  lines.push("[FOLLOWUP_SOURCE_VERIFIED] "+source.lawName+" "+input.source_article+" | MST "+source.mst+" | 시행 "+source.effectiveDate)
+  let verified=0, rejected=0
+  const resolved=new Map<string,LawInfo>()
+  for(const target of selectors.values()){
+    throwIfRequestCancelled()
+    const label=target.name+" "+target.article+" | 등재 MST "+target.mst
+    const edges=links.links.filter(l=>l.mst===target.mst&&l.article===target.article&&sameLawName(l.name,target.name))
+    if(!edges.length){rejected++;lines.push("[FOLLOWUP_NOT_LISTED] "+label+" — 현재 공식 응답에서 해당 연결 미확인");continue}
+    try{
+      const name=edges[0].name
+      const law=resolved.get(name)??await freshExactLaw(api,name,input.apiKey)
+      resolved.set(name,law)
+      if(law.mst!==target.mst){rejected++;lines.push("[FOLLOWUP_STALE_TARGET] "+label+" | 현행 MST "+law.mst+" — 새 추적 필요");continue}
+      const record=await readExactArticle(api,law,target.article,input.apiKey,true)
+      verified++
+      lines.push("[FOLLOWUP_TARGET_VERIFIED] "+law.lawName+" "+target.article+" | MST "+law.mst+" | 시행 "+law.effectiveDate+"\n"+edges.slice(0,5).map(e=>"시작 위치 "+(e.location||"미제공")+" | 목록 문언: "+(e.wording||"미제공")).join("\n")+(edges.length>5?"\n[PARTIAL] 추가 등재 위치 "+(edges.length-5)+"개 미표시":"")+"\n"+truncateResponse(record.header+"\n"+record.body,1000))
+    }catch(e){rethrowIfFatal(e);rejected++;lines.push("[FOLLOWUP_TARGET_NOT_VERIFIED] "+label)}
+  }
+  lines.splice(2,0,"[PARTIAL] 선택 조회 범위만 검증. 요청 "+input.targets.length+"건 / 고유 대상 "+selectors.size+"건 / 원문 확인 "+verified+"건 / 미검증 "+rejected+"건. 공식 응답 "+links.status+". 전체 그래프·행정규칙·추가 하위 경로 미검증.")
+  return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),18000)}]}
 }
