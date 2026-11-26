@@ -1,5 +1,5 @@
 /** Review-only arithmetic. Article 17-2(4),(5),(8),(9) verified at historySeq=1820.
- * Annex adjustment/benefit formulas are secondary prospectus evidence, not verified against 20261112 HWP.
+ * Annex 1 I.3 formula verified against supplied 20261112 HWP SHA-256 8ce007dcf5fc56bc2d4f7f861720f84697bd5df93b5ffdb84f7bed00f2995fc2.
  * No automatic legal eligibility, version selection, committee decision or final sanction. */
 export interface AdjustmentInput {
   preMitigationMonths: number
@@ -17,9 +17,9 @@ export function reviewKofiaAdjustment(input: AdjustmentInput) {
   const feePeriodKrw = scenarioMonths * 5_000_000
   const benefitFloorKrw = Math.floor(benefit / 1_000_000) * 1_000_000
   return {
-    status: 'SECONDARY_EVIDENCE_REVIEW_ONLY',
-    annexVersionVerified: false, legalEffectVerified: false, committeeDecisionVerified: false,
-    source: 'KOFIA Article 17-2(4),(5),(8),(9); secondary 2026-10 prospectus annex quotation',
+    status: 'ANNEX_SOURCE_VERIFIED_REVIEW_ONLY',
+    annexVersionVerified: true, legalEffectVerified: false, committeeDecisionVerified: false,
+    source: 'KOFIA Article 17-2(4),(5),(8),(9); Annex 1 I.3 (20261112 supplied HWP)',
     preMitigationMonths: before, proposedMitigationMonths: reduction, economicBenefitKrw: benefit,
     protectedMonths, appliedMitigationMonths, scenarioMonths,
     paymentReviewThresholdMet: eligible,
