@@ -193,13 +193,14 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
   const article=input.article.replace(/\s+/g,"")
   if(!/^제[1-9]\d{0,3}조(?:의[1-9]\d?)?$/.test(article)||!input.query.trim()||input.query.length>100||!input.lawName.trim()||input.lawName.length>150)return fail("행정규칙 제목 검색어, 정확한 상위 법령명 및 조 번호 필요")
   const today=todayKst(), lines=["[INDEPENDENT_ADMIN_CITATION_SEARCH] 제목 검색 후보의 현행 원문 인용 확인", "검색어별 상위 10개 행, 전체 최대 3개 계보만 확인. 전 행정규칙 본문 검색이나 위임 효력 판정 아님. 공식 연결 미등재와 공식 목록 부존재는 다름."]
-  let law:LawInfo, header:string
+  let law:LawInfo, header:string, sourceBody:string
   try{
     const matches=(await findLaws(api,input.lawName,input.apiKey,100)).filter(l=>sameLawName(l.lawName,input.lawName)&&/^\d+$/.test(l.mst)&&/^\d+$/.test(l.lawId)&&l.effectiveDate&&DATE.test(l.effectiveDate)&&l.effectiveDate<=today&&l.status!=="연혁")
     const unique=[...new Map(matches.map(l=>[JSON.stringify([l.mst,l.lawId,l.effectiveDate]),l])).values()]
     if(unique.length!==1)return fail("상위 현행 법령 정확 식별 실패")
     law=unique[0]
-    header=(await readExactArticle(api,law,article,input.apiKey,true)).header
+    const record=await readExactArticle(api,law,article,input.apiKey,true)
+    header=record.header;sourceBody=record.body
   }catch(e){rethrowIfFatal(e);return fail("상위 조문 원문 검증 실패")}
   lines.push("[SOURCE_ARTICLE_VERIFIED] "+law.lawName+" "+article+" | MST "+law.mst+" | 시행 "+law.effectiveDate)
   let official:ReturnType<typeof parseDelegatedAdminLinks>|undefined
@@ -247,9 +248,27 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
   // Preserve exact user title, then distribute the bounded slots across distinct query streams.
   if(input.expand)for(const row of batches.find(b=>b.query===queries[0])?.rows??[])if(sameLawName(row.name,queries[0]))add(row)
   for(let i=0;i<10;i++)for(const batch of batches){const row=batch.rows[i];if(row)add(row)}
+  // Priority is a discovery hint, never a legal scope or authority determination.
+  // Preserve exact requested titles and verified-list identity, then promote a topical notice
+  // only when its ministry is literally named as an authority in the verified source article.
+  // Remaining candidates retain the existing round-robin order, including internal rules.
+  const normalize=(value:string)=>value.replace(/[\sㆍ·]/g,"")
+  const terms=queries.map(normalize).filter(q=>q.length>=3)
+  const priority=(row:Row):{tier:number;reason:string}=>{
+    if(sameLawName(row.name,queries[0]))return {tier:3,reason:"요청 제목 정확일치"}
+    if(official?.links.some(e=>e.serial===row.serial&&sameLawName(e.name,row.name)))return {tier:2,reason:"공식 등재 일련번호·명칭 일치"}
+    const org=row.org.replace(/\s+/g,"")
+    const topical=terms.some(q=>normalize(row.name).includes(q))
+    if(topical&&row.kind==="고시"&&sourceBody.length<=100000&&/^[가-힣]{2,20}부$/.test(org)&&new RegExp("(?<![가-힣])"+org+"(?:령(?=으로|에서|에|\\s|[.,;)]|$)|장관(?=이|은|의|\\s|[.,;)]|$))").test(sourceBody))return {tier:1,reason:"제목 주제·고시·시작 원문 부처 문언 일치"}
+    return {tier:0,reason:"기존 검색 순서"}
+  }
+  const ranked=candidates.map(row=>({row,...priority(row)})).sort((a,b)=>b.tier-a.tier)
+  lines.push("[CANDIDATE_PRIORITY_SCOPE] 제목·공식 목록·검색 메타데이터를 이용한 열람 순서. 적용범위·법적 효력 판단 아님. 원문 검증 최대 3개 유지.")
+  for(const [i,candidate] of ranked.slice(0,3).entries())lines.push("[CANDIDATE_SELECTED] "+(i+1)+". "+candidate.row.name+" | "+candidate.row.serial+" | "+candidate.reason)
+  if(ranked.length>3)lines.push("[CANDIDATE_DEFERRED] 미열람 "+(ranked.length-3)+"개 계보: "+ranked.slice(3,10).map(c=>c.row.name+" ("+c.row.serial+")").join(" / ")+(ranked.length>10?" / 추가 미표시 "+(ranked.length-10)+"개":""))
   let verified=0, found=0, failed=0
   if(candidates.length>3)limited=true
-  for(const row of candidates.slice(0,3)){
+  for(const {row} of ranked.slice(0,3)){
     throwIfRequestCancelled()
     try{
       const history=await fetchAdminRuleHistory(api,row.name,input.apiKey)

@@ -367,3 +367,60 @@ describe("benchmark-driven evidence compaction",()=>{
     expect(s).toContain("제11조의2제2항 | EXACT=1")
   })
 })
+
+describe("bounded independent discovery candidate priority",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  const params={query:"위험성평가 인정심사",lawName:law.lawName,article:"제11조의2",expand:true}
+  const xml=(...rows:string[])=>"<AdmRulSearch><totalCnt>"+rows.length+"</totalCnt>"+rows.join("")+"</AdmRulSearch>"
+  const other=(id:string,n:string,kind:string,org:string)=>row(id,"20200101").replace("9999",id.slice(-4)).replace(name,n).replace("<행정규칙종류>고시", "<행정규칙종류>"+kind).replace("</admrul>","<소관부처명>"+org+"</소관부처명></admrul>")
+  const internal1=other("2100000000011","국립기관 위험성평가 실시규정","예규","국립기관"),internal2=other("2100000000012","지방기관 위험성평가 실시규정","훈령","지방기관"),internal3=other("2100000000013","다른기관 위험성평가 실시규정","예규","다른기관")
+  const general=other("2100000000014","사업장 위험성평가에 관한 지침","고시","고용노동부"),foreign=other("2100000000015","어선 위험성평가에 관한 지침","고시","해양수산부")
+  function setup(body="위험성평가는 고용노동부령으로 정한다."){
+    const c=fixture()
+    const searchLaw=vi.fn(async()=>`<LawSearch><totalCnt>1</totalCnt><law><법령명한글>${law.lawName}</법령명한글><법령ID>${law.lawId}</법령ID><법령일련번호>${law.mst}</법령일련번호><법령구분명>${law.lawType}</법령구분명><시행일자>${law.effectiveDate}</시행일자></law></LawSearch>`)
+    const getLawText=vi.fn(async()=>JSON.stringify({법령:{기본정보:{법령명_한글:law.lawName,법령ID:law.lawId,시행일자:law.effectiveDate},조문:{조문단위:{조문여부:"조문",조문번호:"11",조문가지번호:"2",조문제목:"위험성평가의 실시",조문내용:body}}}}))
+    c.fetchApi.mockResolvedValueOnce("{}")
+    return {...c,api:{...c.api,searchLaw,getLawText} as unknown as LawApiClient,getLawText}
+  }
+  it("promotes a late topical notice of the ministry named in verified source and preserves other slots",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(internal1,internal2,internal3,foreign,general)).mockResolvedValueOnce(xml(internal1,internal2,internal3))
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[CANDIDATE_SELECTED] 1. 사업장 위험성평가에 관한 지침 | 2100000000014 | 제목 주제·고시·시작 원문 부처 문언 일치")
+    expect(s).toContain("[CANDIDATE_SELECTED] 2. 국립기관 위험성평가 실시규정")
+    expect(s).toContain("[CANDIDATE_SELECTED] 3. 지방기관 위험성평가 실시규정")
+    expect(s).toContain("[CANDIDATE_DEFERRED] 미열람 2개 계보")
+    expect(c.searchAdminRule).toHaveBeenCalledTimes(6)
+    expect(c.getLawText).toHaveBeenCalledTimes(1)
+    expect(s).not.toContain("[INDEPENDENT_CITATION_VERIFIED]")
+  })
+  it.each(["관련 기관을 검토한다.","고용노동부령집을 검토한다.","다른고용노동부령으로 정한다."])("retains prior order without an exact ministry authority phrase: %s",async body=>{
+    const c=setup(body);c.searchAdminRule.mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(internal1,internal2,internal3,general)).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[CANDIDATE_SELECTED] 1. 국립기관 위험성평가 실시규정")
+    expect(s).not.toContain("제목 주제·고시·시작 원문 부처 문언 일치")
+    expect(s).toContain("[CANDIDATE_DEFERRED] 미열람 1개 계보")
+  })
+  it("preserves an explicit institution title ahead of a promoted notice",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce(xml(general,internal3)).mockResolvedValueOnce(xml(general,internal1)).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,{...params,query:"다른기관 위험성평가 실시규정"})).content[0].text
+    expect(s).toContain("[CANDIDATE_SELECTED] 1. 다른기관 위험성평가 실시규정 | 2100000000013 | 요청 제목 정확일치")
+    expect(s).toContain("[CANDIDATE_SELECTED] 2. 사업장 위험성평가에 관한 지침")
+  })
+  it("keeps priority separate from verified citation and checks the selected original",async()=>{
+    const c=setup();c.searchAdminRule.mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(internal1,internal2,internal3,general)).mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(general))
+    const raw=await c.getAdminRule.getMockImplementation()!()
+    c.getAdminRule.mockResolvedValueOnce(raw.replace(serial,"2100000000014").replace("9999","0014").replace(name,"사업장 위험성평가에 관한 지침"))
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[INDEPENDENT_CITATION_VERIFIED] 사업장 위험성평가에 관한 지침")
+    expect(s).toContain("OFFICIAL_STATUS_UNRESOLVED")
+    expect(s).not.toContain("[OFFICIAL_LINK_LISTED]")
+    expect(c.getAdminRule).toHaveBeenCalledTimes(1)
+  })
+  it("does not prioritize ministry metadata without matching topical title or notice kind",async()=>{
+    const c=setup();const unrelated=other("2100000000016","다른 고시","고시","고용노동부"),nonNotice=other("2100000000017","위험성평가 검토규정","예규","고용노동부")
+    c.searchAdminRule.mockResolvedValueOnce(xml()).mockResolvedValueOnce(xml(internal1,internal2,internal3,unrelated,nonNotice)).mockResolvedValueOnce(xml())
+    const s=(await discoverAdminCitations(c.api,params)).content[0].text
+    expect(s).toContain("[CANDIDATE_SELECTED] 1. 국립기관 위험성평가 실시규정")
+    expect(s).not.toContain("제목 주제·고시·시작 원문 부처 문언 일치")
+  })
+})
