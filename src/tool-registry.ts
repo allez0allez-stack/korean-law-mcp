@@ -18,6 +18,7 @@ import { V3_EXPOSED, TOOL_TITLES } from "./lib/tool-profiles.js"
 import { searchDecisions, SearchDecisionsSchema, getDecisionText, GetDecisionTextSchema } from "./tools/unified-decisions.js"
 
 // Tool imports
+import { kofiaSanctionScenario, KofiaSanctionScenarioSchema } from "./tools/kofia-sanction-scenario.js"
 import { kofiaSanctionBase, KofiaSanctionBaseSchema } from "./tools/kofia-sanction-base.js"
 import { continueDelegationTrace, ContinueDelegationSchema } from "./tools/recursive-admin-delegation.js"
 import { searchLaw, SearchLawSchema } from "./tools/search.js"
@@ -733,6 +734,12 @@ export const allTools: McpTool[] = [
     description: "[금융투자 자율규제] 사용자 제공 2026-11-12 개정 금투협 별표 1·1-2의 금액 기반 기본기간 시나리오. version=20261112, violation, violation_amount_krw 필수. 가중·감면·현행성·최종 제재 미확정. 잔여 단위 처리 미확정 시 절사/올림 가정 병기.",
     schema: KofiaSanctionBaseSchema,
     handler: kofiaSanctionBase
+  },
+  {
+    name: "kofia_sanction_scenario",
+    description: "[금융투자 자율규제] 고정 20261112 별표 1·1-2 IPO/무보증사채 가중·감면, 복수 심의, 환매비율, 확약위반 경제적 이익, 사전청약 기본기간 및 재량 상한 시나리오. 현행성·최종 제재 미확정.",
+    schema: KofiaSanctionScenarioSchema,
+    handler: kofiaSanctionScenario
   },
 
   // === 메타 도구 (lite 프로필용) ===

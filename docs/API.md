@@ -371,3 +371,15 @@ legal_analysis(mode="amendment_table",
 
 `execute_tool`로 호출: `{"tool_name":"kofia_sanction_base","params":{"version":"20261112","violation":"ipo_nonpayment","violation_amount_krw":150000000}}`.
 사용자가 제공한 2026-11-12 개정 별표 1·1-2 기준의 기본기간 계산만 지원한다. 결과의 원문 파일 SHA-256, 금액 정의 및 상한 전후 값은 검토용이다. 잔액 단위 절사/올림은 가정별로 병기한다. 행위시 적용, 현행성, 가중·감면, 최종 제재기간 및 제재금은 확정하지 않는다. `discover_tools(intent="불성실 수요예측")`로 검색할 수 있다. 제재기간이 재량인 유형과 무보증사채 규정은 지원하지 않는다.
+
+### 금투협 별표 1·1-2 가중·감면 및 산정 시나리오 (`kofia_sanction_scenario`)
+
+고정 버전 `20261112`의 사용자 제공 별표 1에 대한 검토용 산술. `execute_tool`로 호출한다. IPO 8개 금액 기준 유형 및 무보증사채(미청약·미납입/제17조의2제1항제3호·제9호)를 지원한다. 사전청약은 별표 1-2의 별도 기준으로, 통합 도구에서 금액 기준 및 재량 상한을 구분한다.
+
+```json
+{"tool_name":"kofia_sanction_scenario","params":{"version":"20261112","market":"ipo","violation":"ipo_nonpayment","violation_amount_krw":240000000,"economic_benefit_krw":5000000,"designation_count_including_current":1,"apply_repeat_aggravation":false,"listing_day_lockup":false,"apply_listing_day_aggravation":false,"general_mitigation_bps":7500,"assume_general_mitigation_approval":true}}
+```
+
+가중과 감면의 채택 여부 및 감면율은 입력 가정이며 위원회 의결을 대체하지 않는다. 확약준수율 감면은 일별 잔고와 금액 대사, 재매수 또는 80% 기준 및 위원회 승인 가정을 요구하며 준수율 전액 적용 시나리오를 반환한다. 두 가중의 합산/순차, 경합시 기본상한 및 가중상한 시점, 잔여 가산 단위에 관해 가정별 결과를 반환한다. 감경 후 월 미만은 반올림한다. 경제적 이익 금액은 별도 산정·검증한 입력값이며 감면 제외는 500만원 단위, 제재금은 3개월 이하 양의 제한기간 시나리오만 표시(100만원 미만 절사 해석 병기). 무보증사채는 최근 1년 미지정·경미성 가정 및 50% 감경 상한을 적용하고 납부 기준만 반환한다. 경제적 이익 산정과 복수 사건 선정은 별도 market으로 검토용 산술을 지원하며, 실제 제재금 전환 여부, 행위시 적용례·현행성은 미확정이다.
+
+`kofia_sanction_scenario` 추가 market: `cornerstone` (금액 기준 두 유형), `cornerstone_discretionary` (비밀유지·허위정보·공정성 저해, 12개월 이내 상한만), `lockup_benefit` (처분·재매수 lot 및 기준종가 입력, 정확 유리수 손익). 별표 1 가중·감면은 사전청약에 자동 적용하지 않음.
