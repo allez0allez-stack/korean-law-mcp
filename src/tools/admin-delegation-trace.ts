@@ -7,6 +7,7 @@ import { fetchAdminRuleHistory, adminVersionAt, parseAdminRuleRows } from "../li
 import { loadAdminRuleDoc, adminRuleParsed, type AdminRuleDoc } from "../lib/admin-rule-doc.js"
 import { adminRuleSourceUrl, INLINE_IMAGE_MARK, markInlineImages } from "../lib/image-only-body.js"
 import { parseDelegatedAdminLinks, type AdminDelegationLink } from "../lib/admin-delegation-links.js"
+import { listedRelationNote } from "../lib/relation-wording.js"
 import { extractNamedStatuteReferences, readExactArticle } from "./statute-reference-trace.js"
 import { extractTag } from "../lib/xml-parser.js"
 import { truncateResponse } from "../lib/schemas.js"
@@ -286,7 +287,7 @@ export async function discoverAdminCitations(api:LawApiClient,input:{query:strin
 }
 
 export async function traceAdminRuleDelegations(api: LawApiClient, input: {
-  law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean
+  law: LawInfo; articles: readonly string[]; apiKey?: string; officialPayload?: unknown; maxRules?: number; inspectCurrentCandidate?: boolean; verifiedSourceBody?: {article:string;body:string}
 }): Promise<ToolResponse & { coverage: "COMPLETE" | "PARTIAL" | "NOT_VERIFIED" }> {
   const {law,apiKey} = input
   const today = todayKst()
@@ -345,7 +346,7 @@ export async function traceAdminRuleDelegations(api: LawApiClient, input: {
     const name = edges[0].name
     const linkLabel = name+" | 등재 일련번호 "+serial
     if (edges.some(e=>!sameLawName(e.name,name))) {lines.push("[NOT_VERIFIED] "+linkLabel+" — 제목 충돌");continue}
-    lines.push("[OFFICIAL_LINK_LISTED] "+linkLabel+"\n"+edges.map(e=>e.sourceArticle+" "+e.location+" | 목록 문언: "+(e.wording||"미제공")).join("\n"))
+    lines.push("[OFFICIAL_LINK_LISTED] "+linkLabel+"\n"+edges.map(e=>e.sourceArticle+" "+e.location+" | 목록 문언: "+(e.wording||"미제공")+(input.verifiedSourceBody?.article===e.sourceArticle?listedRelationNote(input.verifiedSourceBody.body,e.wording,law.lawType,"행정규칙"):" | 관계문언: UNRESOLVED (시작 원문 미대조)")).join("\n"))
     try {
       const cached = verifiedHistories.get(name)
       const history = cached && [...cached.groups.values()].some(g=>g.some(v=>v.serial===serial&&sameLawName(v.name,name)))

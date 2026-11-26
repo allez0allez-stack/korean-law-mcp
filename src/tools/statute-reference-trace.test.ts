@@ -65,3 +65,14 @@ describe("effective-slice pinning for split commencement", () => {
     const c=sliceFixture("29990101");const r=await trace(c.api,{law:{...root,effectiveDate:"29990101"},articles:["제11조"]});expect(r.isError).toBe(true);expect(c.getLawText).not.toHaveBeenCalled()
   })
 })
+
+describe("relation wording in explicit reference tracing",()=>{
+  it("preserves legacy extraction and enriches the requested trace without inferring effect",async()=>{
+    lawCache.clear()
+    const body="「민법」 제750조에도 불구하고 예외로 한다. 「민법」 제750조에서 정의한 용어를 쓴다. 「민법」 제750조에 따른 신고를 한다."
+    expect(extract(body,true).map(r=>r.relationEvidence?.kind)).toEqual(["EXCEPTION_WORDING","DEFINITION_WORDING","PROCEDURE_WORDING"])
+    const c=mock([{law:ROOT,articles:{"001100":body}},{law:B,articles:{"075000":"공식 본문"}}]);const s=(await trace(c.api,{law:ROOT,articles:["제11조"]})).content[0].text
+    expect(s).toContain("관계문언: EXCEPTION_WORDING");expect(s).toContain("관계문언: DEFINITION_WORDING");expect(s).toContain("관계문언: PROCEDURE_WORDING");expect(s).toContain("효력 미판정")
+    expect(extract("「민법」 제750조를 준용할 수 없다.")[0].relation).toBe("CITATION")
+  })
+})

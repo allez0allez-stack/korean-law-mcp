@@ -189,3 +189,34 @@ describe("bounded delegation follow-up",()=>{
     expect(ContinueDelegationSchema.safeParse({...batch,targets:[{...batch.targets[0],verified:true}]}).success).toBe(false)
   })
 })
+
+
+describe("relation wording in recursive and follow-up paths",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  function setup(){
+    const rs=records()
+    Object.assign((rs[0].links as ReturnType<typeof edge>).위임법령조문정보,{라인텍스트:"사항은 대통령령으로"})
+    Object.assign((rs[1].links as ReturnType<typeof edge>).위임법령조문정보,{라인텍스트:"재정경제부령으로 정하는 요건"})
+    rs[2].links={위임행정규칙조문정보:{...admin.위임행정규칙조문정보,라인텍스트:"고용노동부장관이 정하여 고시한다"}}
+    const c=fixture(rs),original=c.getLawText.getMockImplementation()!
+    c.getLawText.mockImplementation(async p=>{const raw=JSON.parse(await original(p));raw.법령.조문.조문단위.조문내용=p.mst===A.mst?"사항은 대통령령으로 정한다.":p.mst===B.mst?"재정경제부령으로 정하는 요건을 갖춘다.":"고용노동부장관이 정하여 고시한다.";return JSON.stringify(raw)})
+    return c
+  }
+  it("classifies verified source wording on both statutory and administrative edges without extra API reads",async()=>{
+    const c=setup(),s=(await run(c)).content[0].text
+    expect(s).toContain("관계문언: DELEGATION_WORDING (대통령령으로정한다")
+    expect(s.match(/관계문언: REDELEGATION_WORDING/g)).toHaveLength(2)
+    expect(s).toContain("효력 미판정")
+    expect(c.getLawText).toHaveBeenCalledTimes(3)
+    expect(c.fetchApi).toHaveBeenCalledTimes(3)
+  })
+  it("reuses verified parent wording in a follow-up without a new search round",async()=>{
+    const c=setup()
+    const original=c.searchLaw.getMockImplementation()!
+    c.searchLaw.mockImplementation(async q=>{const xml=await original(q);return xml.replace(/<totalCnt>3<\/totalCnt>/,"<totalCnt>"+(xml.match(/<law>/g)?.length??0)+"</totalCnt>")})
+    const result=await continueDelegationTrace(c.api,ContinueDelegationSchema.parse({source_name:A.lawName,source_mst:A.mst,source_id:A.lawId,source_effective_date:A.effectiveDate,source_article:"제1조",targets:[{name:B.lawName,mst:B.mst,article:"제2조"}]}))
+    expect(result.content[0].text).toContain("관계문언: DELEGATION_WORDING")
+    expect(c.getLawText).toHaveBeenCalledTimes(2)
+    expect(c.fetchApi).toHaveBeenCalledTimes(1)
+  })
+})
