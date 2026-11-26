@@ -50,3 +50,15 @@ python -m unittest -v test_inspect_attachment
 PDF requires pdftotext; HWP5 requires hwp5txt (not installed in this environment). Tests require reportlab for synthetic PDFs. Actual tests 8/8 passed (0.098 s): two-page PDF text and raw SHA-256, blank PDF, corrupt PDF, disguised HTML error, missing file, byte cap, invalid HWP signature and missing HWP parser. HWP extraction success has NOT been tested; no actual HWP or FSS PDF was obtained. Input limit 32 MiB, timeout 30 s, post-extraction output limit 2 million characters. The output byte cap is checked after extraction; this is not a hardened sandbox for arbitrary untrusted documents. Run only in a suitably isolated local environment with trusted files and maintained extractors. Source, version, visual layout, page/table completeness and legal effect are not verified by successful text extraction. Never use synthetic fixture values as legal evidence.
 
 Local tested blob SHAs: inspect_attachment.py c98aa6b2e4df2c97059344852030e6ddd48c8433; test_inspect_attachment.py 5dc01f8d505a425c93c9f9f8ea8e63008b9d6a18. No runtime change, server creation, credential change or manual Actions. Existing 1853 production regression tests were not rerun in this evidence-only step.
+
+
+## Fixed-source date predicate checks — 2026-11-26
+
+While official attachment download remains blocked, eight selected explicit date predicates from the captured historySeq=1820 addenda were indexed in `kofia-date-boundaries-1820.json`. The date-only comparator validates captured page continuity, document identifiers, reported source hash and selected evidence wording. Actual JavaScript execution passed 36/36 checks: 24 boundary checks, eight wrong-event checks, three invalid-date checks and one wrong-source-hash check. These are synthetic dates tested against manually selected source predicates, not independent legal adjudication. The manifest is a curated fixed input, not an automatic parser of all addenda or a signed trust anchor. The raw HTML hash is provider-reported, not locally recomputed.
+
+Example from this directory:
+```sh
+node compare-kofia-date.mjs kofia-date-boundaries-1820.json kofia-1820-page1.json kofia-1820-page2.json HY-SUNSET first_securities_registration 20281231
+```
+
+A DATE_MATCH result concerns the stated date wording only; fund eligibility, currentness, later amendments, substantive conditions, actual events and legal effect remain unverified. In particular, Annex 1 application clauses include more-favorable treatment for earlier misconduct; the annex contents and actual conduct date are necessary before any sanction calculation. Attachment access remains blocked; request the official original HWP files (Annex 1 and 1-2 first) and the FSS full preparation standard/forms PDF from the user. No production code, deployment or authentication change. The prior 1853 runtime regression tests were not rerun.
