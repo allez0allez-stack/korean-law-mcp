@@ -1,0 +1,459 @@
+{
+  "title": "금융투자협회 법규정보시스템 | 증권 인수업무 등에 관한 규정 | 규정내용",
+  "author": "",
+  "published_at": null,
+  "modified_at": null,
+  "text_chars": 53150,
+  "text_sha256": "caa26a7cc7068ba969368814a72d2fe53628c9231da7dca553d5d95b2bf3f41e",
+  "truncated": false,
+  "content_type": "text/html",
+  "verification": "FULL_TEXT_VERIFIED",
+  "verification_scope": "Retrieved text extraction only; not factual truth or visual/table completeness.",
+  "table_extraction": "text rows; PDF layout text, no semantic cell reconstruction",
+  "untrusted_content": true,
+  "url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1782&seq=140",
+  "requested_url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1782&seq=140",
+  "sha256": "7687ac5d901e9a4a87861371114628e9ae175a22ac2e88fa360b85593c5b9cd8",
+  "retrieved_at_utc": "2026-11-26T05:54:40.378426+00:00",
+  "redirects": [
+    {
+      "url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1782&seq=140",
+      "http_status": 200
+    }
+  ],
+  "document_id": "caa26a7cc7068ba969368814a72d2fe53628c9231da7dca553d5d95b2bf3f41e",
+  "download_bytes": 224821,
+  "source_capability": "DECLARED_NOT_LIVE_VERIFIED",
+  "status": "ok",
+  "mode": "FULL",
+  "cache_hit": true,
+  "total_chunks": 696,
+  "chunks": [
+    {
+      "id": 636,
+      "page": null,
+      "paragraph": 637,
+      "offset": 0,
+      "text": "이 규정은 2022년 6월 10일부터 시행하고, 시행일 이후 투자자 재산 운용 업무가 이관되는 경우부터 적용한다."
+    },
+    {
+      "id": 637,
+      "page": null,
+      "paragraph": 638,
+      "offset": 0,
+      "text": "부 칙 (2023. 4. 27)"
+    },
+    {
+      "id": 638,
+      "page": null,
+      "paragraph": 639,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 639,
+      "page": null,
+      "paragraph": 640,
+      "offset": 0,
+      "text": "이 규정은 2023년 5월 1일부터 시행한다. 다만, 다음 각 호의 어느 하나에 해당하는 개정규정은 다음 각 호를 따른다."
+    },
+    {
+      "id": 640,
+      "page": null,
+      "paragraph": 641,
+      "offset": 0,
+      "text": "1. | 제5조의3 및 제17조의2제1항의 개정규정 : 2023년 7월 1일 이후 증권신고서를 최초로 제출한 기업공개부터 시행"
+    },
+    {
+      "id": 641,
+      "page": null,
+      "paragraph": 642,
+      "offset": 0,
+      "text": "2. | 제9조제1항 및 제2항의 개정규정 : 2024년 1월 1일 이후 증권신고서를 최초로 제출한 기업공개 또는 공모증자부터 시행 <개정 2023. 6. 8>"
+    },
+    {
+      "id": 642,
+      "page": null,
+      "paragraph": 643,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 643,
+      "page": null,
+      "paragraph": 644,
+      "offset": 0,
+      "text": "① | <별표 1>의 개정규정은 시행일 이후 발생한 불성실 수요예측행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 644,
+      "page": null,
+      "paragraph": 645,
+      "offset": 0,
+      "text": "② | 이 규정 부칙 제1조에도 불구하고 제17조의2제1항제9호는 2024년 1월 1일 이후에 발생한 불성실수요예측등 참여행위부터 제17조의2제4항을 적용한다."
+    },
+    {
+      "id": 645,
+      "page": null,
+      "paragraph": 646,
+      "offset": 0,
+      "text": "제3조(고위험고수익투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 646,
+      "page": null,
+      "paragraph": 647,
+      "offset": 0,
+      "text": "2021. | 6.17. 부칙 제4조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 647,
+      "page": null,
+      "paragraph": 648,
+      "offset": 0,
+      "text": "제4조(벤처기업투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 648,
+      "page": null,
+      "paragraph": 649,
+      "offset": 0,
+      "text": "2018. | 3.8. 부칙 제3조에도 불구하고 제2조제20호, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목, 같은 조 제8항·제9항·제10항 및 제17조의2제1항제6호ㆍ제7호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 649,
+      "page": null,
+      "paragraph": 650,
+      "offset": 0,
+      "text": "부 칙 (2023. 6. 8)"
+    },
+    {
+      "id": 650,
+      "page": null,
+      "paragraph": 651,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 651,
+      "page": null,
+      "paragraph": 652,
+      "offset": 0,
+      "text": "이 규정은 2023년 6월 12일 이후 증권신고서를 최초로 제출한 기업공개 또는 공모증자부터 적용한다."
+    },
+    {
+      "id": 652,
+      "page": null,
+      "paragraph": 653,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁등에 관한 적용기한)"
+    },
+    {
+      "id": 653,
+      "page": null,
+      "paragraph": 654,
+      "offset": 0,
+      "text": "2023. | 4.27. 부칙 제3조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 654,
+      "page": null,
+      "paragraph": 655,
+      "offset": 0,
+      "text": "부 칙 (2023. 12. 19)"
+    },
+    {
+      "id": 655,
+      "page": null,
+      "paragraph": 656,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 656,
+      "page": null,
+      "paragraph": 657,
+      "offset": 0,
+      "text": "이 규정은 2024년 1월 1일부터 시행한다."
+    },
+    {
+      "id": 657,
+      "page": null,
+      "paragraph": 658,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 658,
+      "page": null,
+      "paragraph": 659,
+      "offset": 0,
+      "text": "제10조의3제5항의 개정규정은 이 규정 시행 이후 상장예비심사를 신청하는 경우부터 적용한다."
+    },
+    {
+      "id": 659,
+      "page": null,
+      "paragraph": 660,
+      "offset": 0,
+      "text": "제3조(경과조치)"
+    },
+    {
+      "id": 660,
+      "page": null,
+      "paragraph": 661,
+      "offset": 0,
+      "text": "제10조의3제5항의 개정규정에서 \"최근 3년 이내에 코스닥시장 상장을 주관한 기술성장기업\"에는 동 규정 시행 이전에 상장을 완료한 기술성장기업은 포함하지 않는다."
+    },
+    {
+      "id": 661,
+      "page": null,
+      "paragraph": 662,
+      "offset": 0,
+      "text": "부 칙 (2024. 6. 28)"
+    },
+    {
+      "id": 662,
+      "page": null,
+      "paragraph": 663,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 663,
+      "page": null,
+      "paragraph": 664,
+      "offset": 0,
+      "text": "이 규정은 2024년 8월 1일부터 시행한다."
+    },
+    {
+      "id": 664,
+      "page": null,
+      "paragraph": 665,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 665,
+      "page": null,
+      "paragraph": 666,
+      "offset": 0,
+      "text": "① | 제3조제2항제8호, 제15조제3항제1호·제2호, 같은 조 제8항 및 <별표 2>의 개정규정은 2024년 8월 1일 이후 대표주관계약 체결분부터 적용한다."
+    },
+    {
+      "id": 666,
+      "page": null,
+      "paragraph": 667,
+      "offset": 0,
+      "text": "② | 제5조제9항 및 제15조제1항의 개정규정은 2024년 10월 1일 이후 대표주관계약 체결분부터 적용한다."
+    },
+    {
+      "id": 667,
+      "page": null,
+      "paragraph": 668,
+      "offset": 0,
+      "text": "부 칙 (2025. 3. 13)"
+    },
+    {
+      "id": 668,
+      "page": null,
+      "paragraph": 669,
+      "offset": 0,
+      "text": "이 규정은 2025년 7월 1일 이후 최초 증권신고서 제출분부터 적용한다. 다만, 제17조의2제4항, 제8항 및 <별표 1>의 개정규정은 2025년 4월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 669,
+      "page": null,
+      "paragraph": 670,
+      "offset": 0,
+      "text": "부 칙 (2025. 6. 12)"
+    },
+    {
+      "id": 670,
+      "page": null,
+      "paragraph": 671,
+      "offset": 0,
+      "text": "이 규정은 2025년 9월 3일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 671,
+      "page": null,
+      "paragraph": 672,
+      "offset": 0,
+      "text": "부 칙 (2025. 12. 4)"
+    },
+    {
+      "id": 672,
+      "page": null,
+      "paragraph": 673,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 673,
+      "page": null,
+      "paragraph": 674,
+      "offset": 0,
+      "text": "이 규정은 2025년 12월 5일부터 시행한다. 다만, 제9조제14항, 제15항의 개정규정은 2025년 12월 5일 이후 최초 증권신고서 제출분부터 적용하고, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목의 개정규정은 2026년 1월 1일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 674,
+      "page": null,
+      "paragraph": 675,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 675,
+      "page": null,
+      "paragraph": 676,
+      "offset": 0,
+      "text": "<별표1>의 개정규정은 2026년 1월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대해서 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 676,
+      "page": null,
+      "paragraph": 677,
+      "offset": 0,
+      "text": "제3조 (고위험고수익투자신탁등에 관한 적용기한)"
+    },
+    {
+      "id": 677,
+      "page": null,
+      "paragraph": 678,
+      "offset": 0,
+      "text": "2023. | 6.8. 부칙 제2조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2028년 12월 31일까지 기업공개 또는 공모증자에 대한 최초 증권신고서를 제출한 경우 그 효력을 가진다."
+    },
+    {
+      "id": 678,
+      "page": null,
+      "paragraph": 679,
+      "offset": 0,
+      "text": "제4조(벤처기업투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 679,
+      "page": null,
+      "paragraph": 680,
+      "offset": 0,
+      "text": "2023. | 4.27. 부칙 제4조에도 불구하고 제2조제20호, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목, 같은 조 제8항·제9항·제10항 및 제17조의2제1항제6호ㆍ제7호의 규정은 2028년 12월 31일까지 기업공개 또는 공모증자에 대한 최초 증권신고서를 제출한 경우 그 효력을 가진다."
+    },
+    {
+      "id": 680,
+      "page": null,
+      "paragraph": 681,
+      "offset": 0,
+      "text": "부 칙 (2026. 3. 12)"
+    },
+    {
+      "id": 681,
+      "page": null,
+      "paragraph": 682,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 682,
+      "page": null,
+      "paragraph": 683,
+      "offset": 0,
+      "text": "이 규정은 2026년 3월 13일부터 시행한다."
+    },
+    {
+      "id": 683,
+      "page": null,
+      "paragraph": 684,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 684,
+      "page": null,
+      "paragraph": 685,
+      "offset": 0,
+      "text": "① | 제9조제1항제7호·제7호다목, 제9조제14항 및 제9조제15항제3호의 개정규정은 2026년 4월 1일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 685,
+      "page": null,
+      "paragraph": 686,
+      "offset": 0,
+      "text": "② | 제5조제10항의 신설규정은 2026년 1월 1일 이후 코스닥시장에 상장된 건부터 적용한다."
+    },
+    {
+      "id": 686,
+      "page": null,
+      "paragraph": 687,
+      "offset": 0,
+      "text": "제3조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 687,
+      "page": null,
+      "paragraph": 688,
+      "offset": 0,
+      "text": "제17조의2제1항제2호가목, 제3호, 제10호, 제11호, 같은 조 제4항 및 <별표1> 중 I.1.표의 개정규정(단, 비고 제외)은 2026년 4월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 688,
+      "page": null,
+      "paragraph": 689,
+      "offset": 0,
+      "text": "[별표/서식 파일]"
+    },
+    {
+      "id": 689,
+      "page": null,
+      "paragraph": 690,
+      "offset": 0,
+      "text": "1. 0000_(별표 1).hwp"
+    },
+    {
+      "id": 690,
+      "page": null,
+      "paragraph": 691,
+      "offset": 0,
+      "text": "2. 0001_(별표 2).hwp"
+    },
+    {
+      "id": 691,
+      "page": null,
+      "paragraph": 692,
+      "offset": 0,
+      "text": "3. 0002_(별지 제1호 서식).hwp"
+    },
+    {
+      "id": 692,
+      "page": null,
+      "paragraph": 693,
+      "offset": 0,
+      "text": "4. 0003_(별지 제2호 서식).hwp"
+    },
+    {
+      "id": 693,
+      "page": null,
+      "paragraph": 694,
+      "offset": 0,
+      "text": "5. 0004_(별지 제3호 서식).hwp"
+    },
+    {
+      "id": 694,
+      "page": null,
+      "paragraph": 695,
+      "offset": 0,
+      "text": "6. 0005_(별지 제4호 서식).hwp"
+    },
+    {
+      "id": 695,
+      "page": null,
+      "paragraph": 696,
+      "offset": 0,
+      "text": "7. 0006_(별지 제5호 서식).hwp"
+    }
+  ],
+  "next_cursor": null,
+  "returned_chars": 3163,
+  "selection_complete": true,
+  "estimated_input_tokens": 4191,
+  "token_estimate_method": "Serialized result UTF-8 bytes / 3 + 32 heuristic; not actual tokens/billing",
+  "elapsed_ms": 4
+}

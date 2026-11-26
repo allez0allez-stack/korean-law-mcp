@@ -1,0 +1,1530 @@
+{
+  "title": "금융투자협회 법규정보시스템 | 증권 인수업무 등에 관한 규정 | 규정내용",
+  "author": "",
+  "published_at": null,
+  "modified_at": null,
+  "text_chars": 59361,
+  "text_sha256": "c49a303feb069500a66b70a191f77d8a37dccbcccf8dfa25e97a156327f22ad7",
+  "truncated": false,
+  "content_type": "text/html",
+  "verification": "FULL_TEXT_VERIFIED",
+  "verification_scope": "Retrieved text extraction only; not factual truth or visual/table completeness.",
+  "table_extraction": "text rows; PDF layout text, no semantic cell reconstruction",
+  "untrusted_content": true,
+  "url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+  "requested_url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+  "sha256": "f351eeaed09fd8c93805f33e3c9f2bd1dcc493d1d892998bf40122124efdc64b",
+  "retrieved_at_utc": "2026-11-26T05:41:06.655005+00:00",
+  "redirects": [
+    {
+      "url": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+      "http_status": 200
+    }
+  ],
+  "document_id": "c49a303feb069500a66b70a191f77d8a37dccbcccf8dfa25e97a156327f22ad7",
+  "download_bytes": 251726,
+  "source_capability": "DECLARED_NOT_LIVE_VERIFIED",
+  "status": "ok",
+  "mode": "FULL",
+  "cache_hit": true,
+  "total_chunks": 774,
+  "chunks": [
+    {
+      "id": 561,
+      "page": null,
+      "paragraph": 562,
+      "offset": 0,
+      "text": "제2조(기관투자자 등에 관한 적용례)"
+    },
+    {
+      "id": 562,
+      "page": null,
+      "paragraph": 563,
+      "offset": 0,
+      "text": "제2조제6호, 제8호, 제13호 및 제3조제1항의 개정 규정은 이 규정 시행일 이후 최초로 제출하는 증권신고서(이 규정 시행일 이전에 금융위원회에 제출된 일괄신고서에 따른 일괄신고추가서류 및 효력발생일의 변경을 수반하는 정정신고서를 포함한다)부터 적용한다."
+    },
+    {
+      "id": 563,
+      "page": null,
+      "paragraph": 564,
+      "offset": 0,
+      "text": "부 칙(2009. 12. 23)"
+    },
+    {
+      "id": 564,
+      "page": null,
+      "paragraph": 565,
+      "offset": 0,
+      "text": "이 규정은 2009년 12월 24일부터 시행한다."
+    },
+    {
+      "id": 565,
+      "page": null,
+      "paragraph": 566,
+      "offset": 0,
+      "text": "부 칙(2010. 8. 20)"
+    },
+    {
+      "id": 566,
+      "page": null,
+      "paragraph": 567,
+      "offset": 0,
+      "text": "이 규정은 2010년 8월 20일부터 시행한다."
+    },
+    {
+      "id": 567,
+      "page": null,
+      "paragraph": 568,
+      "offset": 0,
+      "text": "부 칙(2010. 11. 30)"
+    },
+    {
+      "id": 568,
+      "page": null,
+      "paragraph": 569,
+      "offset": 0,
+      "text": "이 규정은 2010년 12월 1일부터 시행한다."
+    },
+    {
+      "id": 569,
+      "page": null,
+      "paragraph": 570,
+      "offset": 0,
+      "text": "부 칙(2011. 11. 30)"
+    },
+    {
+      "id": 570,
+      "page": null,
+      "paragraph": 571,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 571,
+      "page": null,
+      "paragraph": 572,
+      "offset": 0,
+      "text": "이 규정은 2011년 11월 30일부터 시행한다. 다만, 제3조제4항, 제5조제4항, 제21조 및 별지 제2호의 개정 규정은 2012년 3월 31일부터 시행한다."
+    },
+    {
+      "id": 572,
+      "page": null,
+      "paragraph": 573,
+      "offset": 0,
+      "text": "부 칙(2012. 1. 17)"
+    },
+    {
+      "id": 573,
+      "page": null,
+      "paragraph": 574,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 574,
+      "page": null,
+      "paragraph": 575,
+      "offset": 0,
+      "text": "이 규정은 2012년 1월 18일부터 시행한다."
+    },
+    {
+      "id": 575,
+      "page": null,
+      "paragraph": 576,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 576,
+      "page": null,
+      "paragraph": 577,
+      "offset": 0,
+      "text": "제11조 및 제13조제3항의 개정 규정은 2012년 3월 31일 이후 대표주관계약 체결분부터 적용하고, 제12조, 제17조의2제1항 및 제4항제2호의 개정 규정은 2012년 4월 17일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 577,
+      "page": null,
+      "paragraph": 578,
+      "offset": 0,
+      "text": "부 칙(2012. 3. 29)"
+    },
+    {
+      "id": 578,
+      "page": null,
+      "paragraph": 579,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 579,
+      "page": null,
+      "paragraph": 580,
+      "offset": 0,
+      "text": "이 규정은 2012년 4월 15일부터 시행한다. 다만, 별지 제2호 중 개정규정은 2012년 3월 31부터 시행한다."
+    },
+    {
+      "id": 580,
+      "page": null,
+      "paragraph": 581,
+      "offset": 0,
+      "text": "부 칙(2012. 6. 28)"
+    },
+    {
+      "id": 581,
+      "page": null,
+      "paragraph": 582,
+      "offset": 0,
+      "text": "이 규정은 2012년 7월 1일부터 시행한다."
+    },
+    {
+      "id": 582,
+      "page": null,
+      "paragraph": 583,
+      "offset": 0,
+      "text": "부 칙(2012. 10. 26)"
+    },
+    {
+      "id": 583,
+      "page": null,
+      "paragraph": 584,
+      "offset": 0,
+      "text": "이 규정은 2012년 11월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 584,
+      "page": null,
+      "paragraph": 585,
+      "offset": 0,
+      "text": "부 칙(2013. 4. 4)"
+    },
+    {
+      "id": 585,
+      "page": null,
+      "paragraph": 586,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 586,
+      "page": null,
+      "paragraph": 587,
+      "offset": 0,
+      "text": "이 규정은 영 제119조제2항제6호가 시행되는 날부터 시행한다."
+    },
+    {
+      "id": 587,
+      "page": null,
+      "paragraph": 588,
+      "offset": 0,
+      "text": "부 칙(2013. 4. 26)"
+    },
+    {
+      "id": 588,
+      "page": null,
+      "paragraph": 589,
+      "offset": 0,
+      "text": "이 규정은 2013년 5월 1일부터 시행한다."
+    },
+    {
+      "id": 589,
+      "page": null,
+      "paragraph": 590,
+      "offset": 0,
+      "text": "부 칙(2013. 8. 29)"
+    },
+    {
+      "id": 590,
+      "page": null,
+      "paragraph": 591,
+      "offset": 0,
+      "text": "이 규정은 2013년 8월 29일부터 시행한다."
+    },
+    {
+      "id": 591,
+      "page": null,
+      "paragraph": 592,
+      "offset": 0,
+      "text": "부 칙(2013.11.29.)"
+    },
+    {
+      "id": 592,
+      "page": null,
+      "paragraph": 593,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 593,
+      "page": null,
+      "paragraph": 594,
+      "offset": 0,
+      "text": "이 규정은 2013년 12월 2일부터 시행한다."
+    },
+    {
+      "id": 594,
+      "page": null,
+      "paragraph": 595,
+      "offset": 0,
+      "text": "제2조(무보증사채 불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 595,
+      "page": null,
+      "paragraph": 596,
+      "offset": 0,
+      "text": "제17조의2제4항의 개정규정은 2013년 12월 2일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 596,
+      "page": null,
+      "paragraph": 597,
+      "offset": 0,
+      "text": "제3조(불성실 수요예측참여자 지정에 대한 경과조치)"
+    },
+    {
+      "id": 597,
+      "page": null,
+      "paragraph": 598,
+      "offset": 0,
+      "text": "무보증사채 불성실 수요예측참여자 지정에 있어 <별표 1>Ⅱ.2의 가중·감경 규정은 이 규정 시행일 전에 발생한 불성실 수요예측참여자로 지정된 건에 대해서는 적용하지 아니한다."
+    },
+    {
+      "id": 598,
+      "page": null,
+      "paragraph": 599,
+      "offset": 0,
+      "text": "부 칙(2014. 2. 20)"
+    },
+    {
+      "id": 599,
+      "page": null,
+      "paragraph": 600,
+      "offset": 0,
+      "text": "이 규정은 2014년 2월 21일부터 시행한다. 다만, 제2조제1호의 개정 규정은 「이중상환청구권부 채권 발행에 관한 법률」 시행일부터 시행한다."
+    },
+    {
+      "id": 600,
+      "page": null,
+      "paragraph": 601,
+      "offset": 0,
+      "text": "부 칙(2014. 3. 20)"
+    },
+    {
+      "id": 601,
+      "page": null,
+      "paragraph": 602,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 602,
+      "page": null,
+      "paragraph": 603,
+      "offset": 0,
+      "text": "이 규정은 2014년 5월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 603,
+      "page": null,
+      "paragraph": 604,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 유효기간)"
+    },
+    {
+      "id": 604,
+      "page": null,
+      "paragraph": 605,
+      "offset": 0,
+      "text": "제2조제8호바목, 같은 조 제18호, 제9조제1항제4호의 후단, 같은 항 제5호, 같은 조 제2항제3호의 후단, 같은 항 제6호 및 같은 조 제5항의 개정 규정은 2017년 12월 31일까지 효력을 가진다."
+    },
+    {
+      "id": 605,
+      "page": null,
+      "paragraph": 606,
+      "offset": 0,
+      "text": "부 칙(2014. 10. 16)"
+    },
+    {
+      "id": 606,
+      "page": null,
+      "paragraph": 607,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 607,
+      "page": null,
+      "paragraph": 608,
+      "offset": 0,
+      "text": "이 규정은 2014년 10월 17일부터 시행한다."
+    },
+    {
+      "id": 608,
+      "page": null,
+      "paragraph": 609,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 적용례)"
+    },
+    {
+      "id": 609,
+      "page": null,
+      "paragraph": 610,
+      "offset": 0,
+      "text": "제9조제1항, 제2항 및 제5항의 개정규정은 이 규정 시행일 이후 수요예측분부터 적용한다."
+    },
+    {
+      "id": 610,
+      "page": null,
+      "paragraph": 611,
+      "offset": 0,
+      "text": "제3조(고위험고수익투자신탁에 관한 유효기간)"
+    },
+    {
+      "id": 611,
+      "page": null,
+      "paragraph": 612,
+      "offset": 0,
+      "text": "제9조제1항 및 제2항의 개정규정은 2017년 12월 31일까지 효력을 가진다."
+    },
+    {
+      "id": 612,
+      "page": null,
+      "paragraph": 613,
+      "offset": 0,
+      "text": "부 칙(2014. 11. 20)"
+    },
+    {
+      "id": 613,
+      "page": null,
+      "paragraph": 614,
+      "offset": 0,
+      "text": "이 규정은 2014년 11월 21일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 614,
+      "page": null,
+      "paragraph": 615,
+      "offset": 0,
+      "text": "부 칙(2015. 6. 18)"
+    },
+    {
+      "id": 615,
+      "page": null,
+      "paragraph": 616,
+      "offset": 0,
+      "text": "이 규정은 2015년 8월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 616,
+      "page": null,
+      "paragraph": 617,
+      "offset": 0,
+      "text": "부 칙 (2015. 7. 16)"
+    },
+    {
+      "id": 617,
+      "page": null,
+      "paragraph": 618,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 618,
+      "page": null,
+      "paragraph": 619,
+      "offset": 0,
+      "text": "이 규정은 2015년 7월 17일부터 시행한다. 다만, 제2조제8호의 개정 규정은 2015년 8월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 619,
+      "page": null,
+      "paragraph": 620,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 경과조치)"
+    },
+    {
+      "id": 620,
+      "page": null,
+      "paragraph": 621,
+      "offset": 0,
+      "text": "제9조제1항제4호의 개정규정은 이 규정 시행일 이전에 「상법」제469조제2항제3호에 따른 사채로서 법 제4조제7항제1호에 해당하는 채무증권을 편입한 고위험고수익투자신탁에 대하여는 적용하지 아니한다."
+    },
+    {
+      "id": 621,
+      "page": null,
+      "paragraph": 622,
+      "offset": 0,
+      "text": "제3조(고위험고수익투자신탁에 관한 적용기간)"
+    },
+    {
+      "id": 622,
+      "page": null,
+      "paragraph": 623,
+      "offset": 0,
+      "text": "부칙(2014.3.20.) 제2조에도 불구하고 제2조제8호사목, 같은 조 제18호, 제5조의2제1항의 단서, 제9조제1항제4호, 같은 항 제6호, 같은 조 제2항제3호의 후단, 같은 항 제4호의 후단 및 같은 항 제6호의 규정은 2018년 12월 31일까지 효력을 가진다."
+    },
+    {
+      "id": 623,
+      "page": null,
+      "paragraph": 624,
+      "offset": 0,
+      "text": "부 칙 (2015. 9. 17)"
+    },
+    {
+      "id": 624,
+      "page": null,
+      "paragraph": 625,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 625,
+      "page": null,
+      "paragraph": 626,
+      "offset": 0,
+      "text": "이 규정은 2016년 1월 1일 이후 증권신고서 제출분부터 시행한다."
+    },
+    {
+      "id": 626,
+      "page": null,
+      "paragraph": 627,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 적용기간)"
+    },
+    {
+      "id": 627,
+      "page": null,
+      "paragraph": 628,
+      "offset": 0,
+      "text": "제2조제19호, 제9조제1항제4호, 같은 조 제2항제3호·제4호의 후단, 같은 조 제6항의 규정은 2018년 12월 31일까지 효력을 가진다."
+    },
+    {
+      "id": 628,
+      "page": null,
+      "paragraph": 629,
+      "offset": 0,
+      "text": "부 칙 (2015. 12. 15)"
+    },
+    {
+      "id": 629,
+      "page": null,
+      "paragraph": 630,
+      "offset": 0,
+      "text": "이 규정은 2015년 12월 16일부터 시행한다. 다만, 제6조제5항부터 제8항, 제10조제4항, 제15조제4항제7호·제6항, 제17조제1항, 제18조제1항 및 <별지 제1호 서식〉부터 <별지 제4호 서식>의 개정 규정은 2016년 1월 1일부터 시행한다."
+    },
+    {
+      "id": 630,
+      "page": null,
+      "paragraph": 631,
+      "offset": 0,
+      "text": "부 칙 (2016. 1. 21)"
+    },
+    {
+      "id": 631,
+      "page": null,
+      "paragraph": 632,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 632,
+      "page": null,
+      "paragraph": 633,
+      "offset": 0,
+      "text": "이 규정은 2016년 1월 21일부터 시행한다."
+    },
+    {
+      "id": 633,
+      "page": null,
+      "paragraph": 634,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 634,
+      "page": null,
+      "paragraph": 635,
+      "offset": 0,
+      "text": "제17조의2 및 <별표 1>의 개정규정은 시행일 이후 발생한 불성실 수요예측행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 635,
+      "page": null,
+      "paragraph": 636,
+      "offset": 0,
+      "text": "부 칙 (2016. 2. 18)"
+    },
+    {
+      "id": 636,
+      "page": null,
+      "paragraph": 637,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 637,
+      "page": null,
+      "paragraph": 638,
+      "offset": 0,
+      "text": "이 규정은 2016년 4월 1일부터 시행한다."
+    },
+    {
+      "id": 638,
+      "page": null,
+      "paragraph": 639,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 경과조치)"
+    },
+    {
+      "id": 639,
+      "page": null,
+      "paragraph": 640,
+      "offset": 0,
+      "text": "2016년 2월 5일 이후 신규로 가입한 자가 없는 고위험고수익투자신탁의 경우에는 제2조제18호의 개정규정에도 불구하고 종전의 규정에 따른다."
+    },
+    {
+      "id": 640,
+      "page": null,
+      "paragraph": 641,
+      "offset": 0,
+      "text": "제3조(유효기간)"
+    },
+    {
+      "id": 641,
+      "page": null,
+      "paragraph": 642,
+      "offset": 0,
+      "text": "2015. | 7.16 부칙 제3조 및 2015.9.17 부칙 제2조에도 불구하고 제2조제8호사목, 같은 조 제18호·제19호, 제5조의2제1항의 단서, 제9조제1항제4호·제6호, 같은 조 제2항제3호·제4호·제6호, 같은 조 제6항의 규정은 2019년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 642,
+      "page": null,
+      "paragraph": 643,
+      "offset": 0,
+      "text": "부 칙 (2016. 4. 21)"
+    },
+    {
+      "id": 643,
+      "page": null,
+      "paragraph": 644,
+      "offset": 0,
+      "text": "이 규정은 2016년 4월 22일부터 시행한다. 다만, 제2조제19호, 제9조제1항제4호 후단, 같은 조 제2항제3호·제4호 후단의 규정은 2016년 8월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 644,
+      "page": null,
+      "paragraph": 645,
+      "offset": 0,
+      "text": "부 칙 (2016. 12. 13)"
+    },
+    {
+      "id": 645,
+      "page": null,
+      "paragraph": 646,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 646,
+      "page": null,
+      "paragraph": 647,
+      "offset": 0,
+      "text": "이 규정은 2017년 1월 1일부터 시행한다. 다만, 제3조제4항의 개정 규정은 2017년 2월 1일부터 시행한다."
+    },
+    {
+      "id": 647,
+      "page": null,
+      "paragraph": 648,
+      "offset": 0,
+      "text": "제2조(기관투자자에 대한 규율강화 적용례)"
+    },
+    {
+      "id": 648,
+      "page": null,
+      "paragraph": 649,
+      "offset": 0,
+      "text": "제9조제4항의 개정 규정은 2017년 1월 1일 이후 증권신고서 제출분부터 적용한다. 다만, 제9조제4항제5호의 개정 규정 중 \"주요주주에 해당하는 기관투자자 및 창업투자회사등\"은 2017년 1월 1일 이후 제출된 증권신고서에 기재된 자부터 적용한다."
+    },
+    {
+      "id": 649,
+      "page": null,
+      "paragraph": 650,
+      "offset": 0,
+      "text": "제3조(불성실 수요예측등 참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 650,
+      "page": null,
+      "paragraph": 651,
+      "offset": 0,
+      "text": "제17조의2 및 <별표 1>의 개정규정은 시행일 이후 발생한 불성실 수요예측등 참여행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측등 참여행위에 대하여 개정규정을 적용하는 것이 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 651,
+      "page": null,
+      "paragraph": 652,
+      "offset": 0,
+      "text": "제4조(고위험고수익투자신탁에 관한 적용기간)"
+    },
+    {
+      "id": 652,
+      "page": null,
+      "paragraph": 653,
+      "offset": 0,
+      "text": "2016. | 2.18. 부칙 제3조에도 불구하고 제2조제8호사목, 같은 조 제18호·제19호, 제5조의2제1항의 단서, 제9조제1항제4호·제6호, 같은 조 제2항제3호·제4호·제6호, 같은 조 제6항의 규정은 2020년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 653,
+      "page": null,
+      "paragraph": 654,
+      "offset": 0,
+      "text": "부 칙 (2017. 12. 20)"
+    },
+    {
+      "id": 654,
+      "page": null,
+      "paragraph": 655,
+      "offset": 0,
+      "text": "이 규정은 「금융투자업규정」(2017.12.20., 일부개정) 시행일부터 시행한다."
+    },
+    {
+      "id": 655,
+      "page": null,
+      "paragraph": 656,
+      "offset": 0,
+      "text": "부 칙 (2018. 3. 8)"
+    },
+    {
+      "id": 656,
+      "page": null,
+      "paragraph": 657,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 657,
+      "page": null,
+      "paragraph": 658,
+      "offset": 0,
+      "text": "이 규정은 2018년 3월 30일부터 시행한다. 다만, 제9조의 개정규정은 2018년 3월 30일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 658,
+      "page": null,
+      "paragraph": 659,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 659,
+      "page": null,
+      "paragraph": 660,
+      "offset": 0,
+      "text": "2016. | 12.13. 부칙 제4조에도 불구하고 제2조제8호사목, 같은 조 제18호·제19호, 제5조의2제1항의 단서, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제6항·제7항의 규정은 2020년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 660,
+      "page": null,
+      "paragraph": 661,
+      "offset": 0,
+      "text": "제3조(벤처기업투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 661,
+      "page": null,
+      "paragraph": 662,
+      "offset": 0,
+      "text": "제9조제1항제5호, 같은 조 제2항제4호·제6호나목, 같은 조 제8항·제9항의 규정은 2023년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 662,
+      "page": null,
+      "paragraph": 663,
+      "offset": 0,
+      "text": "부 칙 (2018. 4. 19)"
+    },
+    {
+      "id": 663,
+      "page": null,
+      "paragraph": 664,
+      "offset": 0,
+      "text": "이 규정은 2018년 4월 20일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 664,
+      "page": null,
+      "paragraph": 665,
+      "offset": 0,
+      "text": "부 칙 (2018. 5. 4)"
+    },
+    {
+      "id": 665,
+      "page": null,
+      "paragraph": 666,
+      "offset": 0,
+      "text": "이 규정은 2018년 5월 8일부터 시행한다. 다만, 제9조제1항제5호, 제9조제2항제4호, 제9조제2항제6호나목, 제9조제10항제3호의 개정 규정은 시행일 이후 최초 설정된 벤처기업투자신탁에 적용한다."
+    },
+    {
+      "id": 666,
+      "page": null,
+      "paragraph": 667,
+      "offset": 0,
+      "text": "부 칙 (2018. 8. 31)"
+    },
+    {
+      "id": 667,
+      "page": null,
+      "paragraph": 668,
+      "offset": 0,
+      "text": "이 규정은 2018년 9월 1일부터 시행한다."
+    },
+    {
+      "id": 668,
+      "page": null,
+      "paragraph": 669,
+      "offset": 0,
+      "text": "부 칙 (2018. 12. 11)"
+    },
+    {
+      "id": 669,
+      "page": null,
+      "paragraph": 670,
+      "offset": 0,
+      "text": "이 규정은 2018년 12월 12일부터 시행한다."
+    },
+    {
+      "id": 670,
+      "page": null,
+      "paragraph": 671,
+      "offset": 0,
+      "text": "부 칙 (2019. 8. 14)"
+    },
+    {
+      "id": 671,
+      "page": null,
+      "paragraph": 672,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 672,
+      "page": null,
+      "paragraph": 673,
+      "offset": 0,
+      "text": "이 규정은 2019년 8월 15일부터 시행한다."
+    },
+    {
+      "id": 673,
+      "page": null,
+      "paragraph": 674,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 674,
+      "page": null,
+      "paragraph": 675,
+      "offset": 0,
+      "text": "제6조제4항의 개정규정은 2019년 8월 15일 이후 대표주관계약 체결분부터 적용한다."
+    },
+    {
+      "id": 675,
+      "page": null,
+      "paragraph": 676,
+      "offset": 0,
+      "text": "부 칙 (2019. 9. 11)"
+    },
+    {
+      "id": 676,
+      "page": null,
+      "paragraph": 677,
+      "offset": 0,
+      "text": "이 규정은 2019년 9월 16일부터 시행한다."
+    },
+    {
+      "id": 677,
+      "page": null,
+      "paragraph": 678,
+      "offset": 0,
+      "text": "부 칙 (2020. 3. 19)"
+    },
+    {
+      "id": 678,
+      "page": null,
+      "paragraph": 679,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 679,
+      "page": null,
+      "paragraph": 680,
+      "offset": 0,
+      "text": "이 규정은 2020년 4월 1일부터 시행한다."
+    },
+    {
+      "id": 680,
+      "page": null,
+      "paragraph": 681,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 681,
+      "page": null,
+      "paragraph": 682,
+      "offset": 0,
+      "text": "제17조의2 및 <별표 1>의 개정규정은 시행일 이후 발생한 불성실 수요예측행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 682,
+      "page": null,
+      "paragraph": 683,
+      "offset": 0,
+      "text": "부 칙 (2020. 11. 30)"
+    },
+    {
+      "id": 683,
+      "page": null,
+      "paragraph": 684,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 684,
+      "page": null,
+      "paragraph": 685,
+      "offset": 0,
+      "text": "이 규정은 2020년 12월 1일부터 시행한다."
+    },
+    {
+      "id": 685,
+      "page": null,
+      "paragraph": 686,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 686,
+      "page": null,
+      "paragraph": 687,
+      "offset": 0,
+      "text": "① | 제9조제1항제6호, 제9조제11항부터 제13항까지의 개정규정은 2020년 12월 1일 이후 증권신고서를 최초로 제출한 기업공개부터 적용한다."
+    },
+    {
+      "id": 687,
+      "page": null,
+      "paragraph": 688,
+      "offset": 0,
+      "text": "② | 제9조제1항제3호, 제9조제1항제4호, 제9조제2항제3호, 제9조제2항제6호가목 및 제9조제6항은 2021년 1월 1일 이후 증권신고서를 최초로 제출한 기업공개 또는 공모증자부터 적용한다."
+    },
+    {
+      "id": 688,
+      "page": null,
+      "paragraph": 689,
+      "offset": 0,
+      "text": "제3조(고위험고수익투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 689,
+      "page": null,
+      "paragraph": 690,
+      "offset": 0,
+      "text": "2018. | 3.8. 부칙 제2조에도 불구하고 제2조제18호·제19호, 제5조의2제1항의 단서, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항의 규정은 2023년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 690,
+      "page": null,
+      "paragraph": 691,
+      "offset": 0,
+      "text": "부 칙 (2021. 6. 17)"
+    },
+    {
+      "id": 691,
+      "page": null,
+      "paragraph": 692,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 692,
+      "page": null,
+      "paragraph": 693,
+      "offset": 0,
+      "text": "이 규정은 2021년 6월 20일부터 시행한다. 다만, 제9조제1항 및 제2항의 개정 규정은 2021년 6월 20일 이후 증권신고서 제출분부터, 같은 조 제7항의 개정 규정은 2021년 7월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 693,
+      "page": null,
+      "paragraph": 694,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자등 지정에 관한 적용례)"
+    },
+    {
+      "id": 694,
+      "page": null,
+      "paragraph": 695,
+      "offset": 0,
+      "text": "제17조의2 및 <별표1>의 개정규정은 시행일 이후 발생한 불성실 수요예측등 참여행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측등 참여행위에 대하여 개정규정을 적용하는 것이 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 695,
+      "page": null,
+      "paragraph": 696,
+      "offset": 0,
+      "text": "제3조(불성실 수요예측참여자 지정에 대한 경과조치)"
+    },
+    {
+      "id": 696,
+      "page": null,
+      "paragraph": 697,
+      "offset": 0,
+      "text": "제17조의2 및 <별표1>의 개정규정은 개정규정에도 불구하고 개정규정 시행일 이후 신규로 가입한 자가 없는 고위험고수익투자신탁에 대해서는 적용하지 아니한다."
+    },
+    {
+      "id": 697,
+      "page": null,
+      "paragraph": 698,
+      "offset": 0,
+      "text": "제4조(고위험고수익투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 698,
+      "page": null,
+      "paragraph": 699,
+      "offset": 0,
+      "text": "2020. | 11.30. 부칙 제3조에도 불구하고 제2조제18호·제19호, 제5조의2제1항의 단서, 같은 조 제5항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2023년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 699,
+      "page": null,
+      "paragraph": 700,
+      "offset": 0,
+      "text": "부 칙 (2022. 2. 24)"
+    },
+    {
+      "id": 700,
+      "page": null,
+      "paragraph": 701,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 701,
+      "page": null,
+      "paragraph": 702,
+      "offset": 0,
+      "text": "이 규정은 2022년 2월 25일부터 시행한다."
+    },
+    {
+      "id": 702,
+      "page": null,
+      "paragraph": 703,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자등 지정에 관한 적용례)"
+    },
+    {
+      "id": 703,
+      "page": null,
+      "paragraph": 704,
+      "offset": 0,
+      "text": "제17조의2의 개정규정은 시행일 이후 발생한 불성실 수요예측등 참여행위부터 적용한다."
+    },
+    {
+      "id": 704,
+      "page": null,
+      "paragraph": 705,
+      "offset": 0,
+      "text": "부 칙 (2022. 3. 10)"
+    },
+    {
+      "id": 705,
+      "page": null,
+      "paragraph": 706,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 706,
+      "page": null,
+      "paragraph": 707,
+      "offset": 0,
+      "text": "이 규정은 2022년 5월 1일 이후 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 707,
+      "page": null,
+      "paragraph": 708,
+      "offset": 0,
+      "text": "부 칙 (2022. 6. 9)"
+    },
+    {
+      "id": 708,
+      "page": null,
+      "paragraph": 709,
+      "offset": 0,
+      "text": "이 규정은 2022년 6월 10일부터 시행하고, 시행일 이후 투자자 재산 운용 업무가 이관되는 경우부터 적용한다."
+    },
+    {
+      "id": 709,
+      "page": null,
+      "paragraph": 710,
+      "offset": 0,
+      "text": "부 칙 (2023. 4. 27)"
+    },
+    {
+      "id": 710,
+      "page": null,
+      "paragraph": 711,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 711,
+      "page": null,
+      "paragraph": 712,
+      "offset": 0,
+      "text": "이 규정은 2023년 5월 1일부터 시행한다. 다만, 다음 각 호의 어느 하나에 해당하는 개정규정은 다음 각 호를 따른다."
+    },
+    {
+      "id": 712,
+      "page": null,
+      "paragraph": 713,
+      "offset": 0,
+      "text": "1. | 제5조의3 및 제17조의2제1항의 개정규정 : 2023년 7월 1일 이후 증권신고서를 최초로 제출한 기업공개부터 시행"
+    },
+    {
+      "id": 713,
+      "page": null,
+      "paragraph": 714,
+      "offset": 0,
+      "text": "2. | 제9조제1항 및 제2항의 개정규정 : 2024년 1월 1일 이후 증권신고서를 최초로 제출한 기업공개 또는 공모증자부터 시행 <개정 2023. 6. 8>"
+    },
+    {
+      "id": 714,
+      "page": null,
+      "paragraph": 715,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 715,
+      "page": null,
+      "paragraph": 716,
+      "offset": 0,
+      "text": "① | <별표 1>의 개정규정은 시행일 이후 발생한 불성실 수요예측행위부터 적용한다. 다만, 개정규정 시행일 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 유리한 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 716,
+      "page": null,
+      "paragraph": 717,
+      "offset": 0,
+      "text": "② | 이 규정 부칙 제1조에도 불구하고 제17조의2제1항제9호는 2024년 1월 1일 이후에 발생한 불성실수요예측등 참여행위부터 제17조의2제4항을 적용한다."
+    },
+    {
+      "id": 717,
+      "page": null,
+      "paragraph": 718,
+      "offset": 0,
+      "text": "제3조(고위험고수익투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 718,
+      "page": null,
+      "paragraph": 719,
+      "offset": 0,
+      "text": "2021. | 6.17. 부칙 제4조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 719,
+      "page": null,
+      "paragraph": 720,
+      "offset": 0,
+      "text": "제4조(벤처기업투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 720,
+      "page": null,
+      "paragraph": 721,
+      "offset": 0,
+      "text": "2018. | 3.8. 부칙 제3조에도 불구하고 제2조제20호, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목, 같은 조 제8항·제9항·제10항 및 제17조의2제1항제6호ㆍ제7호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 721,
+      "page": null,
+      "paragraph": 722,
+      "offset": 0,
+      "text": "부 칙 (2023. 6. 8)"
+    },
+    {
+      "id": 722,
+      "page": null,
+      "paragraph": 723,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 723,
+      "page": null,
+      "paragraph": 724,
+      "offset": 0,
+      "text": "이 규정은 2023년 6월 12일 이후 증권신고서를 최초로 제출한 기업공개 또는 공모증자부터 적용한다."
+    },
+    {
+      "id": 724,
+      "page": null,
+      "paragraph": 725,
+      "offset": 0,
+      "text": "제2조(고위험고수익투자신탁등에 관한 적용기한)"
+    },
+    {
+      "id": 725,
+      "page": null,
+      "paragraph": 726,
+      "offset": 0,
+      "text": "2023. | 4.27. 부칙 제3조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2025년 12월 31일까지 그 효력을 가진다."
+    },
+    {
+      "id": 726,
+      "page": null,
+      "paragraph": 727,
+      "offset": 0,
+      "text": "부 칙 (2023. 12. 19)"
+    },
+    {
+      "id": 727,
+      "page": null,
+      "paragraph": 728,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 728,
+      "page": null,
+      "paragraph": 729,
+      "offset": 0,
+      "text": "이 규정은 2024년 1월 1일부터 시행한다."
+    },
+    {
+      "id": 729,
+      "page": null,
+      "paragraph": 730,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 730,
+      "page": null,
+      "paragraph": 731,
+      "offset": 0,
+      "text": "제10조의3제5항의 개정규정은 이 규정 시행 이후 상장예비심사를 신청하는 경우부터 적용한다."
+    },
+    {
+      "id": 731,
+      "page": null,
+      "paragraph": 732,
+      "offset": 0,
+      "text": "제3조(경과조치)"
+    },
+    {
+      "id": 732,
+      "page": null,
+      "paragraph": 733,
+      "offset": 0,
+      "text": "제10조의3제5항의 개정규정에서 \"최근 3년 이내에 코스닥시장 상장을 주관한 기술성장기업\"에는 동 규정 시행 이전에 상장을 완료한 기술성장기업은 포함하지 않는다."
+    },
+    {
+      "id": 733,
+      "page": null,
+      "paragraph": 734,
+      "offset": 0,
+      "text": "부 칙 (2024. 6. 28)"
+    },
+    {
+      "id": 734,
+      "page": null,
+      "paragraph": 735,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 735,
+      "page": null,
+      "paragraph": 736,
+      "offset": 0,
+      "text": "이 규정은 2024년 8월 1일부터 시행한다."
+    },
+    {
+      "id": 736,
+      "page": null,
+      "paragraph": 737,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 737,
+      "page": null,
+      "paragraph": 738,
+      "offset": 0,
+      "text": "① | 제3조제2항제8호, 제15조제3항제1호·제2호, 같은 조 제8항 및 <별표 2>의 개정규정은 2024년 8월 1일 이후 대표주관계약 체결분부터 적용한다."
+    },
+    {
+      "id": 738,
+      "page": null,
+      "paragraph": 739,
+      "offset": 0,
+      "text": "② | 제5조제9항 및 제15조제1항의 개정규정은 2024년 10월 1일 이후 대표주관계약 체결분부터 적용한다."
+    },
+    {
+      "id": 739,
+      "page": null,
+      "paragraph": 740,
+      "offset": 0,
+      "text": "부 칙 (2025. 3. 13)"
+    },
+    {
+      "id": 740,
+      "page": null,
+      "paragraph": 741,
+      "offset": 0,
+      "text": "이 규정은 2025년 7월 1일 이후 최초 증권신고서 제출분부터 적용한다. 다만, 제17조의2제4항, 제8항 및 <별표 1>의 개정규정은 2025년 4월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 741,
+      "page": null,
+      "paragraph": 742,
+      "offset": 0,
+      "text": "부 칙 (2025. 6. 12)"
+    },
+    {
+      "id": 742,
+      "page": null,
+      "paragraph": 743,
+      "offset": 0,
+      "text": "이 규정은 2025년 9월 3일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 743,
+      "page": null,
+      "paragraph": 744,
+      "offset": 0,
+      "text": "부 칙 (2025. 12. 4)"
+    },
+    {
+      "id": 744,
+      "page": null,
+      "paragraph": 745,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 745,
+      "page": null,
+      "paragraph": 746,
+      "offset": 0,
+      "text": "이 규정은 2025년 12월 5일부터 시행한다. 다만, 제9조제14항, 제15항의 개정규정은 2025년 12월 5일 이후 최초 증권신고서 제출분부터 적용하고, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목의 개정규정은 2026년 1월 1일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 746,
+      "page": null,
+      "paragraph": 747,
+      "offset": 0,
+      "text": "제2조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 747,
+      "page": null,
+      "paragraph": 748,
+      "offset": 0,
+      "text": "<별표1>의 개정규정은 2026년 1월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대해서 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 748,
+      "page": null,
+      "paragraph": 749,
+      "offset": 0,
+      "text": "제3조 (고위험고수익투자신탁등에 관한 적용기한)"
+    },
+    {
+      "id": 749,
+      "page": null,
+      "paragraph": 750,
+      "offset": 0,
+      "text": "2023. | 6.8. 부칙 제2조에도 불구하고 제2조제18호, 제5조의2제1항의 단서, 같은 조 제7항, 제9조제1항제4호, 같은 조 제2항제3호·제6호가목, 같은 조 제7항·제9항 및 제17조의2제1항제8호의 규정은 2028년 12월 31일까지 기업공개 또는 공모증자에 대한 최초 증권신고서를 제출한 경우 그 효력을 가진다."
+    },
+    {
+      "id": 750,
+      "page": null,
+      "paragraph": 751,
+      "offset": 0,
+      "text": "제4조(벤처기업투자신탁에 관한 적용기한)"
+    },
+    {
+      "id": 751,
+      "page": null,
+      "paragraph": 752,
+      "offset": 0,
+      "text": "2023. | 4.27. 부칙 제4조에도 불구하고 제2조제20호, 제9조제1항제5호, 같은 조 제2항제4호·제6호나목, 같은 조 제8항·제9항·제10항 및 제17조의2제1항제6호ㆍ제7호의 규정은 2028년 12월 31일까지 기업공개 또는 공모증자에 대한 최초 증권신고서를 제출한 경우 그 효력을 가진다."
+    },
+    {
+      "id": 752,
+      "page": null,
+      "paragraph": 753,
+      "offset": 0,
+      "text": "부 칙 (2026. 3. 12)"
+    },
+    {
+      "id": 753,
+      "page": null,
+      "paragraph": 754,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 754,
+      "page": null,
+      "paragraph": 755,
+      "offset": 0,
+      "text": "이 규정은 2026년 3월 13일부터 시행한다."
+    },
+    {
+      "id": 755,
+      "page": null,
+      "paragraph": 756,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 756,
+      "page": null,
+      "paragraph": 757,
+      "offset": 0,
+      "text": "① | 제9조제1항제7호·제7호다목, 제9조제14항 및 제9조제15항제3호의 개정규정은 2026년 4월 1일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 757,
+      "page": null,
+      "paragraph": 758,
+      "offset": 0,
+      "text": "② | 제5조제10항의 신설규정은 2026년 1월 1일 이후 코스닥시장에 상장된 건부터 적용한다."
+    },
+    {
+      "id": 758,
+      "page": null,
+      "paragraph": 759,
+      "offset": 0,
+      "text": "제3조(불성실 수요예측참여자 지정에 관한 적용례)"
+    },
+    {
+      "id": 759,
+      "page": null,
+      "paragraph": 760,
+      "offset": 0,
+      "text": "제17조의2제1항제2호가목, 제3호, 제10호, 제11호, 같은 조 제4항 및 <별표1> 중 I.1.표의 개정규정(단, 비고 제외)은 2026년 4월 1일 이후 최초 증권신고서 제출분부터 적용하되, 그 이전에 발생한 불성실 수요예측행위에 대하여 개정규정을 적용하는 것이 불성실 수요예측 참여자에게 제재의 감면이 더 큰 경우에는 개정규정을 적용한다."
+    },
+    {
+      "id": 760,
+      "page": null,
+      "paragraph": 761,
+      "offset": 0,
+      "text": "부 칙 (2026. 11. 12)"
+    },
+    {
+      "id": 761,
+      "page": null,
+      "paragraph": 762,
+      "offset": 0,
+      "text": "제1조(시행일)"
+    },
+    {
+      "id": 762,
+      "page": null,
+      "paragraph": 763,
+      "offset": 0,
+      "text": "이 규정은 2026년 11월 13일부터 시행한다."
+    },
+    {
+      "id": 763,
+      "page": null,
+      "paragraph": 764,
+      "offset": 0,
+      "text": "제2조(적용례)"
+    },
+    {
+      "id": 764,
+      "page": null,
+      "paragraph": 765,
+      "offset": 0,
+      "text": "제11조제2항제7호, 제12조제4항 및 제17조의2제6항제3호의 개정규정은 2027년 1월 1일 이후 최초 증권신고서 제출분부터 적용한다."
+    },
+    {
+      "id": 765,
+      "page": null,
+      "paragraph": 766,
+      "offset": 0,
+      "text": "[별표/서식 파일]"
+    },
+    {
+      "id": 766,
+      "page": null,
+      "paragraph": 767,
+      "offset": 0,
+      "text": "1. 0000_(별표 1).hwp"
+    },
+    {
+      "id": 767,
+      "page": null,
+      "paragraph": 768,
+      "offset": 0,
+      "text": "2. 0001_(별표 1-2).hwp"
+    },
+    {
+      "id": 768,
+      "page": null,
+      "paragraph": 769,
+      "offset": 0,
+      "text": "3. 0002_(별표 2).hwp"
+    },
+    {
+      "id": 769,
+      "page": null,
+      "paragraph": 770,
+      "offset": 0,
+      "text": "4. 0003_(별지 제1호 서식).hwp"
+    },
+    {
+      "id": 770,
+      "page": null,
+      "paragraph": 771,
+      "offset": 0,
+      "text": "5. 0004_(별지 제2호 서식).hwp"
+    },
+    {
+      "id": 771,
+      "page": null,
+      "paragraph": 772,
+      "offset": 0,
+      "text": "6. 0005_(별지 제3호 서식).hwp"
+    },
+    {
+      "id": 772,
+      "page": null,
+      "paragraph": 773,
+      "offset": 0,
+      "text": "7. 0006_(별지 제4호 서식).hwp"
+    },
+    {
+      "id": 773,
+      "page": null,
+      "paragraph": 774,
+      "offset": 0,
+      "text": "8. 0007_(별지 제5호 서식).hwp"
+    }
+  ],
+  "next_cursor": null,
+  "returned_chars": 9369,
+  "selection_complete": true,
+  "estimated_input_tokens": 12133,
+  "token_estimate_method": "Serialized result UTF-8 bytes / 3 + 32 heuristic; not actual tokens/billing",
+  "elapsed_ms": 6
+}

@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 1,
+  "status": "EXTRACTED_TEXT_CHECKED",
+  "publisher": "금융투자협회",
+  "title": "증권 인수업무 등에 관한 규정",
+  "seq": 140,
+  "historySeq": 1820,
+  "amended": "20261112",
+  "effective": "20261113",
+  "currentness": "해당 개정본의 부칙 시행일 확인. 최신 개정 목록 원문 추출은 행 데이터 누락으로 독립 전수 확인 못함.",
+  "source": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+  "retrievedAt": "2026-11-26T05:41:06.655005+00:00",
+  "sourceBytes": 251726,
+  "textChars": 59361,
+  "sourceSha256Reported": "f351eeaed09fd8c93805f33e3c9f2bd1dcc493d1d892998bf40122124efdc64b",
+  "documentId": "c49a303feb069500a66b70a191f77d8a37dccbcccf8dfa25e97a156327f22ad7",
+  "sourceHashScope": "공급원 반환 해시 일치 대조; 원시 HTML 바이트 별도 재해시 아님",
+  "retrieval": {
+    "tool": "Agent-Reach V4.2 research_read",
+    "mode": "FULL",
+    "budget": "DEEP",
+    "cursors": [
+      0,
+      561
+    ],
+    "pageFiles": [
+      "kofia-1820-page1.json",
+      "kofia-1820-page2.json"
+    ],
+    "chunkCount": 774,
+    "continuity": true
+  },
+  "headings": [
+    {
+      "id": 52,
+      "title": "제1조(목적)"
+    },
+    {
+      "id": 54,
+      "title": "제2조(용어의 정의)"
+    },
+    {
+      "id": 107,
+      "title": "제3조(대표주관계약의 체결 등)"
+    },
+    {
+      "id": 122,
+      "title": "제5조(주식의 공모가격 결정 등)"
+    },
+    {
+      "id": 147,
+      "title": "제5조의2(투자일임회사 등의 수요예측등 참여 조건)"
+    },
+    {
+      "id": 174,
+      "title": "제5조의3(허수성 수요예측등 참여 금지)"
+    },
+    {
+      "id": 186,
+      "title": "제5조의4(사전수요조사 참여자격 및 확인)"
+    },
+    {
+      "id": 197,
+      "title": "제5조의5(사전청약투자자 참여자격 및 확인 등)"
+    },
+    {
+      "id": 203,
+      "title": "제5조의6(비밀유지계약의 체결)"
+    },
+    {
+      "id": 208,
+      "title": "제5조의7(사전청약투자자계약의 체결 등)"
+    },
+    {
+      "id": 221,
+      "title": "제6조(공동주관회사)"
+    },
+    {
+      "id": 242,
+      "title": "제7조(모집설립을 위한 주식의 인수)"
+    },
+    {
+      "id": 248,
+      "title": "제8조(주식청약증거금 등)"
+    },
+    {
+      "id": 255,
+      "title": "제9조(주식의 배정)"
+    },
+    {
+      "id": 311,
+      "title": "제9조의2(자기 또는 관계인수인이 인수한 주식의 배정)"
+    },
+    {
+      "id": 318,
+      "title": "제9조의3(사전청약투자자 주식의 배정)"
+    },
+    {
+      "id": 326,
+      "title": "제10조(초과배정옵션)"
+    },
+    {
+      "id": 334,
+      "title": "제10조의2(신주인수권)"
+    },
+    {
+      "id": 344,
+      "title": "제10조의3(환매청구권)"
+    },
+    {
+      "id": 366,
+      "title": "제11조(무보증사채 대표주관계약의 체결 등)"
+    },
+    {
+      "id": 377,
+      "title": "제11조의2(무보증사채의 인수)"
+    },
+    {
+      "id": 390,
+      "title": "제12조(무보증사채의 공모금리 결정 등)"
+    },
+    {
+      "id": 407,
+      "title": "제14조(원화표시채권의 인수)"
+    },
+    {
+      "id": 412,
+      "title": "제15조(불건전한 인수행위의 금지)"
+    },
+    {
+      "id": 463,
+      "title": "제15조의2(투자자 재산 운용 등의 업무를 수행하는 금융투자회사 변경 특례)"
+    },
+    {
+      "id": 473,
+      "title": "제16조(정보누설 금지)"
+    },
+    {
+      "id": 476,
+      "title": "제17조(대표주관회사의 실적공시)"
+    },
+    {
+      "id": 481,
+      "title": "제17조의2(불성실 수요예측등 참여자의 관리)"
+    },
+    {
+      "id": 518,
+      "title": "제17조의3(불성실 사전청약투자자의 관리 등)"
+    },
+    {
+      "id": 535,
+      "title": "제18조(채권의 주관회사 실적 공시)"
+    },
+    {
+      "id": 538,
+      "title": "제19조(제재)"
+    },
+    {
+      "id": 542,
+      "title": "제20조(공공적법인의 적용배제)"
+    },
+    {
+      "id": 547,
+      "title": "제21조(모집·매출의 주선)"
+    },
+    {
+      "id": 549,
+      "title": "제22조(단기사채등에 관한 특례)"
+    }
+  ],
+  "tests": [
+    {
+      "id": "amendment",
+      "chunk": 50,
+      "all": [
+        "2026. 11. 12"
+      ],
+      "pass": true
+    },
+    {
+      "id": "effective",
+      "chunk": 762,
+      "all": [
+        "2026년 11월 13일"
+      ],
+      "pass": true
+    },
+    {
+      "id": "deferred_application",
+      "chunk": 764,
+      "all": [
+        "2027년 1월 1일",
+        "제12조제4항"
+      ],
+      "pass": true
+    },
+    {
+      "id": "hy_new",
+      "chunk": 97,
+      "all": [
+        "제93조제1항제1호",
+        "직전 영업일"
+      ],
+      "pass": true
+    },
+    {
+      "id": "hy_old",
+      "chunk": 98,
+      "all": [
+        "2023년 12월 31일",
+        "100분의 45",
+        "100분의 60"
+      ],
+      "pass": true
+    },
+    {
+      "id": "venture_early",
+      "chunk": 100,
+      "all": [
+        "1년 미만",
+        "100분의 35"
+      ],
+      "pass": true
+    },
+    {
+      "id": "manager_2years",
+      "chunk": 162,
+      "all": [
+        "2년이 경과",
+        "50억원"
+      ],
+      "pass": true
+    },
+    {
+      "id": "manager_aum",
+      "chunk": 163,
+      "all": [
+        "300억원"
+      ],
+      "pass": true
+    },
+    {
+      "id": "ordinary_exception",
+      "chunk": 166,
+      "all": [
+        "3개월 이상"
+      ],
+      "pass": true
+    },
+    {
+      "id": "policy_exception",
+      "chunk": 167,
+      "all": [
+        "15일 이상"
+      ],
+      "pass": true
+    },
+    {
+      "id": "payment_assets",
+      "chunk": 178,
+      "all": [
+        "3개월간",
+        "일평균 평가액"
+      ],
+      "pass": true
+    },
+    {
+      "id": "payment_deduction",
+      "chunk": 179,
+      "all": [
+        "차감",
+        "소명"
+      ],
+      "pass": true
+    },
+    {
+      "id": "hy_allocation",
+      "chunk": 260,
+      "all": [
+        "15일 이상",
+        "5% 이상",
+        "10% 이상",
+        "파생결합사채"
+      ],
+      "pass": true
+    },
+    {
+      "id": "venture_allocation",
+      "chunk": 261,
+      "all": [
+        "15일 이상",
+        "1년 6개월",
+        "30% 이상"
+      ],
+      "pass": true
+    },
+    {
+      "id": "hy_cap",
+      "chunk": 287,
+      "all": [
+        "100분의 20",
+        "100분의 10"
+      ],
+      "pass": true
+    },
+    {
+      "id": "venture_cap",
+      "chunk": 290,
+      "all": [
+        "100분의 10"
+      ],
+      "pass": true
+    },
+    {
+      "id": "venture_commitment",
+      "chunk": 297,
+      "all": [
+        "1년 6개월"
+      ],
+      "pass": true
+    },
+    {
+      "id": "ordinary_priority",
+      "chunk": 264,
+      "all": [
+        "40%",
+        "선배정"
+      ],
+      "pass": true
+    }
+  ],
+  "sunsetChunks": [
+    749,
+    751
+  ],
+  "attachments": [
+    {
+      "id": 766,
+      "name": "1. 0000_(별표 1).hwp",
+      "verified": false
+    },
+    {
+      "id": 767,
+      "name": "2. 0001_(별표 1-2).hwp",
+      "verified": false
+    },
+    {
+      "id": 768,
+      "name": "3. 0002_(별표 2).hwp",
+      "verified": false
+    },
+    {
+      "id": 769,
+      "name": "4. 0003_(별지 제1호 서식).hwp",
+      "verified": false
+    },
+    {
+      "id": 770,
+      "name": "5. 0004_(별지 제2호 서식).hwp",
+      "verified": false
+    },
+    {
+      "id": 771,
+      "name": "6. 0005_(별지 제3호 서식).hwp",
+      "verified": false
+    },
+    {
+      "id": 772,
+      "name": "7. 0006_(별지 제4호 서식).hwp",
+      "verified": false
+    },
+    {
+      "id": 773,
+      "name": "8. 0007_(별지 제5호 서식).hwp",
+      "verified": false
+    }
+  ],
+  "limitations": [
+    "문언 선택 점검은 동일 수집 원문의 구조 확인이며 독립 정답 정확도 아님.",
+    "별표·서식 8개 본문 미수집.",
+    "공식 최신개정 목록의 행 추출 불완전.",
+    "법률 적용·과세특례와 협회 우선배정 구분; 개별 증권신고서 및 펀드 규약 확인 필요."
+  ]
+}
