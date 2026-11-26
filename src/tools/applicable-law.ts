@@ -310,7 +310,15 @@ export async function applicableLaw(
       lines.push("")
       lines.push(`▶ 기준일 시점 조문: ${joDisplay}`)
       if (thenText) {
-        lines.push(thenText.length > 2000 ? thenText.slice(0, 2000) + "\n…(생략)" : thenText)
+        // A specifically requested article often contains material exceptions near its end.
+        // Keep a bounded excerpt within the overall response budget, and make any omission explicit.
+        const articleLimit = 12000
+        if (thenText.length > articleLimit) {
+          lines.push(`[PARTIAL] 기준일 조문 본문 ${articleLimit}자 발췌 / 총 ${thenText.length}자 — 생략된 요건·예외를 확인하세요. 정확한 버전 원문 재조회: get_law_text(mst="${effective.mst}", jo="${joDisplay}", efYd="${effective.efYd}")`)
+          lines.push(thenText.slice(0, articleLimit) + "\n…(생략)")
+        } else {
+          lines.push(thenText)
+        }
       } else {
         lines.push(`  [NOT_FOUND] 해당 버전에서 ${joDisplay}를 찾지 못했습니다 (당시 미신설이거나 조회 실패). LLM은 본문을 추측하지 마세요.`)
       }
