@@ -62,3 +62,16 @@ node compare-kofia-date.mjs kofia-date-boundaries-1820.json kofia-1820-page1.jso
 ```
 
 A DATE_MATCH result concerns the stated date wording only; fund eligibility, currentness, later amendments, substantive conditions, actual events and legal effect remain unverified. In particular, Annex 1 application clauses include more-favorable treatment for earlier misconduct; the annex contents and actual conduct date are necessary before any sanction calculation. Attachment access remains blocked; request the official original HWP files (Annex 1 and 1-2 first) and the FSS full preparation standard/forms PDF from the user. No production code, deployment or authentication change. The prior 1853 runtime regression tests were not rerun.
+
+
+## Reuse existing HWP/HWPX parser — follow-up
+
+The production dependency already pins kordoc 4.24.25. The previous hwp5txt-unavailable finding applies only to the separate Python adapter, not the existing MCP parser. Prefer the new offline Node adapter:
+```sh
+npm ci --offline --cache /path/to/verified/npm-cache --no-audit --no-fund
+node benchmarks/financial-law/external/inspect-attachment.mjs /path/to/official-file.hwp
+node --test benchmarks/financial-law/external/inspect-attachment.test.mjs
+```
+The dependency restoration from the retained npm cache succeeded. Actual Node test execution: 8/8 PASS (1.427 s). Synthetic OLE HWP5 Korean text, synthetic HWPX 2x2 table (rows/columns and cell value), and synthetic PDF text were parsed by the real installed dependency, not mocks. Five negative checks passed: HTML disguised as HWP, corrupt OLE signature, corrupt PDF, renamed HWPX and unsupported extension. Tests use the existing locked transitive cfb dependency for fixture creation; no new dependency added. Both source blobs match the locally tested files.
+
+The adapter returns raw byte and text SHA-256, parser version, text, structured table cells/spans, page/section indicator and warnings. OCR is disabled. Warnings remain visible and source, layout and legal effect flags are never promoted. Byte and output limits are bounded checks, not a hardened sandbox or a process memory/time bound; run on trusted files in an isolated local environment. No official KOFIA HWP or FSS PDF attachment was supplied or recovered during this step; official attachment extraction, version and table completeness remain unverified. Synthetic values are not regulatory evidence. Existing Python tool retained as fallback, no runtime/server/authentication changes. No production regression rerun or redeploy required.
