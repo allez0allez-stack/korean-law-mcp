@@ -13,3 +13,31 @@ describe('KOFIA secondary evidence review, not a final sanction',()=>{
   it.each([[-1,0,0],[2,3,0],[2,1,-1],[2.5,1,0],[2,1,NaN],[Number.MAX_SAFE_INTEGER,0,0]])('rejects invalid or unsafe inputs', (b,r,e)=>expect(()=>run(b,r,e)).toThrow(RangeError))
   it('never promotes secondary evidence to verified annex or final sanction',()=>{const d=run(3,1,0); expect(d.annexVersionVerified).toBe(false);expect(d.finalSanctionDetermined).toBe(false);expect(d.legalEffectVerified).toBe(false)})
 })
+
+
+describe('KOFIA review arithmetic invariant regression',()=>{
+  it('matches exact integer reference across 47,775 combinations',()=>{
+    const benefits=[0,1,999999,1000000,1000001,4999999,5000000,5000001,9999999,10000000,10000001,100000000,Number.MAX_SAFE_INTEGER]
+    let count=0
+    for(let b=0;b<=48;b++) for(let r=0;r<=b;r++) for(const membership of ['member','nonmember','unknown'] as const){
+      let previous=-1
+      for(const benefit of benefits){
+        const d=run(b,r,benefit,membership)
+        const protectedMonths=Math.min(r,Number(BigInt(benefit)/5000000n))
+        expect(d.protectedMonths).toBe(protectedMonths)
+        expect(d.scenarioMonths).toBe(b-r+protectedMonths)
+        expect(d.scenarioMonths>=previous && d.scenarioMonths<=b).toBe(true)
+        expect(d.paymentReviewThresholdMet).toBe(d.scenarioMonths<=3)
+        expect(d.legalEffectVerified).toBe(false)
+        expect(d.finalSanctionDetermined).toBe(false)
+        if(d.scenarioMonths<=3){
+          expect(d.feeScenarioKrw?.millionUnitFloor).toBe(Math.max(d.scenarioMonths*5000000,Number(BigInt(benefit)/1000000n*1000000n)))
+          expect(d.feeScenarioKrw!.retainRemainder>=d.feeScenarioKrw!.millionUnitFloor).toBe(true)
+        }else expect(d.feeScenarioKrw).toBeNull()
+        previous=d.scenarioMonths
+        count++
+      }
+    }
+    expect(count).toBe(47775)
+  },30000)
+})
