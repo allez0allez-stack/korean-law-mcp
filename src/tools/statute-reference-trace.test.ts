@@ -66,7 +66,6 @@ describe("effective-slice pinning for split commencement", () => {
   })
 })
 
-
 describe("relation wording in explicit reference tracing",()=>{
   it("preserves legacy extraction and enriches the requested trace without inferring effect",async()=>{
     lawCache.clear()
