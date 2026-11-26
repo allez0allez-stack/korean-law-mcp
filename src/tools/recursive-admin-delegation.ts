@@ -149,7 +149,6 @@ export async function traceRecursiveAdminDelegations(api: LawApiClient, input:{l
   return {content:[{type:"text",text:truncateResponse(lines.join("\n\n"),18000)}],...(!roots?{isError:true}:{})}
 }
 
-
 // Stateless, bounded continuation. Client-supplied batches are selectors, not trusted evidence.
 const articleSelector=z.string().regex(/^제[1-9]\d{0,3}조(?:의[1-9]\d?)?$/)
 const mstSelector=z.string().regex(/^\d{1,12}$/)
