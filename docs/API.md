@@ -366,3 +366,9 @@ legal_analysis(mode="amendment_table",
 - [README.md](../README.md) - 시작 가이드
 - [ARCHITECTURE.md](ARCHITECTURE.md) - 시스템 아키텍처
 - [DEVELOPMENT.md](DEVELOPMENT.md) - 개발자 가이드
+
+
+### 금투협 고정 개정본 기본기간 산정 (`kofia_sanction_base`)
+
+`execute_tool`로 호출: `{"tool_name":"kofia_sanction_base","params":{"version":"20261112","violation":"ipo_nonpayment","violation_amount_krw":150000000}}`.
+사용자가 제공한 2026-11-12 개정 별표 1·1-2 기준의 기본기간 계산만 지원한다. 결과의 원문 파일 SHA-256, 금액 정의 및 상한 전후 값은 검토용이다. 잔액 단위 절사/올림은 가정별로 병기한다. 행위시 적용, 현행성, 가중·감면, 최종 제재기간 및 제재금은 확정하지 않는다. `discover_tools(intent="불성실 수요예측")`로 검색할 수 있다. 제재기간이 재량인 유형과 무보증사채 규정은 지원하지 않는다.
