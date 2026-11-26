@@ -8,6 +8,7 @@ import { formatArticleUnit } from "../lib/article-parser.js"
 import { rethrowIfFatal } from "../lib/fatal-errors.js"
 import { throwIfRequestCancelled } from "../lib/session-state.js"
 import { truncateResponse } from "../lib/schemas.js"
+import { classifyReferenceTail } from "../lib/relation-wording.js"
 import type { ToolResponse } from "../lib/types.js"
 
 export interface NamedStatuteReference {
@@ -15,6 +16,7 @@ export interface NamedStatuteReference {
   article: string
   wording: string
   relation: "CITATION" | "JUNYONG_WORDING"
+  relationEvidence?: {kind:string;wording:string}
 }
 const MAX_ROOTS = 3
 const MAX_TARGETS = 6
@@ -24,7 +26,7 @@ const MAX_CANDIDATES = 100
 const MAX_LAW_SEARCHES = 6
 
 /** Do not infer law ownership for unquoted references, ranges or anaphora. */
-export function extractNamedStatuteReferences(body: string): NamedStatuteReference[] {
+export function extractNamedStatuteReferences(body: string, includeRelationEvidence = false): NamedStatuteReference[] {
   const refs: NamedStatuteReference[] = []
   const pattern = /「([^」\n]{2,150})」\s*제\s*(\d{1,4})\s*조(?:\s*의\s*(\d{1,2}))?(?:\s*제\s*\d+\s*항)?(?:\s*제\s*\d+\s*호)?(?!\s*의\s*\d|\d|례)/g
   for (const m of body.slice(0, MAX_BODY).matchAll(pattern)) {
@@ -33,8 +35,9 @@ export function extractNamedStatuteReferences(body: string): NamedStatuteReferen
     const article = `제${Number(m[2])}조${m[3] ? `의${Number(m[3])}` : ""}`
     if (!Number(m[2]) || (m[3] && !Number(m[3]))) continue
     const tail = body.slice(m.index! + m[0].length, m.index! + m[0].length + 48)
-    const relation = /^\s*(?:의\s*규정\s*)?(?:을|를)\s*준용(?:한다|하며|할|하되|하고)/.test(tail) ? "JUNYONG_WORDING" : "CITATION"
-    refs.push({ lawName, article, relation, wording: m[0] + (relation === "JUNYONG_WORDING" ? tail.slice(0, tail.indexOf("준용") + 2) : "") })
+    const relation = /^\s*(?:의\s*규정\s*)?(?:을|를)\s*준용(?:한다|하며|할\s*수\s*있다|하되|하고)(?=\s|[.,;ㆍ)]|$)/.test(tail) ? "JUNYONG_WORDING" : "CITATION"
+    const relationEvidence = includeRelationEvidence ? classifyReferenceTail(tail) : undefined
+    refs.push({ lawName, article, relation, ...(relationEvidence ? {relationEvidence} : {}), wording: m[0] + (relation === "JUNYONG_WORDING" ? tail.slice(0, tail.indexOf("준용") + 2) : "") })
     if (refs.length >= MAX_CANDIDATES) break
   }
   return refs
@@ -108,12 +111,12 @@ export async function traceStatuteReferences(api: LawApiClient, input: { law: La
     const label = `${node.law.lawName} ${node.article}`
     if (node.depth) { verified++; lines.push(`[TARGET_VERIFIED] 깊이 ${node.depth} | ${label} | MST ${node.law.mst} | 시행일 ${record.effectiveDate || "미확인"}\n${record.header}\n${truncateResponse(record.body, 1300)}`) }
     if (!node.depth) { rootVerified++; lines.push(`[ROOT_VERIFIED] ${label} | MST ${node.law.mst} | 시행일 ${record.effectiveDate || "미확인"}`) }
-    const refs = extractNamedStatuteReferences(record.body)
+    const refs = extractNamedStatuteReferences(record.body,true)
     if (record.body.length > MAX_BODY || refs.length >= MAX_CANDIDATES) { omitted++; lines.push(`[PARTIAL] ${label}: 원문 검색 범위 상한 도달`) }
     if (!refs.length && node.depth === 0) lines.push(`[NO_EXPLICIT_MATCH] ${label}: 지원 표기에서 인용을 찾지 못함. 다른 참조가 없다는 의미는 아님.`)
     const edgeKeys = new Set<string>()
     for (const ref of refs) {
-      const edgeKey = `${ref.lawName}:${ref.article}:${ref.relation}`
+      const edgeKey = `${ref.lawName}:${ref.article}:${ref.relation}:${ref.relationEvidence?.kind??"CITATION_WORDING"}`
       if (edgeKeys.has(edgeKey)) continue
       edgeKeys.add(edgeKey)
       if (node.depth >= MAX_DEPTH || targets >= MAX_TARGETS || (!resolved.has(ref.lawName) && searches >= MAX_LAW_SEARCHES)) {
@@ -134,9 +137,10 @@ export async function traceStatuteReferences(api: LawApiClient, input: { law: La
       } catch (e) { rethrowIfFatal(e); resolved.set(ref.lawName, undefined) }
       if (!law) { targets++; missing++; lines.push(`[NOT_VERIFIED] ${edge} | 공식 법령명/버전 식별 실패`); continue }
       const key = keyFor(law, ref.article)
-      if (seen.has(key)) { lines.push(`[ALREADY_SEEN] ${edge} | 중복·순환 재조회 방지`); continue }
+      const relationNote = ref.relationEvidence ? " | 관계문언: "+ref.relationEvidence.kind+" ("+ref.relationEvidence.wording+"; 효력 미판정)" : " | 관계문언: CITATION_WORDING"
+      if (seen.has(key)) { lines.push(`[ALREADY_SEEN] ${edge} | 중복·순환 재조회 방지 | 원문 표기: ${ref.wording}${relationNote}`); continue }
       targets++; seen.add(key)
-      lines.push(`[REFERENCE_FOUND] ${edge} | 원문 표기: ${ref.wording}`)
+      lines.push(`[REFERENCE_FOUND] ${edge} | 원문 표기: ${ref.wording}${relationNote}`)
       queue.push({ law, article: ref.article, depth: node.depth + 1 })
     }
   }
