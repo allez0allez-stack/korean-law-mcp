@@ -35,13 +35,16 @@ export function listedRelationNote(body:string,wording:string,sourceType:string,
   if(matches.length!==1)return " | 관계문언: UNRESOLVED (원문 대조 불가)"
   const text=matches[0]
   // The trigger must begin inside the original list phrase; only complete its immediate suffix.
-  const authority=targetType==="대통령령"?"대통령령으로":targetType==="총리령"?"총리령으로":targetType==="부령"?"(?:[가-힣]{2,15})?부령으로":targetType==="행정규칙"?"(?:[가-힣]{2,30}(?:장관|위원회|청장|원장)이?|[가-힣]{2,30}의장이)":""
+  // The official API may return the actual ministry name, e.g. 재정경제부령.
+  // Match that named authority literally instead of assuming every ministry rule is labeled 부령.
+  const isMinisterial=(value:string)=>/^(?:[가-힣]{2,20})?부령$/.test(value)
+  const authority=targetType==="대통령령"?"대통령령으로":targetType==="총리령"?"총리령으로":targetType==="부령"?"(?:[가-힣]{2,15})?부령으로":isMinisterial(targetType)?targetType+"으로":targetType==="행정규칙"?"(?:[가-힣]{2,30}(?:장관|위원회|청장|원장)이?|[가-힣]{2,30}의장이)":""
   if(!authority)return " | 관계문언: UNRESOLVED"
   const pattern=new RegExp(authority+(targetType==="행정규칙"?"(?:가)?정하여고시(?:한다|하는|할)":"정(?:한다|하는|할)"))
   const m=pattern.exec(text)
   if(!m||m.index>=needle.length)return " | 관계문언: UNRESOLVED"
   // Explicit exclusion/negation in the observed fragment is not a positive delegation signal.
   if(/(?:아니|않|제외|불구하고)/.test(text))return " | 관계문언: UNRESOLVED (예외·부정 문언 혼재)"
-  const kind=sourceType==="법률"?"DELEGATION_WORDING":(sourceType==="대통령령"&&/^(?:총리령|부령|행정규칙)$/.test(targetType)||/^(?:총리령|부령)$/.test(sourceType)&&targetType==="행정규칙")?"REDELEGATION_WORDING":"UNRESOLVED"
+  const kind=sourceType==="법률"?"DELEGATION_WORDING":(sourceType==="대통령령"&&(targetType==="총리령"||isMinisterial(targetType)||targetType==="행정규칙")||(sourceType==="총리령"||isMinisterial(sourceType))&&targetType==="행정규칙")?"REDELEGATION_WORDING":"UNRESOLVED"
   return " | 관계문언: "+kind+" ("+m[0]+"; 효력 미판정)"
 }
