@@ -32,6 +32,16 @@ export const SearchAdminRuleSchema = z.object({
 
 export type SearchAdminRuleInput = z.infer<typeof SearchAdminRuleSchema>
 
+/** Provider coverage guidance only: a missing law.go.kr result is not a legal conclusion. */
+function adminSearchMiss(query: string) {
+  const result = noResultHint(query, "행정규칙")
+  const name = query.trim().replace(/^「([^」]+)」$/, "$1").replace(/\s+/g, "")
+  if (name === "증권인수업무등에관한규정" || name === "증권인수업무") {
+    result.content[0].text += "\n\n[EXTERNAL_SOURCE_REQUIRED] 금융투자협회 법규정보시스템에서 「증권 인수업무 등에 관한 규정」을 별도로 확인하세요.\nhttps://law.kofia.or.kr/\n법제처 검색 결과 미발견에 대한 공식 발행기관 안내입니다. 협회 원문·현행성·시행일·개별 적용례는 이 호출에서 검증하지 않았으며, 과세특례 규정으로 대체하거나 규정 부존재를 단정하지 마세요."
+  }
+  return result
+}
+
 export async function searchAdminRule(
   apiClient: LawApiClient,
   input: SearchAdminRuleInput
@@ -62,7 +72,7 @@ export async function searchAdminRule(
       if (abolishedNote) {
         return { content: [{ type: "text", text: truncateResponse(abolishedNote) }] }
       }
-      return noResultHint(input.query || "", "행정규칙")
+      return adminSearchMiss(input.query || "")
     }
 
     let resultText = `행정규칙 검색 결과 (총 ${rules.length}건):\n\n`
@@ -107,7 +117,7 @@ async function formatAdminRuleHistory(
   input: SearchAdminRuleInput
 ): Promise<{ content: Array<{ type: string, text: string }>, isError?: boolean }> {
   const { groups, totalCount, truncated } = await fetchAdminRuleHistory(apiClient, input.query, input.apiKey)
-  if (groups.size === 0) return noResultHint(input.query || "", "행정규칙")
+  if (groups.size === 0) return adminSearchMiss(input.query || "")
   const picked = pickAdminRuleGroup(groups, input.query)
   const lists = picked ? [picked] : [...groups.values()].slice(0, Math.max(1, Math.min(input.display, 20)))
   let text = `행정규칙 발령 연혁: '${input.query}' (${picked ? "일치 계보 1개" : `계보 ${groups.size}개${groups.size > lists.length ? ` 중 ${lists.length}개` : ""}`}, 연혁 검색 ${totalCount}건)\n`
