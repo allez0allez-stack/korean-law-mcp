@@ -1,0 +1,1182 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-11-26",
+  "baseline": "2b10d5e0955fbb928a1a46a2bce9e0fb1ff19ba8",
+  "scope": "PR58 동일 런타임 재검증: 기존 15개 질의의 기대값 불변, 직접 조회 후 신규 금감원 관련 3개 질의 고정. 협회 규정의 전체 원문 미열람으로 정답 표본에서 제외. 동일 공식 공급원이며 전문가 전수 검증 아님.",
+  "cases": [
+    {
+      "id": "FIN-01",
+      "topic": "일반 사모펀드 운용·보고 위임",
+      "tool": "legal_research",
+      "args": {
+        "query": "자본시장법 제249조의7 다단계 고시 추적",
+        "task": "law_system",
+        "articles": [
+          "제249조의7"
+        ]
+      },
+      "sources": [
+        {
+          "name": "자본시장과 금융투자업에 관한 법률",
+          "mst": "285957",
+          "effective": "20261113",
+          "article": "제249조의7",
+          "quote": "구체적인 운용방법과 보고 절차, 그 밖에 필요한 사항은 대통령령으로 정한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=285957"
+        },
+        {
+          "name": "자본시장과 금융투자업에 관한 법률 시행령",
+          "mst": "291669",
+          "effective": "20261113",
+          "article": "제271조의10",
+          "quote": "법 제249조의7제1항 각 호 외의 부분 본문에서",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=291669"
+        },
+        {
+          "name": "금융투자업규정",
+          "serial": "2100000285020",
+          "effective": "20260909",
+          "article": "제7-41조의7",
+          "quote": "영 제271조의10제13항제4호에서",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020"
+        }
+      ],
+      "checks": [
+        {
+          "id": "root",
+          "kind": "positive",
+          "prefix": "[DELEGATION_ROOT_VERIFIED]",
+          "all": [
+            "자본시장과 금융투자업에 관한 법률 제249조의7",
+            "MST 285957",
+            "시행 20261113"
+          ]
+        },
+        {
+          "id": "decree",
+          "kind": "positive",
+          "prefix": "[DELEGATED_ARTICLE_VERIFIED]",
+          "all": [
+            "자본시장과 금융투자업에 관한 법률 시행령 제271조의10",
+            "MST 291669",
+            "시행 20261113"
+          ]
+        },
+        {
+          "id": "notice",
+          "kind": "positive",
+          "prefix": [
+            "[CURRENT_CANDIDATE_VERSION_VERIFIED]",
+            "[ADMIN_VERSION_VERIFIED]"
+          ],
+          "all": [
+            "금융투자업규정",
+            "2100000285020",
+            "20260909"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-02",
+      "topic": "벤처기업투자신탁 적격투자 하위법령",
+      "tool": "legal_research",
+      "args": {
+        "query": "조세특례제한법 제16조 다단계 고시 추적",
+        "task": "law_system",
+        "articles": [
+          "제16조"
+        ]
+      },
+      "sources": [
+        {
+          "name": "조세특례제한법",
+          "mst": "284389",
+          "effective": "20260918",
+          "article": "제16조",
+          "quote": "대통령령으로 정하는 벤처기업투자신탁",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=284389"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "법 제16조제1항제2호에서",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "100분의 50 이상일 것. 이 경우 투자신탁 재산총액에서 가목1)에 따른 투자를 하는 재산의 평가액이 차지하는 비율은 100분의 15 이상이어야 한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        }
+      ],
+      "checks": [
+        {
+          "id": "root",
+          "kind": "positive",
+          "prefix": "[DELEGATION_ROOT_VERIFIED]",
+          "all": [
+            "조세특례제한법 제16조",
+            "MST 284389",
+            "시행 20260918"
+          ]
+        },
+        {
+          "id": "decree",
+          "kind": "positive",
+          "prefix": "[DELEGATED_ARTICLE_VERIFIED]",
+          "all": [
+            "조세특례제한법 시행령 제14조",
+            "MST 288915",
+            "시행 20260918"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-03",
+      "topic": "금융투자업규정 현행 역인용",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "search_admin_rule",
+        "params": {
+          "query": "금융투자업규정",
+          "knd": "3",
+          "citation_law": "자본시장과 금융투자업에 관한 법률 시행령",
+          "citation_article": "제271조의10"
+        }
+      },
+      "sources": [
+        {
+          "name": "금융투자업규정",
+          "serial": "2100000285020",
+          "effective": "20260909",
+          "article": "제7-41조의7",
+          "quote": "영 제271조의10제2항에 따라",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020"
+        },
+        {
+          "name": "금융투자업규정",
+          "serial": "2100000285020",
+          "effective": "20260909",
+          "article": "제7-41조의7",
+          "quote": "영 제271조의10제13항제4호에서",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020"
+        },
+        {
+          "name": "금융투자업규정",
+          "serial": "2100000285020",
+          "effective": "20260909",
+          "article": "제7-41조의7",
+          "quote": "영 제271조의10제15항제6호에서",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020"
+        }
+      ],
+      "checks": [
+        {
+          "id": "current_notice",
+          "kind": "positive",
+          "prefix": "[INDEPENDENT_CITATION_VERIFIED]",
+          "all": [
+            "금융투자업규정",
+            "2100000285020",
+            "20260909"
+          ]
+        },
+        {
+          "id": "citation_2",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제7-41조의7",
+            "제271조의10제2항"
+          ]
+        },
+        {
+          "id": "citation_13_4",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제7-41조의7",
+            "제271조의10제13항제4호"
+          ]
+        },
+        {
+          "id": "citation_15_6",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제7-41조의7",
+            "제271조의10제15항제6호"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-04",
+      "topic": "CB 발행 기준일 법령 버전",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "상법",
+        "jo": "제513조",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제513조",
+          "quote": "전환사채의 발행",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        },
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제513조",
+          "quote": "제418조제2항 단서의 규정을 준용한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        }
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "상법",
+            "MST 273629",
+            "2026.09.10"
+          ]
+        },
+        {
+          "id": "body",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제418조제2항 단서의 규정을 준용한다"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-05",
+      "topic": "BW 발행·제3자 배정·특별결의 인용",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "verify_citations",
+        "text": "상법 제516조의2, 상법 제418조 제2항, 상법 제434조",
+        "maxCitations": 5
+      },
+      "sources": [
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제516조의2",
+          "quote": "제434조의 결의로써 이를 정하여야 한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        },
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제418조",
+          "quote": "신기술의 도입, 재무구조의 개선",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        },
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제434조",
+          "quote": "출석한 주주의 의결권의 3분의 2 이상",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        }
+      ],
+      "checks": [
+        {
+          "id": "bw",
+          "kind": "positive",
+          "prefix": "✓ ",
+          "all": [
+            "상법 제516조의2",
+            "실존"
+          ]
+        },
+        {
+          "id": "thirdparty",
+          "kind": "positive",
+          "prefix": "✓ ",
+          "all": [
+            "상법 제418조",
+            "제2항 실존"
+          ]
+        },
+        {
+          "id": "special_resolution",
+          "kind": "positive",
+          "prefix": "✓ ",
+          "all": [
+            "상법 제434조",
+            "실존"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-06",
+      "topic": "실존 조문과 미발견 조문 혼합 인용",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "verify_citations",
+        "text": "상법 제513조, 상법 제9999조",
+        "maxCitations": 5
+      },
+      "sources": [
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제513조",
+          "quote": "전환사채의 발행",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629"
+        },
+        {
+          "name": "상법",
+          "mst": "273629",
+          "effective": "20260910",
+          "article": "제9999조",
+          "quote": "[NOT_FOUND] 조문 내용을 찾을 수 없습니다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=273629",
+          "negative": true
+        }
+      ],
+      "checks": [
+        {
+          "id": "valid",
+          "kind": "positive",
+          "prefix": "✓ ",
+          "all": [
+            "상법 제513조",
+            "실존"
+          ]
+        },
+        {
+          "id": "reject",
+          "kind": "negative",
+          "prefix": "✗ ",
+          "all": [
+            "상법 제9999조",
+            "[NOT_FOUND]"
+          ]
+        },
+        {
+          "id": "no_false_confirmation",
+          "kind": "negative",
+          "prefix": "✓ ",
+          "all": [
+            "상법 제9999조"
+          ],
+          "absent": true
+        }
+      ]
+    },
+    {
+      "id": "FIN-07",
+      "topic": "환매조건부매매 종목교체 규정 조회",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2100000285020",
+          "jo": "제5-22조"
+        }
+      },
+      "sources": [
+        {
+          "name": "금융투자업규정",
+          "serial": "2100000285020",
+          "effective": "20260909",
+          "article": "제5-22조",
+          "quote": "사전에 투자자의 동의를 얻어야 한다.",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000285020"
+        }
+      ],
+      "checks": [
+        {
+          "id": "header",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-22조(매도 증권의 종목교체)"
+          ]
+        },
+        {
+          "id": "consent",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "사전에 투자자의 동의를 얻어야 한다"
+          ]
+        },
+        {
+          "id": "notice",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "지체 없이 투자자에게 통지하여야 한다"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-08",
+      "topic": "벤처기업투자신탁 시행령 기준일 버전 및 수치",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "조세특례제한법 시행령",
+        "jo": "제14조",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "100분의 50 이상일 것",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "100분의 15 이상이어야 한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        }
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "조세특례제한법 시행령",
+            "MST 288915",
+            "2026.09.18"
+          ]
+        },
+        {
+          "id": "ratios",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "100분의 50",
+            "100분의 15"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-09",
+      "topic": "하이일드 과세특례의 가입기한·투자기간·한도",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "조세특례제한법",
+        "jo": "제91조의15",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "조세특례제한법",
+          "mst": "284389",
+          "effective": "20260918",
+          "article": "제91조의15",
+          "quote": "2024년 12월 31일까지 가입",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=284389"
+        },
+        {
+          "name": "조세특례제한법",
+          "mst": "284389",
+          "effective": "20260918",
+          "article": "제91조의15",
+          "quote": "계약기간은 1년 이상",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=284389"
+        }
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "조세특례제한법",
+            "MST 284389",
+            "2026.09.18"
+          ]
+        },
+        {
+          "id": "subscription_deadline",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "2024년 12월 31일까지 가입"
+          ]
+        },
+        {
+          "id": "ceiling",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "3천만원을 초과"
+          ]
+        },
+        {
+          "id": "duration",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "계약기간은 1년 이상",
+            "가입일부터 3년"
+          ]
+        },
+        {
+          "id": "clawback",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "가입일부터 1년 이내",
+            "부득이한 사유"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-10",
+      "topic": "하이일드 공모·비공모 비율 및 예외",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "조세특례제한법 시행령",
+        "jo": "제93조",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제93조",
+          "quote": "사채권의 평균보유비율이 100분의 45 이상이고, 이를 포함한 채권의 평균보유비율이 100분의 60 이상일 것",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제93조",
+          "quote": "공모집합투자기구가 아닌 투자신탁등의 경우",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제93조",
+          "quote": "매 분기 종료일에 산정한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        }
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "조세특례제한법 시행령",
+            "MST 288915",
+            "2026.09.18"
+          ]
+        },
+        {
+          "id": "public",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "공모집합투자기구(",
+            "100분의 45",
+            "100분의 60"
+          ]
+        },
+        {
+          "id": "private",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "공모집합투자기구가 아닌",
+            "100분의 15",
+            "100분의 45"
+          ]
+        },
+        {
+          "id": "domestic",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "국내 자산에만 투자"
+          ]
+        },
+        {
+          "id": "average",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "3개월 동안 합산",
+            "매 분기 종료일"
+          ]
+        },
+        {
+          "id": "nav_exception",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "평가액이 투자원금보다 적은 날"
+          ]
+        },
+        {
+          "id": "first_last_quarter",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "설정일ㆍ설립일 또는 만기일이 속하는 분기"
+          ]
+        },
+        {
+          "id": "tax_exclusion",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "과세특례 적용 대상 소득에서 제외"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-11",
+      "topic": "코스닥벤처 50·15 비율 및 유지기간",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "조세특례제한법 시행령",
+        "jo": "제14조",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "설정일부터 6개월",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        },
+        {
+          "name": "조세특례제한법 시행령",
+          "mst": "288915",
+          "effective": "20260918",
+          "article": "제14조",
+          "quote": "투자신탁의 해지일 전 6개월에 대해서는 적용하지 아니한다.",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288915"
+        }
+      ],
+      "checks": [
+        {
+          "id": "initial_period",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "설정일부터 6개월",
+            "9개월",
+            "100분의 50",
+            "100분의 15"
+          ]
+        },
+        {
+          "id": "direct_exclusion",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "타인 소유의 주식, 출자지분 또는 채권",
+            "제외한다"
+          ]
+        },
+        {
+          "id": "former_venture",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "7년이 지나지 않은",
+            "코스닥시장"
+          ]
+        },
+        {
+          "id": "maintenance",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "매 6개월마다",
+            "해지일 전 6개월"
+          ]
+        },
+        {
+          "id": "annual_limit",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "연 2천만원"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-12",
+      "topic": "CB 최대주주 콜옵션 및 전환금지기간 검색",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2100000287734",
+          "keyword": "전환사채매수선택권"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-21조",
+          "quote": "발행당시 보유",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        },
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-21조",
+          "quote": "발행 후 1년이 경과한 후",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        }
+      ],
+      "checks": [
+        {
+          "id": "article",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-21조(전환사채의 발행제한 및 전환금지기간)"
+          ]
+        },
+        {
+          "id": "call",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "전환사채매수선택권",
+            "주식 비율을 초과하여 주식을 취득할 수 없도록"
+          ]
+        },
+        {
+          "id": "lockup",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "발행 후 1년이 경과한 후",
+            "발행 후 1월"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-13",
+      "topic": "CB 리픽싱 하향·상향 조정 검색",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2100000287734",
+          "keyword": "최저조정가액"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-23조",
+          "quote": "100분의 70",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        },
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-23조",
+          "quote": "주주총회에서 정한 최저조정가액",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        },
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-23조의2",
+          "quote": "감자ㆍ주식병합 등으로 인한 조정비율만큼 상향",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        }
+      ],
+      "checks": [
+        {
+          "id": "down",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-23조(전환가액의 하향조정)"
+          ]
+        },
+        {
+          "id": "floor",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "100분의 70",
+            "주주총회에서 정한 최저조정가액"
+          ]
+        },
+        {
+          "id": "up",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-23조의2(전환가액의 상향조정)"
+          ]
+        },
+        {
+          "id": "reverse_split",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "감자ㆍ주식병합 등으로 인한 조정비율만큼 상향"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-14",
+      "topic": "CB 최초 전환가액과 예외 (직접 조문 재조회 스모크)",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2100000287734",
+          "jo": "제5-22조"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-22조",
+          "quote": "실제 납입일 전 제3거래일",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        },
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-22조",
+          "quote": "100분의 90이상",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        }
+      ],
+      "checks": [
+        {
+          "id": "header",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-22조(전환사채의 전환가액 결정)"
+          ]
+        },
+        {
+          "id": "payment",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "실제 납입일 전 제3거래일"
+          ]
+        },
+        {
+          "id": "discount",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "100분의 90이상"
+          ]
+        },
+        {
+          "id": "credit_rating",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "2 이상의 신용평가회사",
+            "BB+ 이하"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-15",
+      "topic": "발행공시규정의 현행 계보 검색",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "search_admin_rule",
+        "params": {
+          "query": "증권의 발행 및 공시 등에 관한 규정"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-21조",
+          "quote": "전환사채의 발행제한 및 전환금지기간",
+          "source": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000287734"
+        }
+      ],
+      "checks": [
+        {
+          "id": "name",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "증권의 발행 및 공시 등에 관한 규정"
+          ]
+        },
+        {
+          "id": "serial",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "행정규칙일련번호: 2100000287734"
+          ]
+        },
+        {
+          "id": "effective",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "시행일: 20261113"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-16",
+      "topic": "주권 관련 사채 발행 주요사항보고서 제출 기한 및 예외",
+      "tool": "legal_analysis",
+      "args": {
+        "mode": "applicable_law",
+        "lawName": "자본시장과 금융투자업에 관한 법률",
+        "jo": "제161조",
+        "date": "20261126"
+      },
+      "sources": [
+        {
+          "name": "자본시장과 금융투자업에 관한 법률",
+          "mst": "285957",
+          "effective": "20261113",
+          "article": "제161조",
+          "quote": "그 사실이 발생한 다음 날과 납입기일의 1주 전 중 먼저 도래하는 날",
+          "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=285957"
+        }
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "자본시장과 금융투자업에 관한 법률",
+            "MST 285957",
+            "2026.11.13"
+          ]
+        },
+        {
+          "id": "deadline",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "납입기일의 1주 전 중 먼저 도래하는 날"
+          ]
+        },
+        {
+          "id": "instruments",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "전환사채, 교환사채 또는 신주인수권부사채"
+          ]
+        },
+        {
+          "id": "exception",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제119조제1항에 따라 신고서를 제출하는 경우는 제외"
+          ]
+        },
+        {
+          "id": "form",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "금융위원회가 정하여 고시하는 기재방법 및 서식"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-17",
+      "topic": "금융위원회 합병가액 기준 및 금감원 세칙 권한 문언",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2100000287734",
+          "keyword": "상대가치의 산출방법"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정",
+          "serial": "2100000287734",
+          "effective": "20261113",
+          "article": "제5-13조",
+          "quote": "이 조에서 달리 정하지 않는 사항은 감독원장이 정한다.",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2100000287734"
+        }
+      ],
+      "checks": [
+        {
+          "id": "header",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5-13조(합병가액의 산정기준)"
+          ]
+        },
+        {
+          "id": "authority",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "상대가치의 산출방법",
+            "감독원장이 정한다"
+          ]
+        },
+        {
+          "id": "parent",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "영 제176조의5제2항"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FIN-18",
+      "topic": "금감원 시행세칙의 희석증권 반영 및 분석기준일",
+      "tool": "execute_tool",
+      "args": {
+        "tool_name": "get_admin_rule",
+        "params": {
+          "id": "2200000107389",
+          "keyword": "주요사항보고서"
+        }
+      },
+      "sources": [
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정 시행세칙",
+          "serial": "2200000107389",
+          "effective": "20250602",
+          "article": "제5조",
+          "quote": "권리 행사를 가정하여 이를 순자산 및 발행주식의 총수에 반영한다.",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2200000107389"
+        },
+        {
+          "name": "증권의 발행 및 공시 등에 관한 규정 시행세칙",
+          "serial": "2200000107389",
+          "effective": "20250602",
+          "article": "제8조",
+          "quote": "주요사항보고서를 제출하는 날의 5영업일 전일",
+          "source": "https://www.law.go.kr/admRulInfoP.do?admRulSeq=2200000107389"
+        }
+      ],
+      "checks": [
+        {
+          "id": "header",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제5조(자산가치)"
+          ]
+        },
+        {
+          "id": "dilution",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "권리 행사를 가정하여 이를 순자산 및 발행주식의 총수에 반영"
+          ]
+        },
+        {
+          "id": "parent",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "규정 제5-13조"
+          ]
+        },
+        {
+          "id": "date",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "제8조(분석기준일)",
+            "5영업일 전일"
+          ]
+        },
+        {
+          "id": "date_exception",
+          "kind": "positive",
+          "prefix": "",
+          "all": [
+            "분석에 중대한 영향을 줄 수 있는 사항이 발생한 경우에는 그 사항이 발생한 날"
+          ]
+        }
+      ]
+    }
+  ]
+}
