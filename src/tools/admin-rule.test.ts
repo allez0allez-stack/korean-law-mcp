@@ -444,3 +444,32 @@ describe("bounded administrative transition event comparison",()=>{
     expect(s).toContain("[EVENT_NOT_PAIRED]");expect(s).toContain("조건 부존재 단정 금지");expect(s).toContain("[PARTIAL]")
   })
 })
+
+
+describe("external official source handoff after administrative search miss", () => {
+  const empty = "<AdmRulSearch><totalCnt>0</totalCnt></AdmRulSearch>"
+  it.each(["증권 인수업무 등에 관한 규정", "「증권인수업무등에관한규정」", "증권 인수업무"])("retains NOT_FOUND and points to the official association for %s", async query => {
+    const r = await searchAdminRule(searchStub(empty), { query, display: 20 })
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).toContain("[NOT_FOUND]")
+    expect(r.content[0].text).toContain("[EXTERNAL_SOURCE_REQUIRED]")
+    expect(r.content[0].text).toContain("https://law.kofia.or.kr/")
+    expect(r.content[0].text).toContain("원문·현행성·시행일·개별 적용례는 이 호출에서 검증하지 않았으며")
+  })
+  it("preserves the external handoff on an empty history search", async () => {
+    const r = await searchAdminRule(searchStub(empty), { query: "증권 인수업무 등에 관한 규정", display: 20, history: true })
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).toContain("[EXTERNAL_SOURCE_REQUIRED]")
+  })
+  it.each(["증권의 발행 및 공시 등에 관한 규정 시행세칙", "증권", "증권 인수업무 등에 관한 규정 해설"])("does not infer association coverage for another title: %s", async query => {
+    const r = await searchAdminRule(searchStub(empty), { query, display: 20 })
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).not.toContain("[EXTERNAL_SOURCE_REQUIRED]")
+  })
+  it("never replaces an actual upstream result with a static handoff", async () => {
+    const r = await searchAdminRule(searchStub(SEARCH_XML), { query: "증권 인수업무 등에 관한 규정", display: 20 })
+    expect(r.isError).toBeFalsy()
+    expect(r.content[0].text).toContain("2100000271110")
+    expect(r.content[0].text).not.toContain("[EXTERNAL_SOURCE_REQUIRED]")
+  })
+})
