@@ -1,0 +1,237 @@
+{
+  "source": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+  "sourceIdentityChecked": true,
+  "sourcePredicates": 8,
+  "checksPassed": 36,
+  "checksTotal": 36,
+  "checks": [
+    {
+      "id": "HY-SUNSET",
+      "date": "20281230",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "HY-SUNSET",
+      "date": "20281231",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "HY-SUNSET",
+      "date": "20290101",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "HY-SUNSET",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-SUNSET",
+      "date": "20281230",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-SUNSET",
+      "date": "20281231",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-SUNSET",
+      "date": "20290101",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-SUNSET",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-ALLOCATION-2026",
+      "date": "20251231",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-ALLOCATION-2026",
+      "date": "20260101",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-ALLOCATION-2026",
+      "date": "20260102",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "VENTURE-ALLOCATION-2026",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "ORDINARY-ALLOCATION-2026",
+      "date": "20260331",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ORDINARY-ALLOCATION-2026",
+      "date": "20260401",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ORDINARY-ALLOCATION-2026",
+      "date": "20260402",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ORDINARY-ALLOCATION-2026",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "FORECAST-REPORTING-2026",
+      "date": "20251231",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "FORECAST-REPORTING-2026",
+      "date": "20260101",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "FORECAST-REPORTING-2026",
+      "date": "20260102",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "FORECAST-REPORTING-2026",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-JAN",
+      "date": "20251231",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-JAN",
+      "date": "20260101",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-JAN",
+      "date": "20260102",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-JAN",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-APR",
+      "date": "20260331",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-APR",
+      "date": "20260401",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-APR",
+      "date": "20260402",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "ANNEX1-2026-APR",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "id": "BOND-RULE-2027",
+      "date": "20261231",
+      "expected": "DATE_NOT_MATCH",
+      "actual": "DATE_NOT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "BOND-RULE-2027",
+      "date": "20270101",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "BOND-RULE-2027",
+      "date": "20270102",
+      "expected": "DATE_MATCH",
+      "actual": "DATE_MATCH",
+      "pass": true
+    },
+    {
+      "id": "BOND-RULE-2027",
+      "case": "wrong_event",
+      "pass": true
+    },
+    {
+      "case": "invalid_date",
+      "date": "20260229",
+      "pass": true
+    },
+    {
+      "case": "invalid_date",
+      "date": "20261301",
+      "pass": true
+    },
+    {
+      "case": "invalid_date",
+      "date": "2026-01-01",
+      "pass": true
+    },
+    {
+      "case": "wrong_hash",
+      "pass": true
+    }
+  ],
+  "limitations": "Executed date-only boundary checks in JS; not independent legal validation; annex bodies not retrieved."
+}

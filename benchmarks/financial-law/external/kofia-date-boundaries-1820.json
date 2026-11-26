@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "title": "KOFIA selected explicit date boundaries",
+  "source": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+  "historySeq": 1820,
+  "documentId": "c49a303feb069500a66b70a191f77d8a37dccbcccf8dfa25e97a156327f22ad7",
+  "sourceHashReported": "f351eeaed09fd8c93805f33e3c9f2bd1dcc493d1d892998bf40122124efdc64b",
+  "scope": "Manually selected date predicates from captured source, not full applicability, no sanction calculations. Fixed historical version; latest status not automatically verified.",
+  "items": [
+    {
+      "id": "HY-SUNSET",
+      "chunk": 749,
+      "headingChunk": 748,
+      "event": "first_securities_registration",
+      "operator": "lte",
+      "boundary": "20281231",
+      "required": [
+        "제2조제18호",
+        "제9조제1항제4호",
+        "2028년 12월 31일까지",
+        "최초 증권신고서"
+      ],
+      "caveat": "Only the stated sunset wording. Fund eligibility, separate tax provisions, subsequent amendments and other requirements not determined."
+    },
+    {
+      "id": "VENTURE-SUNSET",
+      "chunk": 751,
+      "headingChunk": 750,
+      "event": "first_securities_registration",
+      "operator": "lte",
+      "boundary": "20281231",
+      "required": [
+        "제2조제20호",
+        "제9조제1항제5호",
+        "2028년 12월 31일까지",
+        "최초 증권신고서"
+      ],
+      "caveat": "Only the stated sunset wording. Fund eligibility, subsequent amendments and other requirements not determined."
+    },
+    {
+      "id": "VENTURE-ALLOCATION-2026",
+      "chunk": 745,
+      "headingChunk": 744,
+      "event": "first_securities_registration",
+      "operator": "gte",
+      "boundary": "20260101",
+      "required": [
+        "제9조제1항제5호",
+        "2026년 1월 1일 이후",
+        "최초 증권신고서"
+      ],
+      "caveat": "Selected venture allocation amendment only, not all changes in the same clause."
+    },
+    {
+      "id": "ORDINARY-ALLOCATION-2026",
+      "chunk": 756,
+      "headingChunk": 755,
+      "event": "first_securities_registration",
+      "operator": "gte",
+      "boundary": "20260401",
+      "required": [
+        "제9조제1항제7호",
+        "2026년 4월 1일 이후",
+        "최초 증권신고서"
+      ],
+      "caveat": "Only the listed provisions in this addendum."
+    },
+    {
+      "id": "FORECAST-REPORTING-2026",
+      "chunk": 757,
+      "headingChunk": 755,
+      "event": "kosdaq_listing",
+      "operator": "gte",
+      "boundary": "20260101",
+      "required": [
+        "제5조제10항",
+        "2026년 1월 1일 이후 코스닥시장에 상장"
+      ],
+      "caveat": "Listing event, not filing date. Substantive reporting conditions not evaluated."
+    },
+    {
+      "id": "ANNEX1-2026-JAN",
+      "chunk": 747,
+      "headingChunk": 746,
+      "event": "first_securities_registration",
+      "operator": "gte",
+      "boundary": "20260101",
+      "required": [
+        "<별표1>",
+        "2026년 1월 1일 이후",
+        "최초 증권신고서",
+        "제재의 감면이 더 큰 경우"
+      ],
+      "caveat": "Earlier conduct may receive the more favorable rule; actual annex text and conduct date required. Date condition alone never determines sanction."
+    },
+    {
+      "id": "ANNEX1-2026-APR",
+      "chunk": 759,
+      "headingChunk": 758,
+      "event": "first_securities_registration",
+      "operator": "gte",
+      "boundary": "20260401",
+      "required": [
+        "<별표1> 중 I.1.표",
+        "2026년 4월 1일 이후",
+        "최초 증권신고서",
+        "제재의 감면이 더 큰 경우"
+      ],
+      "caveat": "Only stated amendments excluding the remarks; earlier conduct exception and annex text unresolved."
+    },
+    {
+      "id": "BOND-RULE-2027",
+      "chunk": 764,
+      "headingChunk": 763,
+      "event": "first_securities_registration",
+      "operator": "gte",
+      "boundary": "20270101",
+      "required": [
+        "제11조제2항제7호",
+        "제12조제4항",
+        "제17조의2제6항제3호",
+        "2027년 1월 1일 이후",
+        "최초 증권신고서"
+      ],
+      "caveat": "Only the three listed amended provisions; not the general effective date."
+    }
+  ]
+}
