@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-11-26",
+  "baseline": "2b10d5e0955fbb928a1a46a2bce9e0fb1ff19ba8",
+  "metrics": {
+    "cases": 7,
+    "casesPassed": 7,
+    "captures": 7,
+    "usableCaptures": 7,
+    "checks": 32,
+    "checksPassed": 32,
+    "positiveExpected": 32,
+    "positiveMatched": 32,
+    "negativeExpected": 0,
+    "negativeMatched": 0,
+    "partialCases": 0,
+    "truncatedCases": 0,
+    "totalMs": 17692,
+    "medianMs": 1665
+  },
+  "limitations": [
+    "Fixed selected assertions, not exhaustive precision/recall or legal validity.",
+    "Same official provider, separately fetched direct source excerpts; no independent expert adjudication.",
+    "Partial/truncation flags do not disappear when selected assertions pass.",
+    "Latency is one sequential live sample, not a controlled or cold-cache comparison."
+  ],
+  "cases": [
+    {
+      "id": "FIN-09",
+      "topic": "하이일드 과세특례의 가입기한·투자기간·한도",
+      "status": "ok",
+      "elapsedMs": 5565,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "조세특례제한법 [시행 2026.09.18] [제21467호, 2026.03.17, 타법개정] (MST 284389)"
+        },
+        {
+          "id": "subscription_deadline",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "① 거주자가 대통령령으로 정하는 채권을 일정 비율 이상 편입하는 대통령령으로 정하는 투자신탁 등(이하 \"고위험고수익채권투자신탁\"이라 한다)에 2024년 12월 31일까지 가입하는 경우 해당 고위험고수익채권투자신탁에서 받는 이자소득 또는 배당소득은 「소득세법」 제14조제2항에 따른 종합소득과세표준에 합산하지 아니한다."
+        },
+        {
+          "id": "ceiling",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "② 거주자가 각 금융회사를 통하여 가입한 고위험고수익채권투자신탁에 투자한 금액의 합계액이 3천만원을 초과하는 경우 그 초과하는 금액에서 발생하는 소득에 대해서는 제1항을 적용하지 아니한다."
+        },
+        {
+          "id": "duration",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "③ 고위험고수익채권투자신탁의 계약기간은 1년 이상으로 하고, 가입일부터 3년이 지나 발생한 소득에 대해서는 제1항을 적용하지 아니한다."
+        },
+        {
+          "id": "clawback",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "④ 고위험고수익채권투자신탁의 가입자가 가입일부터 1년 이내에 고위험고수익채권투자신탁을 해약 또는 환매하거나 그 권리를 이전하는 경우 이자소득 또는 배당소득이 종합소득과세표준에 합산되지 아니함으로써 감면받은 세액을 제146조의2에 따라 추징한다. 다만, 가입자의 사망ㆍ해외이주 등 대통령령으로 정하는 부득이한 사유로 해약 또는 환매하거나 그 권리를 이전하는 경우에는 그러하지 아니하다."
+        }
+      ]
+    },
+    {
+      "id": "FIN-10",
+      "topic": "하이일드 공모·비공모 비율 및 예외",
+      "status": "ok",
+      "elapsedMs": 4324,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "version",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "조세특례제한법 시행령 [시행 2026.09.18] [제36587호, 2026.08.18, 타법개정] (MST 288915)"
+        },
+        {
+          "id": "public",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "가. 공모집합투자기구(「자본시장과 금융투자업에 관한 법률」 제9조제18항에 따른 집합투자기구 중 같은 조 제19항에 따른 사모집합투자기구를 제외한 것을 말한다. 이하 이 조에서 같다)인 투자신탁등의 경우: 신용등급(「자본시장과 금융투자업에 관한 법률」 제335조의3에 따라 신용평가업인가를 받은 자 2 이상이 평가한 신용등급 중 낮은 신용등급을 말한다. 이하 이 조에서 같다)이 BBB+ 이하[「주식ㆍ사채 등의 전자등록에 관한 법률」 제2조제1호나목에 따른 사채 중 같은 법 제59조에 따른 단기사채등에 해당하는 사채(이하 이 조에서 \"단기사채\"라 한다)의 경우에는 A3+ 이하]인 사채권의 평균보유비율이 100분의 45 이상이고, 이를 포함한 채권의 평균보유비율이 100분의 60 이상일 것"
+        },
+        {
+          "id": "private",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "나. 공모집합투자기구가 아닌 투자신탁등의 경우: 신용등급이 A+, A 또는 A-(단기사채의 경우에는 A2+, A2 또는 A2-)인 사채권의 평균보유비율이 100분의 15 이상이고, 신용등급이 BBB+ 이하(단기사채의 경우에는 A3+ 이하)인 사채권의 평균보유비율이 100분의 45 이상일 것"
+        },
+        {
+          "id": "domestic",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "2. 국내 자산에만 투자할 것"
+        },
+        {
+          "id": "average",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "③ 제1항제1호가목 및 나목에 따른 평균보유비율은 해당 채권의 평가액이 투자신탁등의 평가액에서 차지하는 매일의 비율(이하 이 조에서 \"일일보유비율\"이라 한다)을 3개월 동안 합산하여 같은 기간의 총일수로 나눈 비율로 하며, 매 분기 종료일에 산정한다."
+        },
+        {
+          "id": "nav_exception",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "④ 투자신탁등의 평가액이 투자원금보다 적은 날의 일일보유비율을 계산할 때 다음 각 호에 해당하는 경우에는 해당 채권의 일일보유비율은 해당 호에서 정한 비율로 본다."
+        },
+        {
+          "id": "first_last_quarter",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "⑤ 제3항에도 불구하고 투자신탁등의 설정일ㆍ설립일 또는 만기일이 속하는 분기에는 제1항제1호의 요건을 갖춘 것으로 보며, 투자신탁등의 설정일ㆍ설립일부터 기산하여 3개월이 되는 날까지의 기간 또는 만기일부터 역산하여 3개월이 되는 날까지의 기간의 일부가 포함되어 있는 분기의 경우에는 해당 기간을 제외한 나머지 기간의 일일보유비율을 합산하여 그 나머지 기간의 총일수로 나눈 비율을 해당 분기의 평균보유비율로 한다."
+        },
+        {
+          "id": "tax_exclusion",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "⑥ 투자신탁등의 결산기간에 제1항제1호의 요건을 갖추지 못한 분기 또는 같은 항 제2호의 요건을 갖추지 못한 날이 포함되어 있는 경우 해당 결산기간에 발생하는 이자소득 및 배당소득은 법 제91조의15제1항에 따른 과세특례 적용 대상 소득에서 제외한다."
+        }
+      ]
+    },
+    {
+      "id": "FIN-11",
+      "topic": "코스닥벤처 50·15 비율 및 유지기간",
+      "status": "ok",
+      "elapsedMs": 4373,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "initial_period",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "3. 투자신탁의 설정일부터 6개월(「자본시장과 금융투자업에 관한 법률」 제9조제19항에 따른 사모집합투자기구에 해당하지 않는 경우에는 9개월) 이내에 투자신탁 재산총액에서 다음 각 목에 따른 비율의 합계가 100분의 50 이상일 것. 이 경우 투자신탁 재산총액에서 가목1)에 따른 투자를 하는 재산의 평가액이 차지하는 비율은 100분의 15 이상이어야 한다."
+        },
+        {
+          "id": "direct_exclusion",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "1) 「벤처투자 촉진에 관한 법률」 제2조제1호에 따른 투자. 다만, 타인 소유의 주식, 출자지분 또는 채권을 매입에 의하여 취득하는 방법으로 하는 투자는 제외한다."
+        },
+        {
+          "id": "former_venture",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "나. 벤처기업이었던 기업이 벤처기업에 해당하지 않게 된 이후 7년이 지나지 않은 기업으로서 「자본시장과 금융투자업에 관한 법률」에 따른 코스닥시장에 상장한 중소기업 또는 중견기업에 가목1) 및 2)에 따른 투자를 하는 재산의 평가액의 합계액이 차지하는 비율"
+        },
+        {
+          "id": "maintenance",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "4. 제3호의 요건을 갖춘 날부터 매 6개월마다 같은 호 각 목 외의 부분 전단 및 후단에 따른 비율(투자신탁재산의 평가액이 투자원금보다 적은 경우로서 같은 후단에 따른 비율이 100분의 15 미만인 경우에는 이를 100분의 15로 본다)을 매일 6개월 동안 합산하여 같은 기간의 총일수로 나눈 비율이 각각 100분의 50 및 100분의 15 이상일 것. 다만, 투자신탁의 해지일 전 6개월에 대해서는 적용하지 아니한다."
+        },
+        {
+          "id": "annual_limit",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "② 벤처기업투자신탁의 수익증권에 투자한 경우 소득공제를 적용받을 수 있는 투자액(해당 거주자가 투자한 모든 벤처기업투자신탁의 합계액을 말한다)은 거주자 1명당 연 2천만원으로 한다. <신설 2018.2.13, 2026.2.27>"
+        }
+      ]
+    },
+    {
+      "id": "FIN-12",
+      "topic": "CB 최대주주 콜옵션 및 전환금지기간 검색",
+      "status": "ok",
+      "elapsedMs": 1665,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "article",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "제5-21조(전환사채의 발행제한 및 전환금지기간)"
+        },
+        {
+          "id": "call",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "③ 주권상장법인이 최대주주 또는 그의 특수관계인(이하 이 조에서 \"최대주주등\"이라 한다)에게 전환사채매수선택권을 부여하는 전환사채를 발행하는 경우(주권상장법인이 자신이 발행한 전환사채를 취득한 후 최대주주등에게 매도하는 경우를 포함한다)에는 최대주주등이 전환사채매수선택권의 행사로 각자 발행당시 보유(누구의 명의로든지 자기의 계산으로 소유하는 경우를 말한다)한 주식 비율을 초과하여 주식을 취득할 수 없도록 하는 조건으로 이를 발행하여야 한다.<신설 2021. 10. 28.>"
+        },
+        {
+          "id": "lockup",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "② 주권상장법인이 전환사채를 발행하는 경우에는 그 발행 후 1년이 경과한 후에 전환할 수 있는 조건으로 이를 발행하여야 한다. 다만, 공모발행방식으로 발행하는 경우에는 그 발행 후 1월이 경과한 후에 전환할 수 있는 조건으로 이를 발행할 수 있다."
+        }
+      ]
+    },
+    {
+      "id": "FIN-13",
+      "topic": "CB 리픽싱 하향·상향 조정 검색",
+      "status": "ok",
+      "elapsedMs": 376,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "down",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "제5-23조(전환가액의 하향조정) 주권상장법인이 전환가액을 하향하여 조정할 수 있는 전환사채를 발행하는 경우에는 다음 각 호의 방법에 따라야 한다.<개정 2010. 11. 8., 2021. 10. 28.>"
+        },
+        {
+          "id": "floor",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "가. 발행당시의 전환가액(조정일 전에 신주의 할인발행 등 또는 감자 등의 사유로 전환가액을 이미 하향 또는 상향 조정한 경우에는 이를 감안하여 산정한 가액)의 100분의 70에 해당하는 가액. 다만, 정관의 규정으로 전환가액의 조정에 관한 사항을 주주총회의 특별결의로 정하도록 하고 해당 전환사채 발행시 주주총회에서 조정 후 전환가액의 최저한도(이하 \"최저조정가액\"이라 한다) 및 해당 사채의 금액을 구체적으로 정한 경우에는 주주총회에서 정한 최저조정가액<개정 2024. 12. 1.>"
+        },
+        {
+          "id": "up",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "제5-23조의2(전환가액의 상향조정)"
+        },
+        {
+          "id": "reverse_split",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "① 주권상장법인이 전환사채를 발행하는 경우에는 감자ㆍ주식병합 등 주식가치 상승사유가 발생하는 경우 감자ㆍ주식병합 등으로 인한 조정비율만큼 상향하여 반영하는 조건으로 이를 발행하여야 한다. 단, 감자ㆍ주식병합 등을 위한 주주총회 결의일 전일을 기산일로 하여 제5-22조제1항 본문의 규정에 의하여 산정(제3호는 제외한다)한 가액(이하 이 항에서 \"산정가액\"이라 한다)이 액면가액 미만이면서 기산일 전에 전환가액을 액면가액으로 이미 조정한 경우(전환가액을 액면가액 미만으로 조정할 수 있는 경우는 제외한다.)에는 조정 후 전환가액은 산정가액을 기준으로 감자ㆍ주식병합 등으로 인한 조정비율만큼 상향조정한 가액 이상으로 할 수 있다."
+        }
+      ]
+    },
+    {
+      "id": "FIN-14",
+      "topic": "CB 최초 전환가액과 예외 (직접 조문 재조회 스모크)",
+      "status": "ok",
+      "elapsedMs": 637,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "header",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "제5-22조(전환사채의 전환가액 결정)"
+        },
+        {
+          "id": "payment",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "3. 청약일전(청약일이 없는 경우에는 납입일) 제3거래일 가중산술평균주가(법 제165조의6제1항제2호의 방법으로 발행하는 경우로서 전환사채 발행을 위한 이사회결의일부터 납입일까지의 기간이 1개월 이상인 경우에는 실제 납입일 전 제3거래일 가중산술평균주가)<개정 2024. 12. 1.>"
+        },
+        {
+          "id": "discount",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "② 제1항에 불구하고 주권상장법인이 발행하는 전환사채가 다음 각 호의 어느 하나에 해당하는 경우에는 전환가액을 제1항 본문의 규정에 의하여 산정한 가액의 100분의 90이상으로 할 수 있다."
+        },
+        {
+          "id": "credit_rating",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "1. 2 이상의 신용평가회사가 평가한 해당 채권의 신용평가등급(해당 채권의 발행일부터 과거 3월 이내에 평가한 채권의 등급이 있는 경우 그 등급으로 갈음할 수 있다)이 투기등급(BB+ 이하)인 경우<개정 2013. 9. 17.>"
+        }
+      ]
+    },
+    {
+      "id": "FIN-15",
+      "topic": "발행공시규정의 현행 계보 검색",
+      "status": "ok",
+      "elapsedMs": 752,
+      "usable": true,
+      "pass": true,
+      "partial": false,
+      "truncated": false,
+      "checks": [
+        {
+          "id": "name",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "1. 증권의 발행 및 공시 등에 관한 규정"
+        },
+        {
+          "id": "serial",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "- 행정규칙일련번호: 2100000287734 (get_admin_rule의 id)"
+        },
+        {
+          "id": "effective",
+          "kind": "positive",
+          "absent": false,
+          "pass": true,
+          "evidence": "- 발령일: 20261103 / 시행일: 20261113"
+        }
+      ]
+    }
+  ]
+}
