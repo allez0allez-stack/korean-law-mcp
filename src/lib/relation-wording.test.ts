@@ -30,3 +30,11 @@ describe("literal legal relation evidence",()=>{
     ["재정경제부령으로 정한다.","재정경제부령으로 정한다","법률","총리령"],
   ])("abstains on unsupported or ambiguous list evidence %s",(body,word,source,target)=>expect(listedRelationNote(body,word,source,target)).toContain("UNRESOLVED"))
 })
+
+
+describe("official ministry-specific law type metadata",()=>{
+  it("recognizes the actual corporate tax rule type returned by the law API",()=>expect(listedRelationNote("재정경제부령으로 정하는 임차사택을 포함한다.","재정경제부령으로 정하는 임차사택을","대통령령","재정경제부령")).toContain("REDELEGATION_WORDING"))
+  it("recognizes a ministry-specific source rule delegating to a notice",()=>expect(listedRelationNote("고용노동부장관이 정하여 고시한다.","고용노동부장관이 정하여 고시한다","고용노동부령","행정규칙")).toContain("REDELEGATION_WORDING"))
+  it("does not substitute another ministry authority",()=>expect(listedRelationNote("기획재정부령으로 정하는 요건을 갖춘다.","기획재정부령으로 정하는 요건","대통령령","재정경제부령")).toContain("UNRESOLVED"))
+  it("does not infer same-level delegation from a named ministry rule",()=>expect(listedRelationNote("재정경제부령으로 정하는 요건을 갖춘다.","재정경제부령으로 정하는 요건","고용노동부령","재정경제부령")).toContain("UNRESOLVED"))
+})
