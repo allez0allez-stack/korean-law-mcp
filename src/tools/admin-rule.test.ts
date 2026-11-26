@@ -394,7 +394,6 @@ describe("administrative transition date comparison", () => {
   })
 })
 
-
 // Event dates are user-provided facts, never independently verified by the rule lookup.
 describe("bounded administrative transition event comparison",()=>{
   const xml=(id:string,blocks:string[])=>`<AdmRulService><행정규칙일련번호>${id}</행정규칙일련번호><행정규칙ID>9999</행정규칙ID><행정규칙명>시험고시</행정규칙명><발령번호>2026-73</발령번호><발령일자>20261104</발령일자><시행일자>20261104</시행일자><조문내용>제1조(목적) 시험 기준을 정한다.</조문내용>${blocks.map(b=>`<부칙내용><![CDATA[${b}]]></부칙내용>`).join("")}</AdmRulService>`
