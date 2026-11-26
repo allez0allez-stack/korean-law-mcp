@@ -35,3 +35,18 @@ node compare-kofia.mjs 1782 1820 kofia-1782-page1.json kofia-1782-page2.json kof
 - Attachment evidence: official forms index search results corroborate the November 12 version and names of Annex 1, Annex 1-2, Annex 2 and Form 1. The opened list was an older snapshot, and direct text extraction omitted downloadable URLs. All eight attachment bodies remain UNVERIFIED. No guessed download URLs or requests to unverified endpoints.
 - FSS guide: official index search found the 2026-05-01 preparation standard (https://dart.fss.or.kr/dsaa003/selectGuideMain.ax?seqno=443), but direct web fetch returned 502 and Agent-Reach returned route_required for DART. Dedicated DART filing tools are not general guide-attachment download tools. Latest version and attached PDFs remain UNVERIFIED.
 - No new server, authentication, allowlist change, paid Exa, or manual Actions. This is evidence/data and an offline comparator; existing production regression count 1853 is unchanged and not rerun in this evidence-only step.
+
+
+## Attachment coverage and local inspection — 2026-11-26
+
+`attachment-coverage-20261126.json` maps all eight listed HWP files of historySeq=1820 to references in the already captured official body. Annex 1/1-2 regulate sanctions, Annex 2 due diligence, and five forms relate to Articles 6, 10, 17, 18 and 5. References are not annex text. All eight remain LISTED_ONLY: official file URLs were not recovered. The forms search index corroborates the version and first four filenames; it does not expose binary content. Direct web page returned cache miss, local DNS resolution failed, and the direct container downloader also failed. FSS guide seqno=443 lists five PDFs but returned HTTP 502 on direct access; the latest version is unverified. No guessed URL was requested.
+
+`inspect_attachment.py` is an offline, local-file inspection utility. With trusted publisher files, run:
+```sh
+python inspect_attachment.py /path/to/file.pdf
+python inspect_attachment.py /path/to/file.hwp
+python -m unittest -v test_inspect_attachment
+```
+PDF requires pdftotext; HWP5 requires hwp5txt (not installed in this environment). Tests require reportlab for synthetic PDFs. Actual tests 8/8 passed (0.098 s): two-page PDF text and raw SHA-256, blank PDF, corrupt PDF, disguised HTML error, missing file, byte cap, invalid HWP signature and missing HWP parser. HWP extraction success has NOT been tested; no actual HWP or FSS PDF was obtained. Input limit 32 MiB, timeout 30 s, post-extraction output limit 2 million characters. The output byte cap is checked after extraction; this is not a hardened sandbox for arbitrary untrusted documents. Run only in a suitably isolated local environment with trusted files and maintained extractors. Source, version, visual layout, page/table completeness and legal effect are not verified by successful text extraction. Never use synthetic fixture values as legal evidence.
+
+Local tested blob SHAs: inspect_attachment.py c98aa6b2e4df2c97059344852030e6ddd48c8433; test_inspect_attachment.py 5dc01f8d505a425c93c9f9f8ea8e63008b9d6a18. No runtime change, server creation, credential change or manual Actions. Existing 1853 production regression tests were not rerun in this evidence-only step.

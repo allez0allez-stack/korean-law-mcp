@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "checkedOn": "2026-11-26",
+  "kofia": {
+    "publisher": "금융투자협회",
+    "source": "https://law.kofia.or.kr/service/law/lawFullScreenContent.do?historySeq=1820&seq=140",
+    "documentId": "c49a303feb069500a66b70a191f77d8a37dccbcccf8dfa25e97a156327f22ad7",
+    "historySeq": 1820,
+    "amended": "20261112",
+    "effective": "20261113",
+    "items": [
+      {
+        "label": "별표 1",
+        "filename": "0000_(별표 1).hwp",
+        "listingChunk": 766,
+        "bodyReferences": [
+          {
+            "chunk": 487,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 508,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 509,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 511,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 512,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 515,
+            "article": "제17조의2"
+          },
+          {
+            "chunk": 534,
+            "article": "제17조의3"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별표 1-2",
+        "filename": "0001_(별표 1-2).hwp",
+        "listingChunk": 767,
+        "bodyReferences": [
+          {
+            "chunk": 532,
+            "article": "제17조의3"
+          },
+          {
+            "chunk": 533,
+            "article": "제17조의3"
+          },
+          {
+            "chunk": 534,
+            "article": "제17조의3"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별표 2",
+        "filename": "0002_(별표 2).hwp",
+        "listingChunk": 768,
+        "bodyReferences": [
+          {
+            "chunk": 458,
+            "article": "제15조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별지 제1호 서식",
+        "filename": "0003_(별지 제1호 서식).hwp",
+        "listingChunk": 769,
+        "bodyReferences": [
+          {
+            "chunk": 233,
+            "article": "제6조"
+          },
+          {
+            "chunk": 234,
+            "article": "제6조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별지 제2호 서식",
+        "filename": "0004_(별지 제2호 서식).hwp",
+        "listingChunk": 770,
+        "bodyReferences": [
+          {
+            "chunk": 333,
+            "article": "제10조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별지 제3호 서식",
+        "filename": "0005_(별지 제3호 서식).hwp",
+        "listingChunk": 771,
+        "bodyReferences": [
+          {
+            "chunk": 477,
+            "article": "제17조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별지 제4호 서식",
+        "filename": "0006_(별지 제4호 서식).hwp",
+        "listingChunk": 772,
+        "bodyReferences": [
+          {
+            "chunk": 536,
+            "article": "제18조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      },
+      {
+        "label": "별지 제5호 서식",
+        "filename": "0007_(별지 제5호 서식).hwp",
+        "listingChunk": 773,
+        "bodyReferences": [
+          {
+            "chunk": 146,
+            "article": "제5조"
+          }
+        ],
+        "downloadUrl": null,
+        "status": "LISTED_ONLY",
+        "sourceVerified": false,
+        "contentVerified": false
+      }
+    ]
+  },
+  "fss": {
+    "publisher": "금융감독원",
+    "title": "기업공시서식 작성기준(2026.5.1. 시행)",
+    "source": "https://dart.fss.or.kr/dsaa003/selectGuideMain.ax?seqno=443",
+    "published": "2026-04-27",
+    "status": "INDEX_ONLY",
+    "latestVersionVerified": false,
+    "files": [
+      {
+        "name": "개정(요약)",
+        "status": "LISTED_ONLY",
+        "downloadUrl": null
+      },
+      {
+        "name": "개정(본문)",
+        "status": "LISTED_ONLY",
+        "downloadUrl": null
+      },
+      {
+        "name": "개정내용(신구조문비표교)",
+        "status": "LISTED_ONLY",
+        "downloadUrl": null
+      },
+      {
+        "name": "작성기준 전문",
+        "status": "LISTED_ONLY",
+        "downloadUrl": null
+      },
+      {
+        "name": "별지서식",
+        "status": "LISTED_ONLY",
+        "downloadUrl": null
+      }
+    ],
+    "limitations": "검색 색인에 5개 PDF 명칭 확인. 직접 열람 HTTP 502, Agent-Reach 기존 호출 route_required. 현재 최신판 여부 미검증."
+  },
+  "localExtractor": {
+    "status": "PDF_FIXTURE_VERIFIED_HWP_UNVERIFIED",
+    "testsPassed": 8,
+    "testsTotal": 8,
+    "dependencies": {
+      "pdf": "pdftotext present",
+      "hwp": "hwp5txt absent"
+    },
+    "sourceHashScope": "local byte SHA256 does not verify official publisher or version"
+  },
+  "blockers": [
+    "KOFIA version URL web cache miss; local DNS resolution failed; direct container download failed.",
+    "KOFIA extracted text and forms index omit downloadable URLs; no guessed URL used.",
+    "FSS direct page HTTP 502; no PDF bytes.",
+    "No HWP5 extractor installed or real HWP fixture in current environment."
+  ],
+  "sourceReferences": [
+    "https://law.kofia.or.kr/service/attach/attachlist.do",
+    "https://law.kofia.or.kr/service/revision/revisionlist.do",
+    "https://dart.fss.or.kr/info/searchGuide.do"
+  ],
+  "scope": "Actual references from stored official extracted main-body chunks; no annex contents or sanction amounts inferred."
+}
