@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-26",
+  "provenance": "User-supplied originals in two ZIP uploads; locally extracted and checked. Publisher byte identity not independently authenticated. Raw files and full extracts retained in user-delivered evidence ZIP, not pushed to GitHub.",
+  "inputZipHashes": {
+    "1번.zip": "c93d2794f16f00627a5767e3ef320e2e4c6a0f26be54a636922190089205f961",
+    "2번.zip": "7424b112cefc1caf4da061f3c71f1b2fc954959836f90000e7db73767ebdfa9e"
+  },
+  "runtime": {
+    "commit": "d86cb8027affe66a6107d82d6b44bc9f32f04a7b",
+    "deploy": "dep-dc3tuemq1p3s73cb3tug",
+    "status": "live",
+    "finished": "2026-11-26T07:27:47.692657Z"
+  },
+  "extractors": {
+    "hwp": "kordoc 4.24.25",
+    "pdf": "PyMuPDF"
+  },
+  "files": [
+    {
+      "file": "1/0000_(별표 1).hwp",
+      "sha256": "8ce007dcf5fc56bc2d4f7f861720f84697bd5df93b5ffdb84f7bed00f2995fc2",
+      "textChars": 6683,
+      "tables": 3,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0001_(별표 1-2).hwp",
+      "sha256": "e704ddf599693b9891ffd5066c8a853ee958ddc0f40a924055b8192388e514e0",
+      "textChars": 822,
+      "tables": 1,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0002_(별표 2).hwp",
+      "sha256": "c87024f97a38f731a0cbeb0148044fb2f84e4ec08fcc1c47be447520ad335365",
+      "textChars": 6751,
+      "tables": 0,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0003_(별지 제1호 서식).hwp",
+      "sha256": "1439bb893a025445646e1640c1bbef3a3a99fd015f7f89740b88ec0dcf86a1d4",
+      "textChars": 1067,
+      "tables": 1,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0004_(별지 제2호 서식).hwp",
+      "sha256": "7f69144f173de399c1b7646f02d4261d1788560170c32dbbf6eb239bcc08cee6",
+      "textChars": 362,
+      "tables": 0,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0005_(별지 제3호 서식).hwp",
+      "sha256": "8489ec1aa3a9560d93ae7ef76b6dc8697db0dc690beb5d46a9661c534fb3d2bc",
+      "textChars": 7031,
+      "tables": 7,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0006_(별지 제4호 서식).hwp",
+      "sha256": "1cb79a12d9c6d33c75ceb37861eec3cbd5996ff4716daed0f3b7d19315104d38",
+      "textChars": 2613,
+      "tables": 1,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "1/0007_(별지 제5호 서식).hwp",
+      "sha256": "d52dffadb1c4ae6b5df517b32e920838484143270856a1c1c9c05a2eef5a91c9",
+      "textChars": 1000,
+      "tables": 1,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/hwp/(붙임4) 기업공시서식 작성기준(2026.11.13. 시행)_게시.hwp",
+      "sha256": "a9ff71c7b70c40b9fa438592713c7b3546b7915bab582b33dfc3e39a94b80582",
+      "textChars": 502279,
+      "tables": 695,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/hwp/(붙임5) 별지서식(2026.9.30. 시행)_게시.hwp",
+      "sha256": "eba54197af2dd630ea3faef9c014ead899844a5cbb4207ad534d5b57d6d8ff24",
+      "textChars": 781485,
+      "tables": 1197,
+      "warnings": 0,
+      "status": "LOCAL_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/(붙임1) 기업공시서식 작성기준 개정(요약).pdf",
+      "sha256": "0c7e7ffe2658c6c228f63824b96ae065b10f0c6a5b16f3e8976ad548c8dc977c",
+      "pageCount": 2,
+      "emptyPages": [],
+      "status": "LOCAL_PAGE_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/(붙임2) 기업공시서식 작성기준 개정내용(본문).pdf",
+      "sha256": "5f9bcecca0d24c74b362e5a8f41d943ac41e5eeb55fe9bb2ca50e9863d06a446",
+      "pageCount": 6,
+      "emptyPages": [],
+      "status": "LOCAL_PAGE_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/(붙임3) 기업공시서식 작성기준 개정내용(신구조문대비표).pdf",
+      "sha256": "910765085ce73e0b22d2c617294ce854f58ee9e317d734677a5ae338961bf850",
+      "pageCount": 9,
+      "emptyPages": [],
+      "status": "LOCAL_PAGE_TEXT_EXTRACTED"
+    },
+    {
+      "file": "2/(붙임4) 기업공시서식 작성기준(2026.11.13. 시행).pdf",
+      "sha256": "69b8d7a8d69cb0f353032dbf75877a5470ba83651031f4847acda14034b112f8",
+      "pageCount": 410,
+      "emptyPages": [],
+      "status": "LOCAL_PAGE_TEXT_EXTRACTED"
+    }
+  ],
+  "metrics": {
+    "documents": 14,
+    "hwp": 10,
+    "pdf": 4,
+    "pdfPages": 427,
+    "hwpTables": 1906,
+    "checksPassed": 46,
+    "checksTotal": 46,
+    "hashChecks": 14,
+    "extractionChecks": 14,
+    "selectedSourceChecks": 18
+  },
+  "selectedChecks": [
+    {
+      "id": "annex1-version",
+      "locator": "heading",
+      "passed": true
+    },
+    {
+      "id": "annex1-merged-grid",
+      "locator": "table 1 header",
+      "passed": true
+    },
+    {
+      "id": "ipo-nonsubscription",
+      "locator": "table 1, row 3, col 4",
+      "passed": true
+    },
+    {
+      "id": "ipo-lockup",
+      "locator": "table 1, row 5, col 4",
+      "passed": true
+    },
+    {
+      "id": "ipo-payment-capacity",
+      "locator": "table 1, row 7, col 4",
+      "passed": true
+    },
+    {
+      "id": "ipo-sanction-discretion",
+      "locator": "I.2, I.3, III.1",
+      "passed": true
+    },
+    {
+      "id": "ipo-venture-redemption",
+      "locator": "I.1 and note",
+      "passed": true
+    },
+    {
+      "id": "bond-separate-rules",
+      "locator": "II.1, II.3",
+      "passed": true
+    },
+    {
+      "id": "annex1-2-version",
+      "locator": "heading",
+      "passed": true
+    },
+    {
+      "id": "cornerstone-nonsubscription",
+      "locator": "table 1, row 3, col 4",
+      "passed": true
+    },
+    {
+      "id": "cornerstone-lockup",
+      "locator": "table 1, row 5, col 4",
+      "passed": true
+    },
+    {
+      "id": "cornerstone-other",
+      "locator": "table 1 rows 7-9",
+      "passed": true
+    },
+    {
+      "id": "fss-effective",
+      "locator": "PDF page 1",
+      "passed": true
+    },
+    {
+      "id": "fss-p27-pricing",
+      "locator": "PDF page 27 (printed 21)",
+      "passed": true
+    },
+    {
+      "id": "fss-p68-disclosure",
+      "locator": "PDF page 68 (printed 62)",
+      "passed": true
+    },
+    {
+      "id": "fss-hwp-pdf-keyterms",
+      "locator": "HWP full text, selected PDF crosscheck",
+      "passed": true
+    },
+    {
+      "id": "fss-cornerstone-report",
+      "locator": "PDF page 6",
+      "passed": true
+    },
+    {
+      "id": "fss-forms-toc",
+      "locator": "table of contents",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "HWP visual layout and all tables not independently validated; PDF samples visually checked, not all pages.",
+    "FSS full standard effective 20261113; supplied forms filename 20260930, track separately.",
+    "Local extraction only, no new runtime tool or sanction determination.",
+    "Previous PR61 listed-only record is historical; this capture supersedes local availability only."
+  ]
+}
