@@ -220,3 +220,35 @@ describe("relation wording in recursive and follow-up paths",()=>{
     expect(c.fetchApi).toHaveBeenCalledTimes(1)
   })
 })
+
+describe("request-local exact version reuse",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  function setup(){
+    const c=fixture([{law:A,jo:"1",links:edge(A,"2","제1조")}])
+    const read=c.getLawText.getMockImplementation()!
+    c.getLawText.mockImplementation(async p=>{const raw=JSON.parse(await read(p));raw.법령.조문.조문단위.조문번호=String(Number(p.jo.slice(0,4)));return JSON.stringify(raw)})
+    const envelope=c.fetchApi.getMockImplementation()!
+    c.fetchApi.mockImplementation(async p=>{const raw=JSON.parse(await envelope(p));raw.lsDelegated.법령.위임조문정보=[raw.lsDelegated.법령.위임조문정보,{조정보:{조문번호:"2"},위임정보:[]}];return JSON.stringify(raw)})
+    return c
+  }
+  it("reuses a verified source version for a different exact article, retaining the article read",async()=>{
+    const c=setup(),s=(await run(c)).content[0].text
+    expect(s).toContain("[DELEGATED_ARTICLE_VERIFIED] 깊이 1 | 시험법 제1조 → 시험법 제2조")
+    expect(s).toContain("동일 요청 법령 버전 식별 재사용 1건")
+    expect(c.searchLaw).not.toHaveBeenCalled();expect(c.getLawText).toHaveBeenCalledTimes(2);expect(c.fetchApi).toHaveBeenCalledTimes(1)
+  })
+  it("does not confirm a wrong article even with reusable version metadata",async()=>{
+    const c=setup(),read=c.getLawText.getMockImplementation()!
+    c.getLawText.mockImplementation(async p=>{const raw=JSON.parse(await read(p));raw.법령.조문.조문단위.조문번호="1";return JSON.stringify(raw)})
+    const s=(await run(c)).content[0].text
+    expect(s).toContain("[NOT_VERIFIED] 시험법 제2조");expect(s).not.toContain("[DELEGATED_ARTICLE_VERIFIED]")
+    expect(c.getLawText).toHaveBeenCalledTimes(2)
+  })
+  it("fresh follow-up reuses exact source metadata only within the current call",async()=>{
+    const c=setup(),input=ContinueDelegationSchema.parse({source_name:A.lawName,source_mst:A.mst,source_id:A.lawId,source_effective_date:A.effectiveDate,source_article:"제1조",targets:[{name:A.lawName,mst:A.mst,article:"제2조"}]})
+    const s=(await continueDelegationTrace(c.api,input)).content[0].text
+    expect(s).toContain("[FOLLOWUP_TARGET_VERIFIED] 시험법 제2조");expect(s).toContain("동일 요청 법령 버전 식별 재사용 1건")
+    expect(c.searchLaw).toHaveBeenCalledTimes(1);expect(c.getLawText).toHaveBeenCalledTimes(2)
+    await continueDelegationTrace(c.api,input);expect(c.searchLaw).toHaveBeenCalledTimes(2);expect(c.getLawText).toHaveBeenCalledTimes(4)
+  })
+})
