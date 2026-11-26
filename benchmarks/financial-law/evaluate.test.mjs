@@ -48,3 +48,8 @@ test("rejects malformed expectations and capture metadata",()=>{
   assert.throws(()=>evaluate(gold([positive,positive]),[cap(valid)]),/Invalid check/);
   assert.throws(()=>evaluate(gold(),[{baseline:"base",results:[{...cap(valid).results[0],elapsedMs:-1}]}]),/Invalid capture/);
 });
+
+test("detects an abbreviated applicable-law article even when selected checks pass",()=>{
+  const r=evaluate(gold(),[cap(valid+"\n…(생략)")]);
+  assert.equal(r.metrics.checksPassed,1);assert.equal(r.metrics.truncatedCases,1);
+});

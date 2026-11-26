@@ -33,7 +33,7 @@ export function evaluate(gold, captures) {
     const rejectConfirmed=checks.some(ch=>ch.kind==="negative"&&!ch.absent&&ch.pass);
     const positiveConfirmed=checks.filter(ch=>ch.kind==="positive").every(ch=>ch.pass);
     for(const ch of checks)if(ch.absent)ch.pass=usable&&rejectConfirmed&&positiveConfirmed&&!ch.evidence;
-    return {id:c.id,topic:c.topic,status:row?.status??"missing",elapsedMs:row?.elapsedMs??null,usable,pass:checks.every(ch=>ch.pass),partial:body.includes("[PARTIAL]"),truncated:/응답이 너무 길어|응답이 잘렸|자로 잘렸/.test(body),checks};
+    return {id:c.id,topic:c.topic,status:row?.status??"missing",elapsedMs:row?.elapsedMs??null,usable,pass:checks.every(ch=>ch.pass),partial:body.includes("[PARTIAL]"),truncated:/응답이 너무 길어|응답이 잘렸|자로 잘렸|…\(생략\)/.test(body),checks};
   });
   for(const id of rows.keys())if(!ids.has(id))throw new Error("Unexpected capture: "+id);
   const checks=cases.flatMap(c=>c.checks), pos=checks.filter(c=>c.kind==="positive"),neg=checks.filter(c=>c.kind==="negative");
