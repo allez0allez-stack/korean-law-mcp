@@ -125,7 +125,7 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
   "법령조회": ["get_law_text", "get_article_detail", "get_batch_articles", "get_article_with_precedents"],
   "행정규칙": ["search_admin_rule", "get_admin_rule", "compare_admin_rule_old_new"],
   "자치법규": ["search_ordinance", "get_ordinance", "ordinance_radar", "chain_ordinance_compare"],
-  "법령연계": ["get_linked_ordinances", "get_linked_ordinance_articles", "get_delegated_laws", "get_linked_laws_from_ordinance"],
+  "법령연계": ["get_linked_ordinances", "get_linked_ordinance_articles", "get_delegated_laws", "get_linked_laws_from_ordinance", "continue_delegation_trace"],
   "비교분석": ["compare_old_new", "get_three_tier", "compare_articles"],
   "개정입안": ["legal_analysis", "amendment_table"],
   "별표서식": ["get_annexes"],

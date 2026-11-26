@@ -18,6 +18,7 @@ import { V3_EXPOSED, TOOL_TITLES } from "./lib/tool-profiles.js"
 import { searchDecisions, SearchDecisionsSchema, getDecisionText, GetDecisionTextSchema } from "./tools/unified-decisions.js"
 
 // Tool imports
+import { continueDelegationTrace, ContinueDelegationSchema } from "./tools/recursive-admin-delegation.js"
 import { searchLaw, SearchLawSchema } from "./tools/search.js"
 import { searchLawBulk, SearchLawBulkSchema } from "./tools/search-bulk.js"
 import { getLawText, GetLawTextSchema } from "./tools/law-text.js"
@@ -717,6 +718,13 @@ export const allTools: McpTool[] = [
     description: "[행위시법] '사건 시점(예: 2023.5.10)에 적용되는 법은?' — 기준일에 시행 중이던 법령 버전(MST) 특정 + 그 시점 조문 본문 + 현행과 비교 + 이후 개정 부칙의 적용례·경과조치 자동 발췌 + 행위시법/처분시법 법리 안내. lawName + date 필수, jo 선택. LLM이 현행법으로 오답하는 것 방지.",
     schema: ApplicableLawSchema,
     handler: applicableLaw
+  },
+
+  {
+    name: "continue_delegation_trace",
+    description: "[법령연계] 미추적 조문 후속 선택 조회. 시작 법령의 현행 ID·MST·시행일·조문과 공식 연결을 재검증하고 지정한 직접 연결 최대 5개 원문 확인. 전체 경로 및 위임 효력 확정 아님.",
+    schema: ContinueDelegationSchema,
+    handler: continueDelegationTrace
   },
 
   // === 메타 도구 (lite 프로필용) ===

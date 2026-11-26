@@ -203,7 +203,7 @@
 | `get_law_abbreviations` | 법령 약칭 목록 조회 |
 | `compare_admin_rule_old_new` | 행정규칙 신구대조 |
 
-### 법령-자치법규 연계 (4개)
+### 법령-자치법규 연계 (5개)
 
 | 도구 | 설명 |
 |------|------|
@@ -211,6 +211,7 @@
 | `get_linked_ordinance_articles` | 연계 자치법규 조문 조회 |
 | `get_delegated_laws` | 위임 법령 조회 |
 | `get_linked_laws_from_ordinance` | 자치법규에서 상위법령 조회 |
+| `continue_delegation_trace` | 다단계 위임 추적의 `[FOLLOWUP_BATCH]` JSON을 `execute_tool`의 params로 전달. 시작 현행 ID·MST·시행일·조문 및 공식 연결을 새로 확인하고 선택한 직접 연결 최대 5개 원문 검증. 전체 그래프·효력 확정 아님. |
 
 ### 조약 (2개)
 

@@ -18,7 +18,7 @@ Korean Law MCP Server v4.15.24 - 법제처 42개 API → 10개 통합 도구 (�
 src/
 ├── index.ts              # 엔트리포인트 (STDIO/HTTP 모드)
 ├── cli.ts                # CLI v2.0 (자연어 라우팅 + REPL)
-├── tool-registry.ts      # 100개 도구 등록, V3_EXPOSED 10개만 노출 (TOOL_COUNTS 파생값)
+├── tool-registry.ts      # 101개 도구 등록, V3_EXPOSED 10개만 노출 (TOOL_COUNTS 파생값)
 ├── tools/                # 도구 구현 (76개 파일, scenarios/ 포함)
 ├── lib/
 │   ├── api-client.ts     # API 클라이언트 (throwIfError/checkHtmlError 통일)
@@ -174,7 +174,7 @@ get_law_text(mst, jo="006300") → 제63조(휴직) 조회
 |------|------|
 | `cli.ts` | CLI v2.0 — 자연어 라우팅 + REPL |
 | `lib/query-router.ts` | 자연어 → 도구 자동 라우팅 (verify/비교/시간필터/impact_map/time_travel/action_plan 포함) |
-| `tool-registry.ts` | 100개 도구 정의, V3_EXPOSED 10개 노출 (TOOL_COUNTS 파생값) |
+| `tool-registry.ts` | 101개 도구 정의, V3_EXPOSED 10개 노출 (TOOL_COUNTS 파생값) |
 | `tools/legal-research.ts` | chain_* 8개 통합 진입점 — task 파라미터 디스패치 (v4.4.0) |
 | `tools/legal-analysis.ts` | 킬러피처 4개 통합 진입점 — mode 파라미터 디스패치 (v4.4.0) |
 | `tools/verify-citations.ts` | LLM 환각 방지 인용 검증 (v3.5 killer feature) |
