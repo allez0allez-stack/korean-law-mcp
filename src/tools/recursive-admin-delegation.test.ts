@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { chainLawSystem } from "./chains.js"
 import { legalResearch, LegalResearchSchema } from "./legal-research.js"
-import { traceRecursiveAdminDelegations as trace, wantsRecursiveAdminTrace as wants } from "./recursive-admin-delegation.js"
+import { traceRecursiveAdminDelegations as trace, wantsRecursiveAdminTrace as wants, continueDelegationTrace, ContinueDelegationSchema } from "./recursive-admin-delegation.js"
 import type { LawApiClient } from "../lib/api-client.js"
 import { lawCache } from "../lib/cache.js"
 import { adminRuleXmlCache } from "../lib/admin-rule-views.js"
@@ -133,5 +133,59 @@ describe("recursive target budget accounting",()=>{
     expect(s).toContain("[LINKED_LAW_MST_NOT_CURRENT]")
     expect(s).toContain("중복·순환 재사용 0건")
     expect(s).not.toContain("[ALREADY_SEEN]")
+  })
+})
+
+// Follow-up uses fresh exact searches, not cached law-search rows or client evidence.
+describe("bounded delegation follow-up",()=>{
+  beforeEach(()=>{lawCache.clear();adminRuleXmlCache.clear()})
+  const D=law("다른법","991103"),E=law("추가법","991104"),F=law("마지막법","991105")
+  const batch={source_name:A.lawName,source_mst:A.mst,source_id:A.lawId,source_effective_date:A.effectiveDate,source_article:"제1조",targets:[{name:B.lawName,mst:B.mst,article:"제2조"}]}
+  const searchXml=(laws:typeof A[])=>`<LawSearch><totalCnt>${laws.length}</totalCnt>${laws.map(l=>`<law><법령명한글>${l.lawName}</법령명한글><법령ID>${l.lawId}</법령ID><법령일련번호>${l.mst}</법령일련번호><법령구분명>${l.lawType}</법령구분명><시행일자>${l.effectiveDate}</시행일자></law>`).join("")}</LawSearch>`
+  const setup=()=>{const c=fixture(records());c.searchLaw.mockImplementation(async q=>searchXml([A,B,C].filter(l=>l.lawName===q)));return c}
+  const call=async(c:ReturnType<typeof fixture>,p:unknown=batch)=>continueDelegationTrace(c.api,ContinueDelegationSchema.parse(p))
+  it("returns a structured selector for an actual omitted direct edge",async()=>{
+    const c=fixture([{law:A,jo:"1",links:[edge(B,"2","제1조"),edge(C,"3","제1조"),edge(D,"4","제1조"),edge(E,"5","제1조"),edge(F,"6","제1조"),edge(law("여섯번째법","991106"),"7","제1조")]},{law:B,jo:"2",links:[]},{law:C,jo:"3",links:[]},{law:D,jo:"4",links:[]},{law:E,jo:"5",links:[]},{law:F,jo:"6",links:[]}])
+    const s=(await run(c)).content[0].text
+    const row=s.split("\n").find(l=>l.startsWith("[FOLLOWUP_BATCH] "))!
+    const p=ContinueDelegationSchema.parse(JSON.parse(row.slice("[FOLLOWUP_BATCH] ".length)))
+    expect(p).toEqual({...batch,targets:[{name:"여섯번째법",mst:"991106",article:"제7조"}]})
+    expect(c.getLawText).toHaveBeenCalledTimes(6)
+  })
+  it("revalidates parent and selected direct target without reading unrelated descendants",async()=>{
+    const c=setup(),s=(await call(c)).content[0].text
+    expect(s).toContain("[FOLLOWUP_SOURCE_VERIFIED]");expect(s).toContain("[FOLLOWUP_TARGET_VERIFIED] 시험법 시행령 제2조")
+    expect(s).toContain("시작 위치 제1조");expect(s).toContain("원문 내용");expect(c.getLawText).toHaveBeenCalledTimes(2);expect(c.fetchApi).toHaveBeenCalledTimes(1)
+    expect(c.searchLaw.mock.calls.map(([q])=>q)).toEqual([A.lawName,B.lawName])
+  })
+  it("rejects a forged or changed edge before target search",async()=>{
+    const c=setup(),s=(await call(c,{...batch,targets:[{name:C.lawName,mst:C.mst,article:"제3조"}]})).content[0].text
+    expect(s).toContain("[FOLLOWUP_NOT_LISTED]");expect(s).not.toContain("[FOLLOWUP_TARGET_VERIFIED]");expect(c.getLawText).toHaveBeenCalledTimes(1);expect(c.searchLaw).toHaveBeenCalledTimes(1)
+  })
+  it.each([{source_mst:"999999"},{source_id:"999999"},{source_effective_date:"20190101"}])("rejects stale source identity %j",async changed=>{
+    const c=setup(),r=await call(c,{...batch,...changed});expect(r.isError).toBe(true);expect(r.content[0].text).toContain("버전 변경");expect(c.getLawText).not.toHaveBeenCalled();expect(c.fetchApi).not.toHaveBeenCalled()
+  })
+  it("rejects a listed target no longer current",async()=>{
+    const c=setup();c.searchLaw.mockResolvedValueOnce(searchXml([A])).mockResolvedValueOnce(searchXml([{...B,mst:"999999"}]))
+    const s=(await call(c)).content[0].text;expect(s).toContain("[FOLLOWUP_STALE_TARGET]");expect(c.getLawText).toHaveBeenCalledTimes(1)
+  })
+  it("deduplicates exact selectors and rejects conflicting names",async()=>{
+    const c=setup(),r=await call(c,{...batch,targets:[batch.targets[0],batch.targets[0]]});expect(r.content[0].text).toContain("고유 대상 1건 / 원문 확인 1건");expect(c.getLawText).toHaveBeenCalledTimes(2)
+    const d=setup(),bad=await call(d,{...batch,targets:[batch.targets[0],{...batch.targets[0],name:"무관법"}]});expect(bad.isError).toBe(true);expect(d.searchLaw).not.toHaveBeenCalled()
+  })
+  it("rejects malformed and incomplete fresh search results",async()=>{
+    const c=setup();c.searchLaw.mockResolvedValueOnce(searchXml([A]).replace("<totalCnt>1","<totalCnt>2"));expect((await call(c)).isError).toBe(true);expect(c.getLawText).not.toHaveBeenCalled()
+  })
+  it("rejects an envelope from another effective slice",async()=>{
+    const c=setup();c.fetchApi.mockResolvedValueOnce("{}");expect((await call(c)).isError).toBe(true);expect(c.getLawText).toHaveBeenCalledTimes(1)
+  })
+  it("does not confirm a wrong returned target article",async()=>{
+    const c=setup();const original=c.getLawText.getMockImplementation()!;c.getLawText.mockImplementation(async p=>{const raw=JSON.parse(await original(p));if(p.mst===B.mst)raw.법령.조문.조문단위.조문번호="9999";return JSON.stringify(raw)})
+    const s=(await call(c)).content[0].text;expect(s).toContain("[FOLLOWUP_TARGET_NOT_VERIFIED]");expect(s).not.toContain("[FOLLOWUP_TARGET_VERIFIED]")
+  })
+  it("limits selectors and rejects non-article or extra fields",()=>{
+    expect(ContinueDelegationSchema.safeParse({...batch,targets:Array(6).fill(batch.targets[0])}).success).toBe(false)
+    expect(ContinueDelegationSchema.safeParse({...batch,source_article:"제1조제2항"}).success).toBe(false)
+    expect(ContinueDelegationSchema.safeParse({...batch,targets:[{...batch.targets[0],verified:true}]}).success).toBe(false)
   })
 })
