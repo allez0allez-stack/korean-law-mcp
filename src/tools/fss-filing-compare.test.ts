@@ -15,3 +15,8 @@ it('detects Finger 10th CB reported start-date change from selected recovered so
  // Issuer code is caller asserted here; selected cells only, not complete tables.
  const r=compareMezzanineFilings(FilingCompareSchema.parse({mode:'filing_compare',issuer_code:'00000000',before,after}));expect(r.changedCount).toBe(1);expect(r.fields.find(f=>f.code==='SB_BGN_DT')).toMatchObject({status:'VALUE_CHANGED_REVIEW',before:[{value:'2027년 11월 12일'}],after:[{value:'2027년 11월 13일'}]});expect(r).toMatchObject({originalReviewRequired:true,sourceAttested:false,beforeSource:{parserStatus:'RECOVERED'},afterSource:{parserStatus:'RECOVERED'}})
 })
+it('compares disclosed share-total percentage without inventing numeric equivalence',()=>{
+ const before={...b,rows:[...b.rows,row('주식총수 대비비율(%)','STK_RT','6.04')]}
+ const after={...a,rows:[...a.rows,row('주식총수 대비비율(%)','STK_RT','6.03')]}
+ const result=compareMezzanineFilings(FilingCompareSchema.parse({mode:'filing_compare',issuer_code:'00000000',before,after}));expect(result.fields.find(f=>f.code==='STK_RT')).toMatchObject({status:'VALUE_CHANGED_REVIEW',before:[{value:'6.04'}],after:[{value:'6.03'}]})
+})

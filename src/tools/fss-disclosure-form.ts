@@ -7,11 +7,15 @@ import {MezzanineFilingReviewSchema,reviewMezzanineFiling} from './fss-cb-filing
 import {MezzanineTermsSchema,reviewMezzanineTerms} from './fss-mezzanine-terms.js'
 import {MarketReviewSchema,reviewMarket} from './fss-market-review.js'
 import {FilingCompareSchema,compareMezzanineFilings} from './fss-filing-compare.js'
+import {HistoricalReviewSchema,historicalMezzanineBasis} from './fss-historical-review.js'
+import {FilingLineageSchema,reviewFilingLineage} from './fss-filing-lineage.js'
 export const FssDisclosureFormSchema=z.discriminatedUnion('mode',[
  MezzanineFilingReviewSchema,
  MezzanineTermsSchema,
  MarketReviewSchema,
  FilingCompareSchema,
+ HistoricalReviewSchema,
+ FilingLineageSchema,
  z.object({mode:z.literal('form'),version:z.literal('20260930'),instrument:z.enum(['CB','BW','EB']),start_line:z.number().int().min(1).max(10000).default(1),keyword:z.string().trim().min(1).max(100).optional()}).strict(),
  z.object({mode:z.literal('regulatory_basis'),instrument:z.enum(['CB','BW','EB']),topic:z.enum(FSS_TOPICS)}).strict(),
  z.object({mode:z.literal('amendment_scope'),version:z.literal('20261113')}).strict(),
@@ -23,6 +27,8 @@ export async function fssDisclosureForm(_api:LawApiClient,input:z.input<typeof F
  const parsed=FssDisclosureFormSchema.safeParse(input)
  if(!parsed.success)return {isError:true,content:[{type:'text',text:'[NOT_VERIFIED] 지원하는 고정 자료 버전과 모드만 입력하세요. 행위시 적용 및 현행성 미검증.'}]}
  const p=parsed.data
+ if(p.mode==='historical_basis')return historicalMezzanineBasis(_api,p)
+ if(p.mode==='filing_lineage'){try{return {content:[{type:'text',text:JSON.stringify(reviewFilingLineage(p),null,2)}]}}catch(error){if(!(error instanceof RangeError))throw error;return {isError:true,content:[{type:'text',text:'[NOT_VERIFIED] '+error.message}]}}}
  if(p.mode==='market_review'||p.mode==='filing_compare'){try{return {content:[{type:'text',text:JSON.stringify(p.mode==='market_review'?reviewMarket(p):compareMezzanineFilings(p),null,2)}]}}catch(error){if(!(error instanceof RangeError))throw error;return {isError:true,content:[{type:'text',text:'[NOT_VERIFIED] '+error.message}]}}}
  if(p.mode==='term_review'){try{return {content:[{type:'text',text:JSON.stringify(reviewMezzanineTerms(p),null,2)}]}}catch(error){if(!(error instanceof RangeError))throw error;return {isError:true,content:[{type:'text',text:'[NOT_VERIFIED] '+error.message}]}}}
  if(p.mode==='filing_review'){try{return {content:[{type:'text',text:JSON.stringify(reviewMezzanineFiling(p),null,2)}]}}catch(error){if(!(error instanceof RangeError))throw error;return {isError:true,content:[{type:'text',text:'[NOT_VERIFIED] '+error.message}]}}}

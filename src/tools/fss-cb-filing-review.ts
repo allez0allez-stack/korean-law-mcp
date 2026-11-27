@@ -7,13 +7,13 @@ type Input=z.infer<typeof MezzanineFilingReviewSchema>
 const normalized=(s:string)=>s.normalize('NFKC').replace(/\s/g,'')
 const date=(s:string)=>{const v=s.trim().replace(/^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일$/,(_,y,m,d)=>y+m.padStart(2,'0')+d.padStart(2,'0')).replace(/[.-]/g,'');if(!/^\d{8}$/.test(v))return undefined;const d=`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6)}`;const t=Date.parse(d);return Number.isFinite(t)&&new Date(t).toISOString().slice(0,10)===d?v:undefined}
 const integer=(s:string|undefined)=>s&&/^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(s.trim())?BigInt(s.replace(/,/g,'')):undefined
-const DEFINITIONS={DNM_SUM:'권면(전자등록)총액',ARI_LMT:'정관상잔여발행한도',PRFT_RATE:'표면이자율',LST_RTN_RT:'만기이자율',EXP_DT:'사채만기일',ISSU_MTH:'사채발행방법',EXE_RT:'전환비율',EXE_PRC:'전환가액(원/주)',EXE_FUNC:'전환가액결정방법',STK_CNT:'주식수',SB_BGN_DT:'시작일',SB_END_DT:'종료일',EXE_REG:'전환가액조정에관한사항',MIN_PRC:'최저조정가액(원)',MIN_RSN:'최저조정가액근거',CTR_LMT:'70%미만으로조정가능한잔여발행한도',OPT_FCT:'옵션에관한사항',PYM_DT:'납입일',DRC_DT:'이사회결의일',RPT_SM_YN:'증권신고서제출대상여부',RPT_SBM:'제출을면제받은경우그사유',SSL_YN:'해당여부',MOR_OFR:'담보제공에관한사항'} as const
+const DEFINITIONS={DNM_SUM:'권면(전자등록)총액',ARI_LMT:'정관상잔여발행한도',PRFT_RATE:'표면이자율',LST_RTN_RT:'만기이자율',EXP_DT:'사채만기일',ISSU_MTH:'사채발행방법',EXE_RT:'전환비율',EXE_PRC:'전환가액(원/주)',EXE_FUNC:'전환가액결정방법',STK_CNT:'주식수',STK_RT:'주식총수대비비율',SB_BGN_DT:'시작일',SB_END_DT:'종료일',EXE_REG:'전환가액조정에관한사항',MIN_PRC:'최저조정가액(원)',MIN_RSN:'최저조정가액근거',CTR_LMT:'70%미만으로조정가능한잔여발행한도',OPT_FCT:'옵션에관한사항',PYM_DT:'납입일',DRC_DT:'이사회결의일',RPT_SM_YN:'증권신고서제출대상여부',RPT_SBM:'제출을면제받은경우그사유',SSL_YN:'해당여부',MOR_OFR:'담보제공에관한사항'} as const
 export function reviewMezzanineFiling(p:Input){
  const term={CB:'전환',BW:'행사',EB:'교환'}[p.instrument]
  const security={CB:'전환사채',BW:'신주인수권부사채',EB:'교환사채'}[p.instrument]
  const defs:Record<string,string>={...DEFINITIONS,EXE_RT:term+'비율',EXE_PRC:term+'가액(원/주)',EXE_FUNC:term+'가액결정방법',EXE_REG:term+'가액조정에관한사항',STK_KND:'종류'}
  if(p.instrument==='BW')Object.assign(defs,{DIV_YN:'사채와인수권의분리여부',PYM_MTH:'신주대금납입방법'})
- if(p.instrument==='EB')for(const code of ['ARI_LMT','MIN_PRC','MIN_RSN','CTR_LMT','SSL_YN','MOR_OFR'])delete defs[code]
+ if(p.instrument==='EB')for(const code of ['ARI_LMT','MIN_PRC','MIN_RSN','CTR_LMT','SSL_YN','MOR_OFR','STK_RT'])delete defs[code]
 
  if(p.rows.reduce((n,r)=>n+r.reduce((m,c)=>m+c.value.length,0),0)>180000)throw new RangeError('Table text exceeds review limit')
  const candidates=(code:string)=>p.rows.flatMap((r,row)=>r.flatMap((c,col)=>c.dart_code===code||c.unit===code?[{row,col,value:c.value,unitValue:c.unit_value??null,labels:r.filter(x=>!x.dart_code&&!x.unit).map(x=>x.value)}]:[]))
