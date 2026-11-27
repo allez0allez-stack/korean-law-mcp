@@ -745,7 +745,7 @@ export const allTools: McpTool[] = [
 
   {
     name: "fss_disclosure_form",
-    description: "[금감원 공시서식] 제공된 20260930 CB/BW/EB 별지 38-24~26 원문 파싱 행·기재상 주의 검색 및 20261113 IPO 개정 범위. mode=form / amendment_scope / regulatory_basis(법령·금융위 고시 공식 조문 연결) / filing_review(제공 DART CB 주요 표 검토). 서식 현행성·적용례 미확정.",
+    description: "[금감원 공시서식] 제공된 20260930 CB/BW/EB 별지 38-24~26 원문 파싱 행·기재상 주의 검색 및 20261113 IPO 개정 범위. mode=form / amendment_scope / regulatory_basis(법령·금융위 고시 공식 조문 연결) / filing_review(제공 DART CB/BW/EB 주요 표 검토). 서식 현행성·적용례 미확정.",
     schema: FssDisclosureFormSchema,
     handler: fssDisclosureForm
   },
