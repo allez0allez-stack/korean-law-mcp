@@ -393,3 +393,5 @@ legal_analysis(mode="amendment_table",
 `mode=filing_review, version=20260930, instrument=CB|BW|EB`는 DART MCP에서 가져온 단일 메자닌 주요 발행조건 표의 `rcept_no`, `source_file`, `table_index`, `rows`(셀 value/dart_code/unit/unit_value), 선택적 `source_sha256`를 받아 코드와 행 제목을 대조합니다. 누락, 대시, 중복 및 라벨 불일치를 구별하며 전환주식수, 70% 가격 기준, 사모 전환일 및 옵션 문구를 검토합니다. DART 직접 수집·원본 해시 검증·정정 최신성·법적 적합성 판단을 수행하지 않습니다. BW는 분리 여부·신주대금 납입방법을 추가 확인하고, EB는 교환대상과 교환주식수 대사를 수행하되 CB/BW의 70%·1년 기준을 적용하지 않습니다. 한글 날짜 및 날짜 표시값과 unit_value 불일치를 처리합니다.
 
 `mode=term_review, instrument=CB|BW|EB, scenario={kind:holder_call|initial_price|market_refixing|corporate_action,...}`는 20261113 금융위 고시 제5-21~24조 기반 산술 검토입니다. 개인별 매수선택권 비율, 제5-22조제1항 표준 발행가액, 시가 조정 하한/상한 및 자본변동 비례 참조가격을 검토합니다. VWAP는 소수 8자리 이하 문자열로 입력하며 정수 유리수로 계산합니다. EB는 매핑하지 않고, 실제 발행일 법령·주가·보유비율·특별결의·예외는 검증하지 않습니다. 발행사 조기상환권과 제3자 매수선택권을 구분합니다.
+
+`fss_disclosure_form`의 `market_review`는 제공 일별 KRX 행과 명시적 거래일 목록, 기준기간, 발행방식 및 가격을 받아 정확 유리수 VWAP를 계산합니다. 거래일 목록 누락·중복·종목 불일치를 차단하며 거래일 달력·법적 기준일·권리변동·데이터 출처/이용권한은 별도 확인합니다. `filing_compare`는 동일 증권종류·회차의 두 제공 주요 표에서 태그/라벨 검토 결과와 원문 값·위치를 비교합니다. 정정계보, 회사 동일성 및 최신성은 확정하지 않습니다.
