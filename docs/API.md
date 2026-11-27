@@ -371,3 +371,31 @@ legal_analysis(mode="amendment_table",
 
 `execute_tool`로 호출: `{"tool_name":"kofia_sanction_base","params":{"version":"20261112","violation":"ipo_nonpayment","violation_amount_krw":150000000}}`.
 사용자가 제공한 2026-11-12 개정 별표 1·1-2 기준의 기본기간 계산만 지원한다. 결과의 원문 파일 SHA-256, 금액 정의 및 상한 전후 값은 검토용이다. 잔액 단위 절사/올림은 가정별로 병기한다. 행위시 적용, 현행성, 가중·감면, 최종 제재기간 및 제재금은 확정하지 않는다. `discover_tools(intent="불성실 수요예측")`로 검색할 수 있다. 제재기간이 재량인 유형과 무보증사채 규정은 지원하지 않는다.
+
+### 금투협 별표 1·1-2 가중·감면 및 산정 시나리오 (`kofia_sanction_scenario`)
+
+고정 버전 `20261112`의 사용자 제공 별표 1에 대한 검토용 산술. `execute_tool`로 호출한다. IPO 8개 금액 기준 유형 및 무보증사채(미청약·미납입/제17조의2제1항제3호·제9호)를 지원한다. 사전청약은 별표 1-2의 별도 기준으로, 통합 도구에서 금액 기준 및 재량 상한을 구분한다.
+
+```json
+{"tool_name":"kofia_sanction_scenario","params":{"version":"20261112","market":"ipo","violation":"ipo_nonpayment","violation_amount_krw":240000000,"economic_benefit_krw":5000000,"designation_count_including_current":1,"apply_repeat_aggravation":false,"listing_day_lockup":false,"apply_listing_day_aggravation":false,"general_mitigation_bps":7500,"assume_general_mitigation_approval":true}}
+```
+
+가중과 감면의 채택 여부 및 감면율은 입력 가정이며 위원회 의결을 대체하지 않는다. 확약준수율 감면은 일별 잔고와 금액 대사, 재매수 또는 80% 기준 및 위원회 승인 가정을 요구하며 준수율 전액 적용 시나리오를 반환한다. 두 가중의 합산/순차, 경합시 기본상한 및 가중상한 시점, 잔여 가산 단위에 관해 가정별 결과를 반환한다. 감경 후 월 미만은 반올림한다. 경제적 이익 금액은 별도 산정·검증한 입력값이며 감면 제외는 500만원 단위, 제재금은 3개월 이하 양의 제한기간 시나리오만 표시(100만원 미만 절사 해석 병기). 무보증사채는 최근 1년 미지정·경미성 가정 및 50% 감경 상한을 적용하고 납부 기준만 반환한다. 경제적 이익 산정과 복수 사건 선정은 별도 market으로 검토용 산술을 지원하며, 실제 제재금 전환 여부, 행위시 적용례·현행성은 미확정이다.
+
+`kofia_sanction_scenario` 추가 market: `cornerstone` (금액 기준 두 유형), `cornerstone_discretionary` (비밀유지·허위정보·공정성 저해, 12개월 이내 상한만), `lockup_benefit` (처분·재매수 lot 및 기준종가 입력, 정확 유리수 손익). 별표 1 가중·감면은 사전청약에 자동 적용하지 않음.
+
+### 금감원 기업공시서식 스냅샷 (`fss_disclosure_form`)
+
+`execute_tool`로 `mode=form, version=20260930, instrument=CB|BW|EB`를 지정합니다. `keyword`는 공백 무시 문자열 검색, `start_line`은 결과 목록 1부터 시작하는 페이지 오프셋이며 `nextStartLine`으로 계속 조회합니다. `mode=amendment_scope, version=20261113`은 제공 개정본문의 IPO 개정 범위를 반환합니다. 고정 제공본의 파싱 결과이며 원본 바이너리·최신성·행위시 적용을 확정하지 않습니다.
+
+`mode=regulatory_basis, instrument=CB|BW|EB, topic=filing|attachments|issuance|pricing|refixing_down|refixing_up|option_disclosure|option_attachments`는 조회시점 공식 법령·고시 조문을 별도 반환합니다. 법 제161조와 시행령 제171조는 공통 근거, BW는 준용 근거를 함께 조회하고 EB에 CB/BW 특례를 임의 적용하지 않습니다. 공식 행정규칙의 정식 명칭·소관·시행일·조문 제목을 확인하며 누락은 PARTIAL 또는 NOT_VERIFIED. 서식 최신성 및 발행 당시 적용례는 미확정입니다.
+
+`mode=filing_review, version=20260930, instrument=CB|BW|EB`는 DART MCP에서 가져온 단일 메자닌 주요 발행조건 표의 `rcept_no`, `source_file`, `table_index`, `rows`(셀 value/dart_code/unit/unit_value), 선택적 `source_sha256`를 받아 코드와 행 제목을 대조합니다. 누락, 대시, 중복 및 라벨 불일치를 구별하며 전환주식수, 70% 가격 기준, 사모 전환일 및 옵션 문구를 검토합니다. DART 직접 수집·원본 해시 검증·정정 최신성·법적 적합성 판단을 수행하지 않습니다. BW는 분리 여부·신주대금 납입방법을 추가 확인하고, EB는 교환대상과 교환주식수 대사를 수행하되 CB/BW의 70%·1년 기준을 적용하지 않습니다. 한글 날짜 및 날짜 표시값과 unit_value 불일치를 처리합니다.
+
+`mode=term_review, instrument=CB|BW|EB, scenario={kind:holder_call|initial_price|market_refixing|corporate_action,...}`는 20261113 금융위 고시 제5-21~24조 기반 산술 검토입니다. 개인별 매수선택권 비율, 제5-22조제1항 표준 발행가액, 시가 조정 하한/상한 및 자본변동 비례 참조가격을 검토합니다. VWAP는 소수 8자리 이하 문자열로 입력하며 정수 유리수로 계산합니다. EB는 매핑하지 않고, 실제 발행일 법령·주가·보유비율·특별결의·예외는 검증하지 않습니다. 발행사 조기상환권과 제3자 매수선택권을 구분합니다.
+
+`fss_disclosure_form`의 `market_review`는 제공 일별 KRX 행과 명시적 거래일 목록, 기준기간, 발행방식 및 가격을 받아 정확 유리수 VWAP를 계산합니다. 거래일 목록 누락·중복·종목 불일치를 차단하며 거래일 달력·법적 기준일·권리변동·데이터 출처/이용권한은 별도 확인합니다. `filing_compare`는 동일 증권종류·회차의 두 제공 주요 표에서 태그/라벨 검토 결과와 원문 값·위치를 비교합니다. 정정계보, 회사 동일성 및 최신성은 확정하지 않습니다.
+
+`fss_disclosure_form`의 `historical_basis`는 사건 종류·일자에 따른 금융위 고시 계보(36044)의 시행 버전과 조문을 조회하고 해당 버전 및 선택한 이후 시행본의 부칙 근거를 제공하며, 법률·시행령은 기존 행위시법 분석에 위임합니다. 적용례 해석은 확정하지 않습니다. `filing_lineage`는 제공 DART 목록·정정대상 서류명·최초제출일 원문·회차를 대조하여 계보 후보와 제외·미확인 사항을 구분합니다. 동일일 복수 원공시나 미확인 정정이 있으면 최신 후보를 보류합니다. 원문 인증·목록 완전성·최신성은 검증하지 않습니다.
+
+`option_review`는 CB/BW/EB의 지정 옵션 원문 셀 또는 동일 정정표의 전후 셀을 받아 명시 제목, 날짜, 통지·주기 문구 및 매도청구권 배분 후보를 원문 오프셋과 함께 반환합니다. 배분 비교는 명시적 allocation 범위에서만 수행하며, 미발견을 권리 부존재로 판단하지 않습니다. 계약 전문·지분·분모·법적 효력·출처 진위는 별도 검증 대상입니다.
